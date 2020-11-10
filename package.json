@@ -1,0 +1,28 @@
+{
+  "name": "kanbn",
+  "version": "0.0.0",
+  "description": "A cli Kanban application",
+  "main": "index.js",
+  "scripts": {
+    "test": "qunit"
+  },
+  "bin": {
+    "kanbn": "bin/kanbn"
+  },
+  "author": "Gordon Larrigan <gordonlarrigan@gmail.com> (gordonlarrigan.com)",
+  "license": "MIT",
+  "dependencies": {
+    "glob": "^7.1.6",
+    "inquirer": "^7.3.3",
+    "inquirer-recursive": "0.0.6",
+    "jsonschema": "^1.4.0",
+    "marked": "^1.2.3",
+    "md-2-json": "^1.0.6",
+    "minimist": "^1.2.5",
+    "param-case": "^3.0.3",
+    "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "qunit": "^2.11.3"
+  }
+}
