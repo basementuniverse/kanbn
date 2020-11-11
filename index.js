@@ -1,44 +1,66 @@
 const minimist = require('minimist');
 
-module.exports = () => {
-  const args = minimist(process.argv.slice(2));
+module.exports = async () => {
+  const args = minimist(process.argv.slice(2), {
+    boolean: [
+      'version',
+      'help',
+      'interactive',
+      'force'
+    ],
+    string: [
+      'title',
+      'description',
+      'column'
+    ],
+    alias: {
+      'version': ['v'],
+      'help': ['h'],
+      'interactive': ['n'],
+      'title': ['t'],
+      'description': ['d'],
+      'column': ['c'],
+      'untracked': ['u'],
+      'force': ['f']
+    }
+  });
 
   // Get first command
   let command = args._[0] || '';
 
   // Check for shortcut arguments
-  if (args.version || args.v) {
-    command = 'version';
-  }
-  if (args.help || args.h) {
-    command = 'help';
-  }
-  if (args.init || args.i) {
+  if (args.init || command === 'i') {
     command = 'init';
   }
-  if (args.add || args.a) {
+  if (args.add || command === 'a') {
     command = 'add';
   }
-  if (args.edit || args.e) {
+  if (args.edit || command === 'e') {
     command = 'edit';
   }
-  if (args.remove || args.rm) {
+  if (args.remove || command === 'rm') {
     command = 'remove';
   }
-  if (args.move || args.mv) {
+  if (args.move || command === 'mv') {
     command = 'move';
   }
-  if (args.find || args.f) {
+  if (args.find || command === 'f') {
     command = 'find';
   }
-  if (args.stats || args.s) {
-    command = 'stats';
+  if (args.status || command === 's') {
+    command = 'status';
   }
-  if (args.burndown || args.b) {
+  if (args.burndown || command === 'b') {
     command = 'burndown';
   }
   if (args.nuclear) {
     command = 'nuclear';
+  }
+  if (args.version || command === 'v') {
+    command = 'version';
+  }
+  if (args.help || command === 'h') {
+    command = 'help';
   }
 
   // Run command
@@ -50,10 +72,10 @@ module.exports = () => {
       require('./commands/help')(args);
       break;
     case 'init':
-      require('./commands/init')(args);
+      await require('./commands/init')(args);
       break;
     case 'add':
-      require('./commands/add')(args);
+      await require('./commands/add')(args);
       break;
     case 'edit':
       require('./commands/edit')(args);
@@ -67,14 +89,14 @@ module.exports = () => {
     case 'find':
       require('./commands/find')(args);
       break;
-    case 'stats':
-      require('./commands/stats')(args);
+    case 'status':
+      require('./commands/status')(args);
       break;
     case 'burndown':
       require('./commands/burndown')(args);
       break;
     case 'nuclear':
-      require('./commands/nuclear')(args);
+      await require('./commands/nuclear')(args);
       break;
     case '':
       require('./app/main.js')();

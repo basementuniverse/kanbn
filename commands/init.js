@@ -46,13 +46,28 @@ async function interactive(options, initialised) {
   ]);
 }
 
-module.exports = (args) => {
+function initialise(options, initialised) {
+  kanbn
+  .initialise(options)
+  .then(() => {
+    if (initialised) {
+      console.log(`Reinitialised existing kanbn board in ${kanbn.getMainFolder()}`);
+    } else {
+      console.log(`Initialised empty kanbn board in ${kanbn.getMainFolder()}`);
+    }
+  })
+  .catch(error => {
+    console.log(error);
+  });
+}
+
+module.exports = async (args) => {
   let options = {};
 
   // If this folder is already initialised, set the default title and description using the current values
-  const initialised = kanbn.initialised();
+  const initialised = await kanbn.initialised();
   if (initialised) {
-    const index = kanbn.getIndex();
+    const index = await kanbn.getIndex();
     options.title = index.title;
     options.description = index.description;
   }
@@ -61,24 +76,18 @@ module.exports = (args) => {
   if (args.title) {
     options.title = args.title;
   }
-  if (args.t) {
-    options.title = args.t;
-  }
   if (args.description) {
     options.description = args.description;
   }
-  if (args.d) {
-    options.description = args.d;
-  }
 
   // Interactive initialisation
-  if (args.interactive || args.n) {
+  if (args.interactive) {
     interactive(options, initialised)
     .then(answers => {
       if ('columns' in answers) {
         answers.columns = answers.columns.map(column => column.columnName);
       }
-      kanbn.initialise(answers);
+      initialise(answers, initialised);
     })
     .catch(error => {
       console.log(error);
@@ -86,6 +95,6 @@ module.exports = (args) => {
 
   // Non-interactive initialisation
   } else {
-    kanbn.initialise(options);
+    initialise(options, initialised);
   }
 };

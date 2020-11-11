@@ -1,9 +1,9 @@
 const kanbn = require('../lib/main');
 const inquirer = require('inquirer');
 
-module.exports = (args) => {
-  if (args.f) {
-    kanbn.nuclear();
+module.exports = async (args) => {
+  if (args.force) {
+    await kanbn.nuclear();
   } else {
     inquirer.prompt([
       {
@@ -12,9 +12,9 @@ module.exports = (args) => {
         name: 'sure',
         default: false
       }
-    ]).then(answers => {
+    ]).then(async answers => {
       if (answers.sure) {
-        kanbn.nuclear();
+        await kanbn.nuclear();
       }
     }).catch(error => {
       console.log(error);

@@ -12,7 +12,8 @@
   "author": "Gordon Larrigan <gordonlarrigan@gmail.com> (gordonlarrigan.com)",
   "license": "MIT",
   "dependencies": {
-    "glob": "^7.1.6",
+    "cli-spinner": "^0.2.10",
+    "glob-promise": "^3.4.0",
     "inquirer": "^7.3.3",
     "inquirer-recursive": "0.0.6",
     "jsonschema": "^1.4.0",

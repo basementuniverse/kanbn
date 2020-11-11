@@ -1,3 +1,5 @@
+const utility = require('../lib/utility');
+
 const menus = {
   main: `
 Usage:
@@ -13,18 +15,21 @@ Where {b}<command>{b} is one of:
   {b}remove{b} {d}........{d} remove a kanbn task
   {b}move{b} {d}..........{d} move a kanbn task to another column
   {b}find{b} {d}..........{d} search for kanbn tasks
-  {b}stats{b} {d}.........{d} get task statistics
+  {b}status{b} {d}........{d} get task statistics
   {b}burndown{b} {d}......{d} view a burndown chart
+  {b}nuclear{b} {d}.......{d} remove the kanbn board and all tasks
 
 For more help with commands, try:
 
 {b}kanbn help <command>{b}
+{b}kanbn h <command>{b}
 {b}kanbn <command> --help{b}
 {b}kanbn <command> -h{b}
 `,
 
   version: `
 {b}kanbn version{b}
+{b}kanbn v{b}
 {b}kanbn --version{b}
 {b}kanbn -v{b}
 
@@ -33,8 +38,7 @@ Show package version.
 
   init: `
 {b}kanbn init{b}
-{b}kanbn --init{b}
-{b}kanbn -i{b}
+{b}kanbn i{b}
 
 Initialise a kanbn board in the current working directory using the default options.
 
@@ -54,8 +58,7 @@ Options:
 
   add: `
 {b}kanbn add{b}
-{b}kanbn --add{b}
-{b}kanbn -a{b}
+{b}kanbn a{b}
 
 Create a new task and add it to the index.
 
@@ -70,21 +73,23 @@ Options:
 
   {b}kanbn add --column "column"{b}
   {b}kanbn add -c "column"{b}
-    Create a new task and add it to the specified column in the index. This option is required if not adding a task interactively.
+    Create a new task and add it to the specified column in the index. If this is not specified, the task will be added to the first available column.
 
   {b}kanbn add --untracked{b}
   {b}kanbn add -u{b}
     Find all untracked tasks and add them to the first column in the index.
 
+  {b}kanbn add --untracked "filename"{b}
+  {b}kanbn add -u "filename"{b}
+    Add untracked tasks in the specified file(s) to the first column in the index. The {b}--untracked{b} / {b}-u{b} argument can be repeated to add multiple files.
+
   {b}kanbn add --untracked --column "column"{b}
+  {b}kanbn add -u -c "column"{b}
     Find all untracked tasks and add them to the specified column in the index.
 
-  {b}kanbn add --filename "filename"{b}
-  {b}kanbn add -f "filename"{b}
-    Add an untracked task in the specified file to the first column in the index.
-
-  {b}kanbn add --filename "filename" --column "column"{b}
-    Add an untracked task in the specified file to the specified column in the index.
+  {b}kanbn add --untracked "filename" --column "column"{b}
+  {b}kanbn add -u "filename" -c "column"{b}
+    Add untracked tasks in the specified file(s) to the specified column in the index.  The {b}--untracked{b} / {b}-u{b} argument can be repeated to add multiple files.
 `,
 
   edit: `
@@ -112,43 +117,22 @@ Options:
 `,
 
   nuclear: `
-{b}kanbn --nuclear{b}
+{b}kanbn nuclear{b}
 
 This is the nuclear option. It completely removes your '.kanbn' directory and all of the contents.
 
 Make sure you have anything that you want to keep committed or backed-up before running this.
 
 Options:
-  {b}kanbn --nuclear -f{b}
+  {b}kanbn nuclear -f{b}
     Force delete without asking for confirmation.
 `
 };
 
-function bold(s) {
-  return `\x1b[1m${s}\x1b[0m`;
-}
-
-function dim(s) {
-  return `\x1b[2m${s}\x1b[0m`;
-}
-
-const tags = {
-  b: bold,
-  d: dim
-};
-
-function replaceTags(s) {
-  for (tag in tags) {
-    const r = new RegExp(`\{${tag}\}([^{]+)\{${tag}\}`, 'g');
-    s = s.replace(r, (m, s) => tags[tag](s));
-  }
-  return s;
-}
-
 module.exports = (args) => {
-  const subCommand = args._[0] === 'help'
+  const subCommand = (args._[0] === 'help' || args._[0] === 'h')
     ? args._[1]
     : args._[0];
 
-  console.log(replaceTags(menus[subCommand] || menus.main).trim());
+  console.log(utility.replaceTags(menus[subCommand] || menus.main).trim());
 };
