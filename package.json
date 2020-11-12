@@ -15,6 +15,7 @@
     "cli-spinner": "^0.2.10",
     "glob-promise": "^3.4.0",
     "inquirer": "^7.3.3",
+    "inquirer-datepicker": "^2.0.0",
     "inquirer-recursive": "0.0.6",
     "jsonschema": "^1.4.0",
     "marked": "^1.2.3",
@@ -24,6 +25,8 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "mock-fs": "^4.13.0",
+    "mock-require": "^3.0.3",
     "qunit": "^2.11.3"
   }
 }

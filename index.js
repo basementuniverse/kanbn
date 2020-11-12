@@ -78,22 +78,22 @@ module.exports = async () => {
       await require('./commands/add')(args);
       break;
     case 'edit':
-      require('./commands/edit')(args);
+      await require('./commands/edit')(args);
       break;
     case 'remove':
-      require('./commands/remove')(args);
+      await require('./commands/remove')(args);
       break;
     case 'move':
-      require('./commands/move')(args);
+      await require('./commands/move')(args);
       break;
     case 'find':
-      require('./commands/find')(args);
+      await require('./commands/find')(args);
       break;
     case 'status':
-      require('./commands/status')(args);
+      await require('./commands/status')(args);
       break;
     case 'burndown':
-      require('./commands/burndown')(args);
+      await require('./commands/burndown')(args);
       break;
     case 'nuclear':
       await require('./commands/nuclear')(args);
@@ -102,7 +102,7 @@ module.exports = async () => {
       require('./app/main.js')();
       break;
     default:
-      console.error(`"${command}" is not a valid command!`);
+      console.error(`"${command}" is not a valid command`);
       break;
   }
 };

@@ -129,6 +129,8 @@ Options:
 `
 };
 
+// TODO finish help
+
 module.exports = (args) => {
   const subCommand = (args._[0] === 'help' || args._[0] === 'h')
     ? args._[1]

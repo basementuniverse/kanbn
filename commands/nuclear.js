@@ -8,7 +8,7 @@ module.exports = async (args) => {
     inquirer.prompt([
       {
         type: 'confirm',
-        message: 'Are you sure?',
+        message: 'Are you sure you want to remove kanbn and all tasks?',
         name: 'sure',
         default: false
       }

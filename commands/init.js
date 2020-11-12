@@ -15,7 +15,7 @@ async function interactive(options, initialised) {
         if ((/.+/).test(value)) {
           return true;
         }
-        return 'Project title cannot be empty!';
+        return 'Project title cannot be empty';
       }
     },
     {
@@ -38,7 +38,7 @@ async function interactive(options, initialised) {
             if ((/.+/).test(value)) {
               return true;
             }
-            return 'Column name cannot be empty!';
+            return 'Column name cannot be empty';
           }
         }
       ]

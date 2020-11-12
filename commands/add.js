@@ -4,9 +4,10 @@ const inquirer = require('inquirer');
 const Spinner = require('cli-spinner').Spinner;
 const path = require('path');
 
+inquirer.registerPrompt('datepicker', require('inquirer-datepicker'));
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
-async function interactive(taskData, columnName) {
+async function interactive(taskData, columnName, columnNames) {
   return await inquirer
   .prompt([
     {
@@ -15,12 +16,43 @@ async function interactive(taskData, columnName) {
       message: 'Task title:',
       default: taskData.title || '',
       validate: async function (value) {
-        const exists = await kanbn.taskTitleExists(value);
-        if (!exists) {
+        if ((/.+/).test(value)) {
           return true;
         }
-        return 'Task title exists already!';
+        return 'Task title cannot be empty';
       }
+    },
+    {
+      type: 'list',
+      name: 'column',
+      message: 'Column:',
+      choices: columnNames,
+      default: columnName
+    },
+    {
+      type: 'datepicker',
+      name: 'due',
+      message: 'Due date:',
+      default: new Date(),
+      format: ['Y', '/', 'MM', '/', 'DD']
+    },
+    {
+      type: 'recursive',
+      message: 'Add a sub-task?',
+      name: 'subTasks',
+      prompts: [
+        {
+          type: 'input',
+          name: 'subTaskTitle',
+          message: 'Sub-task title:',
+          validate: function (value) {
+            if ((/.+/).test(value)) {
+              return true;
+            }
+            return 'Sub-task title cannot be empty';
+          }
+        }
+      ]
     }
   ]);
 }
@@ -29,16 +61,16 @@ function createTask(taskData, columnName) {
   kanbn
   .createTask(taskData, columnName)
   .then(taskId => {
-    console.log(`Created task ${taskData.title} (id: ${taskId}) in column ${columnName}`);
+    console.log(`Created task "${taskId}" in column "${columnName}"`);
   })
   .catch(error => {
-    console.log(error);
+    console.error(error);
   });
 }
 
 module.exports = async (args) => {
   if (!await kanbn.initialised()) {
-    console.error(utility.replaceTags('Kanbn has not been initialised in this folder!\nTry running: {b}kanbn init{b}'));
+    console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
     return;
   }
 
@@ -46,13 +78,17 @@ module.exports = async (args) => {
   const index = await kanbn.getIndex();
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    console.error(utility.replaceTags('No columns defined in the index!\nTry editing {b}index.md{b}'));
+    console.error(utility.replaceTags('No columns defined in the index\nTry editing {b}index.md{b}'));
     return;
   }
 
   // Get column name if specified, otherwise default to the first available column
-  const columnName = columnNames[0];
+  let columnName = columnNames[0];
   if (args.column) {
+    if (columnNames.indexOf(args.column) === -1) {
+      console.log(`Column "${args.column}" doesn't exist`);
+      return;
+    }
     columnName = args.column;
   }
 
@@ -73,11 +109,16 @@ module.exports = async (args) => {
       await kanbn.addUntrackedTask(untrackedTask);
     }
     spinner.stop(true);
-    console.log(`Added ${untrackedTasks.length} tasks to column ${columnName}`);
+    console.log(
+      `Added ${untrackedTasks.length} task${untrackedTasks.length !== 1 ? 's' : ''} to column "${columnName}"`
+    );
 
   // Otherwise, create a task from arguments or interactively
   } else {
-    const taskData = {};
+    const taskData = {
+      metadata: {},
+      subTasks: []
+    };
 
     // Get task settings from arguments
     if (args.title) {
@@ -86,8 +127,15 @@ module.exports = async (args) => {
 
     // Create task interactively
     if (args.interactive) {
-      interactive(taskData, columnName)
+      interactive(taskData, columnName, columnNames)
       .then(answers => {
+        taskData.title = answers.title;
+        taskData.metadata.due = answers.due.toISOString();
+        taskData.subTasks = answers.subTasks.map(subTask => ({
+          text: subTask.subTaskTitle,
+          checked: false
+        }));
+        columnName = answers.column;
         createTask(taskData, columnName);
       })
       .catch(error => {
