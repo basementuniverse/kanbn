@@ -17,7 +17,7 @@ module.exports = async (args) => {
         await kanbn.nuclear();
       }
     }).catch(error => {
-      console.log(error);
+      console.error(error.message);
     })
   }
 };

@@ -15,8 +15,7 @@ Where {b}<command>{b} is one of:
   {b}remove{b} {d}........{d} remove a kanbn task
   {b}move{b} {d}..........{d} move a kanbn task to another column
   {b}find{b} {d}..........{d} search for kanbn tasks
-  {b}status{b} {d}........{d} get task statistics
-  {b}burndown{b} {d}......{d} view a burndown chart
+  {b}status{b} {d}........{d} get project and task statistics
   {b}nuclear{b} {d}.......{d} remove the kanbn board and all tasks
 
 For more help with commands, try:
@@ -81,7 +80,7 @@ Options:
 
   {b}kanbn add --untracked "filename"{b}
   {b}kanbn add -u "filename"{b}
-    Add untracked tasks in the specified file(s) to the first column in the index. The {b}--untracked{b} / {b}-u{b} argument can be repeated to add multiple files.
+    Add untracked tasks in the specified file(s) to the first column in the index. This argument can be repeated to add multiple files.
 
   {b}kanbn add --untracked --column "column"{b}
   {b}kanbn add -u -c "column"{b}
@@ -89,31 +88,90 @@ Options:
 
   {b}kanbn add --untracked "filename" --column "column"{b}
   {b}kanbn add -u "filename" -c "column"{b}
-    Add untracked tasks in the specified file(s) to the specified column in the index.  The {b}--untracked{b} / {b}-u{b} argument can be repeated to add multiple files.
+    Add untracked tasks in the specified file(s) to the specified column in the index. This argument can be repeated to add multiple files.
 `,
 
   edit: `
+{b}kanbn edit "task-id"{b}
+{b}kanbn e "task-id"{b}
 
+Edit an existing task and update its 'updated' date.
+
+Options:
+  {b}kanbn edit "task-id" --interactive{b}
+  {b}kanbn edit "task-id" -n{b}
+    Edit a task interactively.
+
+  {b}kanbn edit "task-id" --title "title"{b}
+  {b}kanbn edit "task-id" -t "title"{b}
+    Update the title of a task.
+
+  {b}kanbn edit "task-id" --column "column"{b}
+  {b}kanbn edit "task-id" -c "column"{b}
+    Move a task to a different column in the index.
 `,
 
   remove: `
+{b}kanbn remove "task-id"{b}
+{b}kanbn rm "task-id"{b}
 
+Remove an existing task.
+
+Options:
+  {b}kanbn remove "task-id" --index{b}
+  {b}kanbn remove "task-id" -i{b}
+    Only remove the task from the index. The task file will not be deleted.
+
+  {b}kanbn remove "task-id" --force{b}
+  {b}kanbn remove "task-id" -f{b}
+    Force remove the task without asking for confirmation.
 `,
 
   move: `
+{b}kanbn move "task-id"{b}
+{b}kanbn mv "task-id"{b}
 
+Move an existing task to a different column in the index.
+
+Options:
+  {b}kanbn move "task-id" --interactive{b}
+  {b}kanbn move "task-id" -n{b}
+    Move a task interactively.
+
+  {b}kanbn move "task-id" --column "column"{b}
+  {b}kanbn move "task-id" -c "column"{b}
+    Move the task to this column in the index. This option is required if not moving a task interactively.
 `,
 
   find: `
+{b}kanbn find{b}
+{b}kanbn f{b}
 
+Search all tasks in the index and show search results. If no filters are specified, this command will list all tracked tasks.
+
+Options:
+  {b}kanbn find --quiet{b}
+  {b}kanbn find -q{b}
+    Only show task ids in the output.
+
+  {b}kanbn find --filter "filter"{b}
+  {b}kanbn find -s "filter"{b}
+    Add a search filter. This argument can be repeated to add multiple filters. See below for filter syntax.
+
+Filter syntax:
+  ... // TODO add filter syntax documentation
 `,
 
-  stats: `
+  status: `
+{b}kanbn status{b}
+{b}kanbn s{b}
 
-`,
+Show status information for the current project... // TODO add more information about status command
 
-  burndown: `
-
+Options:
+  {b}kanbn status --json{b}
+  {b}kanbn status -j{b}
+    Output status information in JSON format.
 `,
 
   nuclear: `
@@ -128,8 +186,6 @@ Options:
     Force delete without asking for confirmation.
 `
 };
-
-// TODO finish help
 
 module.exports = (args) => {
   const subCommand = (args._[0] === 'help' || args._[0] === 'h')

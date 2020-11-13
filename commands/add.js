@@ -2,11 +2,16 @@ const kanbn = require('../lib/main');
 const utility = require('../lib/utility');
 const inquirer = require('inquirer');
 const Spinner = require('cli-spinner').Spinner;
-const path = require('path');
 
 inquirer.registerPrompt('datepicker', require('inquirer-datepicker'));
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
+/**
+ * Create a task interactively
+ * @param {object} taskData
+ * @param {string} columnName
+ * @param {string[]} columnNames
+ */
 async function interactive(taskData, columnName, columnNames) {
   return await inquirer
   .prompt([
@@ -26,20 +31,26 @@ async function interactive(taskData, columnName, columnNames) {
       type: 'list',
       name: 'column',
       message: 'Column:',
-      choices: columnNames,
-      default: columnName
+      default: columnName,
+      choices: columnNames
+    },
+    {
+      type: 'confirm',
+      name: 'setDue',
+      message: 'Set a due date?'
     },
     {
       type: 'datepicker',
       name: 'due',
       message: 'Due date:',
       default: new Date(),
-      format: ['Y', '/', 'MM', '/', 'DD']
+      format: ['Y', '/', 'MM', '/', 'DD'],
+      when: answers => answers.setDue,
     },
     {
       type: 'recursive',
-      message: 'Add a sub-task?',
       name: 'subTasks',
+      message: 'Add a sub-task?',
       prompts: [
         {
           type: 'input',
@@ -57,6 +68,11 @@ async function interactive(taskData, columnName, columnNames) {
   ]);
 }
 
+/**
+ * Create a task
+ * @param {object} taskData
+ * @param {string} columnName
+ */
 function createTask(taskData, columnName) {
   kanbn
   .createTask(taskData, columnName)
@@ -75,7 +91,13 @@ module.exports = async (args) => {
   }
 
   // Get the index and make sure it has some columns
-  const index = await kanbn.getIndex();
+  let index;
+  try {
+    index = await kanbn.getIndex();
+  } catch (error) {
+    console.error(error.message);
+    return;
+  }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
     console.error(utility.replaceTags('No columns defined in the index\nTry editing {b}index.md{b}'));
@@ -100,13 +122,24 @@ module.exports = async (args) => {
     } else if (typeof args.untracked === 'string') {
       untrackedTasks.push(args.untracked);
     } else if (args.untracked === true) {
-      untrackedTasks.push(...await kanbn.findUntrackedTasks());
+      try {
+        untrackedTasks.push(...await kanbn.findUntrackedTasks());
+      } catch (error) {
+        console.error(error.message);
+        return;
+      }
     }
     const spinner = new Spinner('Adding untracked tasks...');
     spinner.setSpinnerString(18);
     spinner.start();
     for (let untrackedTask of untrackedTasks) {
-      await kanbn.addUntrackedTask(untrackedTask);
+      try {
+        await kanbn.addTaskToIndex(untrackedTask, columnName);
+      } catch (error) {
+        spinner.stop(true);
+        console.error(error.message);
+        return;
+      }
     }
     spinner.stop(true);
     console.log(
@@ -130,7 +163,9 @@ module.exports = async (args) => {
       interactive(taskData, columnName, columnNames)
       .then(answers => {
         taskData.title = answers.title;
-        taskData.metadata.due = answers.due.toISOString();
+        if (answers.due) {
+          taskData.metadata.due = answers.due.toISOString();
+        }
         taskData.subTasks = answers.subTasks.map(subTask => ({
           text: subTask.subTaskTitle,
           checked: false
@@ -139,7 +174,7 @@ module.exports = async (args) => {
         createTask(taskData, columnName);
       })
       .catch(error => {
-        console.log(error);
+        console.error(error.message);
       });
     } else {
       createTask(taskData, columnName);

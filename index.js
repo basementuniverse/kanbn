@@ -6,12 +6,16 @@ module.exports = async () => {
       'version',
       'help',
       'interactive',
-      'force'
+      'force',
+      'index',
+      'quiet',
+      'json'
     ],
     string: [
       'title',
       'description',
-      'column'
+      'column',
+      'filter'
     ],
     alias: {
       'version': ['v'],
@@ -21,7 +25,11 @@ module.exports = async () => {
       'description': ['d'],
       'column': ['c'],
       'untracked': ['u'],
-      'force': ['f']
+      'force': ['f'],
+      'index': ['i'],
+      'quiet': ['q'],
+      'filter': ['s'],
+      'json': ['j']
     }
   });
 
@@ -49,9 +57,6 @@ module.exports = async () => {
   }
   if (args.status || command === 's') {
     command = 'status';
-  }
-  if (args.burndown || command === 'b') {
-    command = 'burndown';
   }
   if (args.nuclear) {
     command = 'nuclear';
@@ -91,9 +96,6 @@ module.exports = async () => {
       break;
     case 'status':
       await require('./commands/status')(args);
-      break;
-    case 'burndown':
-      await require('./commands/burndown')(args);
       break;
     case 'nuclear':
       await require('./commands/nuclear')(args);

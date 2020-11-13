@@ -3,6 +3,11 @@ const inquirer = require('inquirer');
 
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
+/**
+ * Initialise kanbn interactively
+ * @param {object} options
+ * @param {boolean} initialised
+ */
 async function interactive(options, initialised) {
   return await inquirer
   .prompt([
@@ -46,6 +51,11 @@ async function interactive(options, initialised) {
   ]);
 }
 
+/**
+ * Initialise kanbn
+ * @param {object} options
+ * @param {boolean} initialised
+ */
 function initialise(options, initialised) {
   kanbn
   .initialise(options)
@@ -57,7 +67,7 @@ function initialise(options, initialised) {
     }
   })
   .catch(error => {
-    console.log(error);
+    console.error(error.message);
   });
 }
 
@@ -67,9 +77,14 @@ module.exports = async (args) => {
   // If this folder is already initialised, set the default title and description using the current values
   const initialised = await kanbn.initialised();
   if (initialised) {
-    const index = await kanbn.getIndex();
-    options.title = index.title;
-    options.description = index.description;
+    try {
+      const index = await kanbn.getIndex();
+      options.title = index.title;
+      options.description = index.description;
+    } catch (error) {
+      console.error(error.message);
+      return;
+    }
   }
 
   // Check for arguments and override the defaults if present
@@ -90,9 +105,8 @@ module.exports = async (args) => {
       initialise(answers, initialised);
     })
     .catch(error => {
-      console.log(error);
+      console.error(error.message);
     });
-
   // Non-interactive initialisation
   } else {
     initialise(options, initialised);
