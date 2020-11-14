@@ -80,7 +80,7 @@ function createTask(taskData, columnName) {
     console.log(`Created task "${taskId}" in column "${columnName}"`);
   })
   .catch(error => {
-    console.error(error);
+    console.error(error.message);
   });
 }
 
@@ -134,7 +134,7 @@ module.exports = async (args) => {
     spinner.start();
     for (let untrackedTask of untrackedTasks) {
       try {
-        await kanbn.addTaskToIndex(untrackedTask, columnName);
+        await kanbn.addUntrackedTaskToIndex(untrackedTask, columnName);
       } catch (error) {
         spinner.stop(true);
         console.error(error.message);

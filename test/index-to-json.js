@@ -10,8 +10,9 @@ const CASE_1 = `
 Project description
 
 ## Options
-
+\`\`\`yml
 option1: a
+\`\`\`
 
 ## Column1
 
@@ -28,7 +29,9 @@ const CASE_2 = `
 
 ## Options
 
+\`\`\`
 option1: a
+\`\`\`
 
 ## Column1
 
@@ -44,12 +47,11 @@ const CASE_3 = `
 # Project name
 
 ## Column1
-
 - task-id-1
+
 - task-id-2
 
 ## Column2
-
 - task-id-3
 `;
 

@@ -5,7 +5,7 @@ const utility = require('../lib/utility');
 module.exports = async (args) => {
   const taskId = args._[1];
   if (!taskId) {
-    console.error(utility.replaceTags('No task id specified. Try running {b}kanbn move "task id"{b}'));
+    console.error(utility.replaceTags('No task id specified. Try running {b}kanbn rename "task id"{b}'));
     return;
   }
 

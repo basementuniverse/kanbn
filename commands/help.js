@@ -12,6 +12,7 @@ Where {b}<command>{b} is one of:
   {b}init{b} {d}..........{d} initialise kanbn board
   {b}add{b} {d}...........{d} add a kanbn task
   {b}edit{b} {d}..........{d} edit a kanbn task
+  {b}rename{b} {d}........{d} rename a kanbn task
   {b}remove{b} {d}........{d} remove a kanbn task
   {b}move{b} {d}..........{d} move a kanbn task to another column
   {b}find{b} {d}..........{d} search for kanbn tasks
@@ -101,14 +102,22 @@ Options:
   {b}kanbn edit "task-id" --interactive{b}
   {b}kanbn edit "task-id" -n{b}
     Edit a task interactively.
+`,
 
-  {b}kanbn edit "task-id" --title "title"{b}
-  {b}kanbn edit "task-id" -t "title"{b}
-    Update the title of a task.
+  rename: `
+{b}kanbn rename "task-id"{b}
+{b}kanbn ren "task-id"{b}
 
-  {b}kanbn edit "task-id" --column "column"{b}
-  {b}kanbn edit "task-id" -c "column"{b}
-    Move a task to a different column in the index.
+Rename a task. This will change the task filename and update the index.
+
+Options:
+  {b}kanbn rename "task-id" --interactive{b}
+  {b}kanbn rename "task-id" -n{b}
+    Rename a task interactively.
+
+  {b}kanbn rename "task-id" --title "title"{b}
+  {b}kanbn rename "task-id" -t "title"{b}
+    Rename the task with the specified title. This option is required if not renaming a task interactively.
 `,
 
   remove: `

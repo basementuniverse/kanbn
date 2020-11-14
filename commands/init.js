@@ -107,6 +107,7 @@ module.exports = async (args) => {
     .catch(error => {
       console.error(error.message);
     });
+
   // Non-interactive initialisation
   } else {
     initialise(options, initialised);

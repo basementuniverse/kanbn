@@ -35,11 +35,13 @@ Even more data!
 
 ## Metadata
 
+\`\`\`yaml
 due: null
 tags:
   - tag1
   - tag2
   - tag3
+\`\`\`
 
 ## Sub-tasks
 
@@ -60,11 +62,13 @@ This is a *task* description
 
 ## Metadata
 
+\`\`\`yaml
 due: null
 tags:
   - tag1
   - tag2
   - tag3
+\`\`\`
 `;
 
 const CASE_3 = `

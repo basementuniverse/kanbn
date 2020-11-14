@@ -1,7 +1,13 @@
 const kanbn = require('../lib/main');
 const inquirer = require('inquirer');
+const utility = require('../lib/utility');
 
 module.exports = async (args) => {
+  if (!await kanbn.initialised()) {
+    console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
+    return;
+  }
+
   if (args.force) {
     await kanbn.nuclear();
   } else {

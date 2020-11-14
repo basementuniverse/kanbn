@@ -46,6 +46,9 @@ module.exports = async () => {
   if (args.edit || command === 'e') {
     command = 'edit';
   }
+  if (args.rename || command === 'ren') {
+    command = 'rename';
+  }
   if (args.remove || command === 'rm') {
     command = 'remove';
   }
@@ -84,6 +87,9 @@ module.exports = async () => {
       break;
     case 'edit':
       await require('./commands/edit')(args);
+      break;
+    case 'rename':
+      await require('./commands/rename')(args);
       break;
     case 'remove':
       await require('./commands/remove')(args);

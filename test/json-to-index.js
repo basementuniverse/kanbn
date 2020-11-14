@@ -11,7 +11,9 @@ Project description
 
 ## Options
 
+\`\`\`yaml
 option1: a
+\`\`\`
 
 ## Column1
 
@@ -28,7 +30,9 @@ const CASE_2 = `
 
 ## Options
 
+\`\`\`yaml
 option1: a
+\`\`\`
 
 ## Column1
 

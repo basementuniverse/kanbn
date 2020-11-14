@@ -28,13 +28,13 @@ More data
 And more data...
 
 ## Metadata
-
+\`\`\`yml
 due: null
 tags:
   - tag1
   - tag2
   - tag3
-
+\`\`\`
 ## Sub-tasks
 
 - [ ] this is a sub-task
@@ -58,11 +58,13 @@ This is a *task* description
 
 ## Metadata
 
+\`\`\`yaml
 due: null
 tags:
   - tag1
   - tag2
   - tag3
+\`\`\`
 `;
 
 const CASE_3 = `
@@ -162,7 +164,8 @@ const validCases = [
 ];
 
 const invalidCases = [
-  CASE_5
+  CASE_5,
+  CASE_6
 ];
 
 QUnit.test('Test task to json conversion with valid markdown', assert => {
