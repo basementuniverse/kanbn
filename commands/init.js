@@ -1,5 +1,6 @@
 const kanbn = require('../lib/main');
 const inquirer = require('inquirer');
+const utility = require('../lib/utility');
 
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
@@ -67,7 +68,7 @@ function initialise(options, initialised) {
     }
   })
   .catch(error => {
-    console.error(error.message);
+    utility.showError(error);
   });
 }
 
@@ -82,7 +83,7 @@ module.exports = async (args) => {
       options.title = index.title;
       options.description = index.description;
     } catch (error) {
-      console.error(error.message);
+      utility.showError(error);
       return;
     }
   }
@@ -105,7 +106,7 @@ module.exports = async (args) => {
       initialise(answers, initialised);
     })
     .catch(error => {
-      console.error(error.message);
+      utility.showError(error);
     });
 
   // Non-interactive initialisation

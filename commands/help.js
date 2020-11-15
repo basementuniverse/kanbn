@@ -96,12 +96,20 @@ Options:
 {b}kanbn edit "task-id"{b}
 {b}kanbn e "task-id"{b}
 
-Edit an existing task and update its 'updated' date.
+Edit an existing task and update its 'updated' date. This command can be used to rename and move tasks as well.
 
 Options:
   {b}kanbn edit "task-id" --interactive{b}
   {b}kanbn edit "task-id" -n{b}
     Edit a task interactively.
+
+  {b}kanbn edit "task-id" --title "title"{b}
+  {b}kanbn edit "task-id" -t "title"{b}
+    Update a task title.
+
+  {b}kanbn edit "task-id" --column "column"{b}
+  {b}kanbn edit "task-id" -c "column"{b}
+    Move a task to a different column.
 `,
 
   rename: `

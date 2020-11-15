@@ -28,7 +28,7 @@ function updateTask(taskId, taskData, columnName) {
     console.log(`Updated task "${taskId}"`);
   })
   .catch(error => {
-    console.error(error.message);
+    utility.showError(error);
   });
 }
 
@@ -64,7 +64,7 @@ module.exports = async (args) => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    console.error(error.message);
+    utility.showError(error);
     return;
   }
   const columnNames = Object.keys(index.columns);
@@ -78,7 +78,7 @@ module.exports = async (args) => {
   try {
     task = await kanbn.getTask(taskId);
   } catch (error) {
-    console.error(error.message);
+    utility.showError(error);
   }
 
   // Get column name if specified, otherwise default to the task's current column
@@ -112,7 +112,7 @@ module.exports = async (args) => {
   //     createTask(taskData, columnName);
   //   })
   //   .catch(error => {
-  //     console.error(error.message);
+  //     utility.showError(error);
   //   });
   // } else {
   //   createTask(taskData, columnName);

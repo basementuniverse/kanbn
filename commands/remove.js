@@ -19,7 +19,7 @@ module.exports = async (args) => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    console.error(error.message);
+    utility.showError(error);
     return;
   }
   const columnNames = Object.keys(index.columns);

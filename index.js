@@ -1,6 +1,10 @@
 const minimist = require('minimist');
+const path = require('path');
 
 module.exports = async () => {
+  require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+  // Parse arguments
   const args = minimist(process.argv.slice(2), {
     boolean: [
       'version',

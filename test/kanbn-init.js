@@ -4,16 +4,16 @@ const fs = require('fs');
 const path = require('path');
 const kanbn = require('../lib/main');
 
-QUnit.module('Kanbn library operations', {
-  before() {
+QUnit.module('Kanbn initialise tests', {
+  beforeEach() {
     mock();
   },
-  after() {
+  afterEach() {
     mock.restore();
   }
 });
 
-QUnit.test('Initialise', async assert => {
+QUnit.test('Initialise with default settings', async assert => {
 
   // Kanbn shouldn't be currently initialised in our mock filesystem
   assert.equal(await kanbn.initialised(), false);
@@ -29,4 +29,9 @@ QUnit.test('Initialise', async assert => {
 
   // Kanbn should now be initialised
   assert.equal(await kanbn.initialised(), true);
+
+  // Check for default title & columns
+  const index = await kanbn.getIndex();
+  assert.equal(index.title, 'Project Title');
+  assert.deepEqual(Object.keys(index.columns), ['Backlog', 'Todo', 'In Progress', 'Done', 'Archive']);
 });
