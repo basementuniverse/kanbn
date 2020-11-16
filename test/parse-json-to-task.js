@@ -1,8 +1,6 @@
-const { assert } = require('qunit');
+const parseTask = require('../lib/parse-task.js');
 
-const task = require('../lib/parse-task.js');
-
-QUnit.module('Task to JSON conversion');
+QUnit.module('JSON to Task conversion');
 
 const CASE_1 = `
 # Task Title
@@ -10,11 +8,13 @@ const CASE_1 = `
 This is a *task* description
 
 It has some code:
+
 \`\`\`js
 const wibble = 1;
 \`\`\`
 
 And a list:
+
 - one
 - two
 - three
@@ -27,14 +27,20 @@ More data
 
 And more data...
 
+## More stuff
+
+Even more data!
+
 ## Metadata
-\`\`\`yml
+
+\`\`\`yaml
 due: null
 tags:
   - tag1
   - tag2
   - tag3
 \`\`\`
+
 ## Sub-tasks
 
 - [ ] this is a sub-task
@@ -45,10 +51,6 @@ tags:
 - [requires another-task](another-task.md)
 - [duplicates some-other-task](some-other-task.md)
 - [blocks this-task](this-task.md)
-
-## More stuff
-
-Even more data!
 `;
 
 const CASE_2 = `
@@ -85,8 +87,7 @@ const CASE_6 = ``;
 
 const validCases = [
   {
-    data: CASE_1,
-    expected: {
+    data: {
       title: 'Task Title',
       description: 'This is a *task* description\n' +
         '\n' +
@@ -126,11 +127,11 @@ const validCases = [
         { type: 'duplicates', task: 'some-other-task' },
         { type: 'blocks', task: 'this-task' }
       ]
-    }
+    },
+    expected: CASE_1
   },
   {
-    data: CASE_2,
-    expected: {
+    data: {
       title: 'Task Title',
       description: 'This is a *task* description',
       metadata: {
@@ -139,43 +140,33 @@ const validCases = [
       },
       subTasks: [],
       relations: []
-    }
+    },
+    expected: CASE_2
   },
   {
-    data: CASE_3,
-    expected: {
+    data: {
       title: 'Task Title',
       description: 'This is a *task* description',
       metadata: {},
       subTasks: [],
       relations: []
-    }
+    },
+    expected: CASE_3
   },
   {
-    data: CASE_4,
-    expected: {
+    data: {
       title: 'Task Title',
       description: '',
       metadata: {},
       subTasks: [],
       relations: []
-    }
+    },
+    expected: CASE_4
   }
 ];
 
-const invalidCases = [
-  CASE_5,
-  CASE_6
-];
-
-QUnit.test('Test task to json conversion with valid markdown', assert => {
+QUnit.test('Test json to task conversion with valid json', assert => {
   validCases.forEach(validCase => {
-    assert.deepEqual(task.taskToJson(validCase.data), validCase.expected);
-  });
-});
-
-QUnit.test('Test task to json conversion with invalid markdown', assert => {
-  invalidCases.forEach(invalidCase => {
-    assert.throws(() => { task.taskToJson(invalidCase); }, /Unable to parse task/);
+    assert.equal(parseTask.json2md(validCase.data), validCase.expected.trim());
   });
 });
