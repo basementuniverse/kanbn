@@ -28,5 +28,6 @@ module.exports = async (args) => {
     return;
   }
 
+  // TODO remove command
   console.log('removing...');
 };

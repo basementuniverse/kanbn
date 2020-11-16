@@ -28,6 +28,7 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "faker": "^5.1.0",
     "mock-fs": "^4.13.0",
     "qunit": "^2.11.3"
   }

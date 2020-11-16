@@ -28,5 +28,6 @@ module.exports = async (args) => {
     return;
   }
 
+  // TODO rename command
   console.log('moving...');
 };

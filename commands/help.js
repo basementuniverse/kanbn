@@ -71,6 +71,10 @@ Options:
   {b}kanbn add --t "title"{b}
     Create a new task with the specified title. This option is required if not adding a task interactively.
 
+  {b}kanbn add --description "description"{b}
+  {b}kanbn add -d "description"{b}
+    Create a new task with the specified description.
+
   {b}kanbn add --column "column"{b}
   {b}kanbn add -c "column"{b}
     Create a new task and add it to the specified column in the index. If this is not specified, the task will be added to the first available column.
@@ -106,6 +110,10 @@ Options:
   {b}kanbn edit "task-id" --title "title"{b}
   {b}kanbn edit "task-id" -t "title"{b}
     Update a task title.
+
+  {b}kanbn add --description "description"{b}
+  {b}kanbn add -d "description"{b}
+    Update a task description.
 
   {b}kanbn edit "task-id" --column "column"{b}
   {b}kanbn edit "task-id" -c "column"{b}
@@ -183,7 +191,7 @@ Filter syntax:
 {b}kanbn status{b}
 {b}kanbn s{b}
 
-Show status information for the current project... // TODO add more information about status command
+Show status information for the current project... // TODO add more help information about status command
 
 Options:
   {b}kanbn status --json{b}

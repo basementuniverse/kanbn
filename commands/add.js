@@ -216,6 +216,9 @@ module.exports = async (args) => {
     if (args.title) {
       taskData.title = args.title;
     }
+    if (args.description) {
+      taskData.description = args.description;
+    }
 
     // Create task interactively
     if (args.interactive) {
