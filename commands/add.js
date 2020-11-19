@@ -3,6 +3,7 @@ const utility = require('../lib/utility');
 const inquirer = require('inquirer');
 const Spinner = require('cli-spinner').Spinner;
 const fuzzy = require('fuzzy');
+const chrono = require('chrono-node');
 
 inquirer.registerPrompt('datepicker', require('inquirer-datepicker'));
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
@@ -11,11 +12,11 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
 /**
  * Create a task interactively
  * @param {object} taskData
+ * @param {string[]} taskIds
  * @param {string} columnName
  * @param {string[]} columnNames
  */
-async function interactive(taskData, columnName, columnNames) {
-  const trackedTasks = [...await kanbn.findTrackedTasks()];
+async function interactive(taskData, taskIds, columnName, columnNames) {
   return await inquirer.prompt([
     {
       type: 'input',
@@ -70,14 +71,20 @@ async function interactive(taskData, columnName, columnNames) {
       prompts: [
         {
           type: 'input',
-          name: 'subTaskTitle',
-          message: 'Sub-task title:',
+          name: 'text',
+          message: 'Sub-task text:',
           validate: value => {
             if ((/.+/).test(value)) {
               return true;
             }
             return 'Sub-task title cannot be empty';
           }
+        },
+        {
+          type: 'confirm',
+          name: 'completed',
+          message: 'Sub-task completed?',
+          default: false
         }
       ]
     },
@@ -89,8 +96,8 @@ async function interactive(taskData, columnName, columnNames) {
       prompts: [
         {
           type: 'input',
-          name: 'tagName',
-          message: 'Tag:',
+          name: 'name',
+          message: 'Tag name:',
           validate: value => {
             if ((/.+/).test(value)) {
               return true;
@@ -105,14 +112,15 @@ async function interactive(taskData, columnName, columnNames) {
       name: 'relations',
       message: 'Add a relation?',
       default: false,
+      when: answers => taskIds.length > 0,
       prompts: [
         {
           type: 'autocomplete',
-          name: 'relatedTaskId',
-          message: 'Task id:',
+          name: 'task',
+          message: 'Related task id:',
           source: (answers, input) => {
             input = input || '';
-            const result = fuzzy.filter(input, trackedTasks);
+            const result = fuzzy.filter(input, taskIds);
             return new Promise(resolve => {
               resolve(result.map(result => result.string));
             });
@@ -120,8 +128,8 @@ async function interactive(taskData, columnName, columnNames) {
         },
         {
           type: 'input',
-          name: 'relationType',
-          message: 'Type:'
+          name: 'type',
+          message: 'Relation type:'
         }
       ]
     }
@@ -145,6 +153,8 @@ function createTask(taskData, columnName) {
 }
 
 module.exports = async (args) => {
+
+  // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
     console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
     return;
@@ -205,55 +215,120 @@ module.exports = async (args) => {
     console.log(
       `Added ${untrackedTasks.length} task${untrackedTasks.length !== 1 ? 's' : ''} to column "${columnName}"`
     );
+    return;
+  }
 
   // Otherwise, create a task from arguments or interactively
-  } else {
-    const taskData = {
-      metadata: {}
-    };
+  const taskData = {
+    metadata: {}
+  };
 
-    // Get task settings from arguments
-    if (args.title) {
-      taskData.title = args.title;
-    }
-    if (args.description) {
-      taskData.description = args.description;
-    }
+  // Get a list of existing task ids
+  const taskIds = [...await kanbn.findTrackedTasks()];
 
-    // Create task interactively
-    if (args.interactive) {
-      interactive(taskData, columnName, columnNames)
-      .then(answers => {
-        taskData.title = answers.title;
-        if ('description' in answers) {
-          taskData.description = answers.description;
+  // Get task settings from arguments
+  // Title
+  if (args.title) {
+    taskData.title = args.title;
+  }
+
+  // Description
+  if (args.description) {
+    taskData.description = args.description;
+  }
+
+  // Due date
+  if (args.due) {
+    taskData.metadata.due = chrono.parseDate(args.due);
+    if (taskData.metadata.due === null) {
+      console.log('Unable to parse due date');
+      return;
+    }
+  }
+
+  // Sub-tasks
+  if (args['sub-task']) {
+    const subTasks = Array.isArray(args['sub-task']) ? args['sub-task'] : [args['sub-task']];
+    taskData.subTasks = subTasks.map(subTask => {
+      const match = subTask.match(/^\[([x ])\] (.*)/);
+      if (match !== null) {
+        return {
+          completed: match[1] === 'x',
+          text: match[2]
+        };
+      }
+      return {
+        completed: false,
+        text: subTask
+      };
+    });
+  }
+
+  // Tags
+  if (args.tag) {
+    taskData.metadata.tags = Array.isArray(args.tag) ? args.tag : [args.tag];
+  }
+
+  // Relations
+  if (args.relation) {
+    const relations = (Array.isArray(args.relation) ? args.relation : [args.relation]).map(relation => {
+      const parts = relation.split(':');
+      return parts.length === 1
+        ? {
+          type: '',
+          task: parts[0]
         }
-        if ('due' in answers) {
-          taskData.metadata.due = answers.due.toISOString();
-        }
-        if ('subTasks' in answers) {
-          taskData.subTasks = answers.subTasks.map(subTask => ({
-            text: subTask.subTaskTitle,
-            checked: false
-          }));
-        }
-        if ('tags' in answers && answers.tags.length > 0) {
-          taskData.metadata.tags = answers.tags.map(tag => tag.tagName);
-        }
-        if ('relations' in answers) {
-          taskData.relations = answers.relations.map(relation => ({
-            task: relation.relatedTaskId,
-            type: relation.relationType
-          }));
-        }
-        columnName = answers.column;
-        createTask(taskData, columnName);
-      })
-      .catch(error => {
-        utility.showError(error);
-      });
-    } else {
+        : {
+          type: parts[0],
+          task: parts[1]
+        };
+    });
+
+    // Make sure each relation is an existing task
+    for (let relation of relations) {
+      if (taskIds.indexOf(relation.task) === -1) {
+        console.log(`Related task ${relation.task} doesn't exist`);
+        return;
+      }
+    }
+    taskData.relations = relations;
+  }
+
+  // Create task interactively
+  if (args.interactive) {
+    interactive(taskData, taskIds, columnName, columnNames)
+    .then(answers => {
+      taskData.title = answers.title;
+      if ('description' in answers) {
+        taskData.description = answers.description;
+      }
+      if ('due' in answers) {
+        taskData.metadata.due = answers.due.toISOString();
+      }
+      if ('subTasks' in answers) {
+        taskData.subTasks = answers.subTasks.map(subTask => ({
+          text: subTask.text,
+          completed: subTask.completed
+        }));
+      }
+      if ('tags' in answers && answers.tags.length > 0) {
+        taskData.metadata.tags = answers.tags.map(tag => tag.name);
+      }
+      if ('relations' in answers) {
+        taskData.relations = answers.relations.map(relation => ({
+          task: relation.task,
+          type: relation.type
+        }));
+      }
+      columnName = answers.column;
       createTask(taskData, columnName);
-    }
+    })
+    .catch(error => {
+      utility.showError(error);
+    });
+
+  // Otherwise create task non-interactively
+  } else {
+    createTask(taskData, columnName);
   }
 };

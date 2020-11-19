@@ -119,8 +119,8 @@ const validCases = [
         tags: [ 'tag1', 'tag2', 'tag3' ]
       },
       subTasks: [
-        { text: 'this is a sub-task', checked: false },
-        { text: 'here is a completed sub-task', checked: true }
+        { text: 'this is a sub-task', completed: false },
+        { text: 'here is a completed sub-task', completed: true }
       ],
       relations: [
         { type: 'requires', task: 'another-task' },

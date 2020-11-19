@@ -19,7 +19,14 @@ module.exports = async () => {
       'title',
       'description',
       'column',
-      'filter'
+      'filter',
+      'due',
+      'sub-task',
+      'remove-sub-task',
+      'tag',
+      'remove-tag',
+      'relation',
+      'remove-relation'
     ],
     alias: {
       'version': ['v'],
@@ -33,7 +40,11 @@ module.exports = async () => {
       'index': ['i'],
       'quiet': ['q'],
       'filter': ['s'],
-      'json': ['j']
+      'json': ['j'],
+      'due': ['e'],
+      'sub-task': ['b'],
+      'tag': ['g'],
+      'relation': ['r']
     }
   });
 

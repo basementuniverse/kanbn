@@ -3,7 +3,7 @@ const kanbn = require('../lib/main');
 
 QUnit.module('Kanbn nuclear tests', {
   beforeEach() {
-    require('./fixtures')();
+    require('./fixtures')(1);
   },
   afterEach() {
     mock.restore();
