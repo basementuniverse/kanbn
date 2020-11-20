@@ -1,8 +1,8 @@
-const mock = require('mock-fs');
+const mockFileSystem = require('mock-fs');
 const faker = require('faker');
 const paramCase = require('param-case').paramCase;
-const parseIndex = require('../lib/parse-index.js');
-const parseTask = require('../lib/parse-task.js');
+const parseIndex = require('../../lib/parse-index.js');
+const parseTask = require('../../lib/parse-task.js');
 
 function generateTask() {
   const COUNT_TAGS = faker.random.number(5);
@@ -66,7 +66,7 @@ module.exports = (COUNT_TASKS = null) => {
   };
 
   // Generate in-memory files
-  mock({
+  mockFileSystem({
     '.kanbn': {
       'index.md': parseIndex.json2md(index),
       'tasks': Object.fromEntries(tasks.map(i => [`${paramCase(i.name)}.md`, parseTask.json2md(i)]))

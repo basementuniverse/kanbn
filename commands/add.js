@@ -156,7 +156,7 @@ function createTask(taskData, columnName) {
   });
 }
 
-module.exports = async (args) => {
+module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {

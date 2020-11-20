@@ -12,6 +12,7 @@
   "author": "Gordon Larrigan <gordonlarrigan@gmail.com> (gordonlarrigan.com)",
   "license": "MIT",
   "dependencies": {
+    "capture-stdout": "^1.0.0",
     "chrono-node": "^2.1.9",
     "cli-spinner": "^0.2.10",
     "dotenv": "^8.2.0",
@@ -30,9 +31,9 @@
   },
   "devDependencies": {
     "faker": "^5.1.0",
+    "mock-argv": "^1.1.8",
     "mock-fs": "^4.13.0",
     "mock-require": "^3.0.3",
-    "nixt": "^0.5.1",
     "qunit": "^2.12.0"
   }
 }

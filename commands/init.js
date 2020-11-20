@@ -82,7 +82,7 @@ function initialise(options, initialised) {
   });
 }
 
-module.exports = async (args) => {
+module.exports = async args => {
   let options = {};
 
   // If this folder is already initialised, set the default name and description using the current values

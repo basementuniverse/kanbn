@@ -1,14 +1,14 @@
-const mock = require('mock-fs');
+const mockFileSystem = require('mock-fs');
 const fs = require('fs');
 const path = require('path');
-const kanbn = require('../lib/main');
+const kanbn = require('../../lib/main');
 
 QUnit.module('Kanbn initialise tests', {
   beforeEach() {
-    mock();
+    mockFileSystem();
   },
   afterEach() {
-    mock.restore();
+    mockFileSystem.restore();
   }
 });
 

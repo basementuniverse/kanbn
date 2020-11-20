@@ -262,7 +262,7 @@ Options:
 `
 };
 
-module.exports = (args) => {
+module.exports = args => {
   const subCommand = (args._[0] === 'help' || args._[0] === 'h')
     ? args._[1]
     : args._[0];

@@ -1,3 +1,3 @@
-module.exports = (args) => {
+module.exports = args => {
   // TODO status command
 };

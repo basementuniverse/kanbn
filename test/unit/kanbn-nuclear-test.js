@@ -1,12 +1,12 @@
-const mock = require('mock-fs');
-const kanbn = require('../lib/main');
+const mockFileSystem = require('mock-fs');
+const kanbn = require('../../lib/main');
 
 QUnit.module('Kanbn nuclear tests', {
   beforeEach() {
     require('./fixtures')(1);
   },
   afterEach() {
-    mock.restore();
+    mockFileSystem.restore();
   }
 });
 
