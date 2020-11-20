@@ -44,16 +44,20 @@ Initialise a kanbn board in the current working directory using the default opti
 
 Options:
   {b}kanbn init --interactive{b}
-  {b}kanbn init -n{b}
+  {b}kanbn init -i{b}
     Initialise a kanbn board interactively.
 
-  {b}kanbn init --title "title"{b}
-  {b}kanbn init -t "title"{b}
-    Initialise a kanbn board with the specified title.
+  {b}kanbn init --name "name"{b}
+  {b}kanbn init -n "name"{b}
+    Initialise a kanbn board with the specified name.
 
   {b}kanbn init --description "description"{b}
   {b}kanbn init -d "description"{b}
     Initialise a kanbn board with the specified description.
+
+  {b}kanbn init --column "column"{b}
+  {b}kanbn init -c "column"{b}
+    Initialise a kanbn board and add the specified column. This argument can be repeated to add multiple columns.
 `,
 
   add: `
@@ -64,12 +68,12 @@ Create a new task and add it to the index.
 
 Options:
   {b}kanbn add --interactive{b}
-  {b}kanbn add -n{b}
+  {b}kanbn add -i{b}
     Create a new task interactively.
 
-  {b}kanbn add --title "title"{b}
-  {b}kanbn add --t "title"{b}
-    Create a new task with the specified title. This option is required if not adding a task interactively.
+  {b}kanbn add --name "name"{b}
+  {b}kanbn add --n "name"{b}
+    Create a new task with the specified name. This option is required if not adding a task interactively.
 
   {b}kanbn add --description "description"{b}
   {b}kanbn add -d "description"{b}
@@ -78,6 +82,25 @@ Options:
   {b}kanbn add --column "column"{b}
   {b}kanbn add -c "column"{b}
     Create a new task and add it to the specified column in the index. If this is not specified, the task will be added to the first available column.
+
+  {b}kanbn add --due "date"{b}
+  {b}kanbn add -e "date"{b}
+    Create a new task and set the due date. The date can be in (almost) any format.
+
+  {b}kanbn add --sub-task "sub-task"{b}
+  {b}kanbn add -k "sub-task"{b}
+    Create a new task and add a sub-task. The sub-task text can be prefixed with "[ ] " or "[x] " to set the completion status.
+
+  {b}kanbn add --tag "tag"{b}
+  {b}kanbn add -t "tag"{b}
+    Create a new task and add a tag.
+
+  {b}kanbn add --relation "relation"{b}
+  {b}kanbn add -r "relation"{b}
+    Create a new task and add a relation. The relation should be an existing task id, optionally prefixed with a relation type.
+    Examples:
+      "blocks my-task-1"
+      "duplicates my-task-2"
 
   {b}kanbn add --untracked{b}
   {b}kanbn add -u{b}
@@ -104,12 +127,12 @@ Edit an existing task and update its 'updated' date. This command can be used to
 
 Options:
   {b}kanbn edit "task-id" --interactive{b}
-  {b}kanbn edit "task-id" -n{b}
+  {b}kanbn edit "task-id" -i{b}
     Edit a task interactively.
 
-  {b}kanbn edit "task-id" --title "title"{b}
-  {b}kanbn edit "task-id" -t "title"{b}
-    Update a task title.
+  {b}kanbn edit "task-id" --name "name"{b}
+  {b}kanbn edit "task-id" -n "name"{b}
+    Update a task name.
 
   {b}kanbn add --description "description"{b}
   {b}kanbn add -d "description"{b}
@@ -118,6 +141,34 @@ Options:
   {b}kanbn edit "task-id" --column "column"{b}
   {b}kanbn edit "task-id" -c "column"{b}
     Move a task to a different column.
+
+  {b}kanbn edit --due "date"{b}
+  {b}kanbn edit -e "date"{b}
+    Update a task due date. The date can be in (almost) any format.
+
+  {b}kanbn edit --remove-sub-task "sub-task"{b}
+    Remove a sub-task.
+
+  {b}kanbn edit --sub-task "sub-task"{b}
+  {b}kanbn edit -k "sub-task"{b}
+    Add or edit a sub-task. The sub-task text can be prefixed with "[ ] " or "[x] " to edit the completion status.
+
+  {b}kanbn edit --remove-tag "tag"{b}
+    Remove a tag.
+
+  {b}kanbn edit --tag "tag"{b}
+  {b}kanbn edit -t "tag"{b}
+    Add a tag.
+
+  {b}kanbn edit --remove-relation "relation"{b}
+    Remove a relation.
+
+  {b}kanbn edit --relation "relation"{b}
+  {b}kanbn edit -r "relation"{b}
+    Add or edit a relation. The relation should be an existing task id, optionally prefixed with a relation type.
+    Examples:
+      "blocks my-task-1"
+      "duplicates my-task-2"
 `,
 
   rename: `
@@ -128,12 +179,12 @@ Rename a task. This will change the task filename and update the index.
 
 Options:
   {b}kanbn rename "task-id" --interactive{b}
-  {b}kanbn rename "task-id" -n{b}
+  {b}kanbn rename "task-id" -i{b}
     Rename a task interactively.
 
-  {b}kanbn rename "task-id" --title "title"{b}
-  {b}kanbn rename "task-id" -t "title"{b}
-    Rename the task with the specified title. This option is required if not renaming a task interactively.
+  {b}kanbn rename "task-id" --name "name"{b}
+  {b}kanbn rename "task-id" -n "name"{b}
+    Rename the task with the specified name. This option is required if not renaming a task interactively.
 `,
 
   remove: `
@@ -144,7 +195,6 @@ Remove an existing task.
 
 Options:
   {b}kanbn remove "task-id" --index{b}
-  {b}kanbn remove "task-id" -i{b}
     Only remove the task from the index. The task file will not be deleted.
 
   {b}kanbn remove "task-id" --force{b}
@@ -184,14 +234,14 @@ Options:
     Add a search filter. This argument can be repeated to add multiple filters. See below for filter syntax.
 
 Filter syntax:
-  ... // TODO add filter syntax documentation
+  ... // TODO filter syntax help documentation
 `,
 
   status: `
 {b}kanbn status{b}
 {b}kanbn s{b}
 
-Show status information for the current project... // TODO add more help information about status command
+Show status information for the current project. // TODO status help documentation needs more information
 
 Options:
   {b}kanbn status --json{b}

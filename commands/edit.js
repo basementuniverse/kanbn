@@ -24,20 +24,21 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
   return await inquirer.prompt([
     {
       type: 'input',
-      name: 'title',
-      message: 'Task title:',
-      default: taskData.title || '',
+      name: 'name',
+      message: 'Task name:',
+      default: taskData.name || '',
       validate: async function (value) {
         if ((/.+/).test(value)) {
           return true;
         }
-        return 'Task title cannot be empty';
+        return 'Task name cannot be empty';
       }
     },
     {
       type: 'confirm',
       name: 'editDescription',
-      message: 'Edit description?'
+      message: 'Edit description?',
+      default: false
     },
     {
       type: 'editor',
@@ -93,74 +94,194 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       format: ['Y', '/', 'MM', '/', 'DD'],
       when: answers => answers.setDue || answers.editDue === 'edit'
     },
-
-    // here: need to choose sub-tasks/tags/relations and add/edit/remove them
-    // {
-    //   type: 'recursive',
-    //   name: 'subTasks',
-    //   message: 'Add a sub-task?',
-    //   default: false,
-    //   prompts: [
-    //     {
-    //       type: 'input',
-    //       name: 'subTaskTitle',
-    //       message: 'Sub-task title:',
-    //       validate: value => {
-    //         if ((/.+/).test(value)) {
-    //           return true;
-    //         }
-    //         return 'Sub-task title cannot be empty';
-    //       }
-    //     }
-    //   ]
-    // },
-    // {
-    //   type: 'recursive',
-    //   name: 'tags',
-    //   message: 'Add a tag?',
-    //   default: false,
-    //   prompts: [
-    //     {
-    //       type: 'input',
-    //       name: 'tagName',
-    //       message: 'Tag:',
-    //       validate: value => {
-    //         if ((/.+/).test(value)) {
-    //           return true;
-    //         }
-    //         return 'Tag name cannot be empty';
-    //       }
-    //     }
-    //   ]
-    // },
-    // {
-    //   type: 'recursive',
-    //   name: 'relations',
-    //   message: 'Add a relation?',
-    //   default: false,
-    //   when: answers => trackedTasks.length > 0,
-    //   prompts: [
-    //     {
-    //       type: 'autocomplete',
-    //       name: 'relatedTaskId',
-    //       message: 'Task id:',
-    //       source: (answers, input) => {
-    //         input = input || '';
-    //         const result = fuzzy.filter(input, trackedTasks);
-    //         return new Promise(resolve => {
-    //           resolve(result.map(result => result.string));
-    //         });
-    //       }
-    //     },
-    //     {
-    //       type: 'input',
-    //       name: 'relationType',
-    //       message: 'Type:'
-    //     }
-    //   ]
-    // }
+    {
+      type: 'recursive',
+      name: 'addSubTasks',
+      initialMessage: 'Add a sub-task?',
+      message: 'Add another sub-task?',
+      default: false,
+      prompts: [
+        {
+          type: 'input',
+          name: 'text',
+          message: 'Sub-task text:',
+          validate: value => {
+            if ((/.+/).test(value)) {
+              return true;
+            }
+            return 'Sub-task text cannot be empty';
+          }
+        },
+        {
+          type: 'confirm',
+          name: 'completed',
+          message: 'Sub-task completed?',
+          default: false
+        }
+      ]
+    },
+    {
+      type: 'recursive',
+      name: 'editSubTasks',
+      initialMessage: 'Update or remove a sub-task?',
+      message: 'Update or remove another sub-task?',
+      default: false,
+      when: answers => taskData.subTasks.length > 0,
+      prompts: [
+        {
+          type: 'list',
+          name: 'selectSubTask',
+          message: 'Which sub-task do you want to update or remove?',
+          choices: taskData.subTasks.map(subTask => subTask.text)
+        },
+        {
+          type: 'expand',
+          name: 'editSubTask',
+          message: 'Edit completion status or remove sub-task?',
+          default: 'none',
+          choices: [
+            {
+              key: 'e',
+              name: 'Edit completion status',
+              value: 'edit'
+            },
+            {
+              key: 'r',
+              name: 'Remove',
+              value: 'remove'
+            },
+            new inquirer.Separator(),
+            {
+              key: 'n',
+              name: 'Do nothing',
+              value: 'none'
+            }
+          ]
+        },
+        {
+          type: 'confirm',
+          name: 'completed',
+          message: 'Sub-task completed?',
+          default: answers => taskData.subTasks.find(subTask => subTask.text === answers.selectSubTask).completed,
+          when: answers => answers.editSubTask === 'edit'
+        }
+      ]
+    },
+    {
+      type: 'recursive',
+      name: 'addTags',
+      initialMessage: 'Add a tag?',
+      message: 'Add another tag?',
+      default: false,
+      prompts: [
+        {
+          type: 'input',
+          name: 'name',
+          message: 'Tag name:',
+          validate: value => {
+            if ((/.+/).test(value)) {
+              return true;
+            }
+            return 'Tag name cannot be empty';
+          }
+        }
+      ]
+    },
+    {
+      type: 'recursive',
+      name: 'removeTags',
+      initialMessage: 'Remove a tag?',
+      message: 'Remove another tag?',
+      default: false,
+      when: answers => (
+        'metadata' in taskData &&
+        'tags' in taskData.metadata &&
+        taskData.metadata.tags.length > 0
+      ),
+      prompts: [
+        {
+          type: 'list',
+          name: 'selectTag',
+          message: 'Which tag do you want to remove?',
+          choices: taskData.metadata.tags
+        }
+      ]
+    },
+    {
+      type: 'recursive',
+      name: 'addRelations',
+      initialMessage: 'Add a relation?',
+      message: 'Add another relation?',
+      default: false,
+      when: answers => taskIds.length > 0,
+      prompts: [
+        {
+          type: 'autocomplete',
+          name: 'task',
+          message: 'Related task id:',
+          source: (answers, input) => {
+            input = input || '';
+            const result = fuzzy.filter(input, taskIds);
+            return new Promise(resolve => {
+              resolve(result.map(result => result.string));
+            });
+          }
+        },
+        {
+          type: 'input',
+          name: 'type',
+          message: 'Relation type:'
+        }
+      ]
+    },
+    {
+      type: 'recursive',
+      name: 'editRelations',
+      initialMessage: 'Update or remove a relation?',
+      message: 'Update or remove another relation?',
+      default: false,
+      when: answers => taskData.relations.length > 0,
+      prompts: [
+        {
+          type: 'list',
+          name: 'selectRelation',
+          message: 'Which relation do you want to update or remove?',
+          choices: taskData.relations.map(relation => relation.task)
+        },
+        {
+          type: 'expand',
+          name: 'editRelation',
+          message: 'Edit relation type or remove relation?',
+          default: 'none',
+          choices: [
+            {
+              key: 'e',
+              name: 'Edit relation type',
+              value: 'edit'
+            },
+            {
+              key: 'r',
+              name: 'Remove',
+              value: 'remove'
+            },
+            new inquirer.Separator(),
+            {
+              key: 'n',
+              name: 'Do nothing',
+              value: 'none'
+            }
+          ]
+        },
+        {
+          type: 'input',
+          name: 'type',
+          message: 'Relation type:',
+          default: answers => taskData.relations.find(relation => relation.task === answers.selectRelation).task,
+          when: answers => answers.editRelation === 'edit'
+        }
+      ]
+    }
   ]);
-  // TODO finish task interactive update
 }
 
 /**
@@ -255,9 +376,9 @@ module.exports = async (args) => {
   const taskIds = [...await kanbn.findTrackedTasks()];
 
   // Get task settings from arguments
-  // Title
-  if (args.title) {
-    taskData.title = args.title;
+  // Name
+  if (args.name) {
+    taskData.name = args.name;
   }
 
   // Description
@@ -370,15 +491,15 @@ module.exports = async (args) => {
   if (args.relation) {
     const newRelationInputs = Array.isArray(args.relation) ? args.relation : [args.relation];
     const newRelations = newRelationInputs.map(relation => {
-      const parts = relation.split(':');
+      const parts = relation.split(' ');
       return parts.length === 1
         ? {
           type: '',
-          task: parts[0]
+          task: parts[0].trim()
         }
         : {
-          type: parts[0],
-          task: parts[1]
+          type: parts[0].trim(),
+          task: parts[1].trim()
         };
     });
 
@@ -398,34 +519,92 @@ module.exports = async (args) => {
 
   // Update task interactively
   if (args.interactive) {
-    interactive(taskData, columnName, columnNames)
+    interactive(taskData, taskIds, columnName, columnNames)
     .then(answers => {
-      console.log(answers);
-      return;
 
-      taskData.title = answers.title;
+      // Name
+      taskData.name = answers.name;
+
+      // Description
       if ('description' in answers) {
         taskData.description = answers.description;
       }
+
+      // Due date
       if ('due' in answers) {
         taskData.metadata.due = answers.due.toISOString();
       }
-      // TODO collate interactive edit answers
-      // if ('subTasks' in answers) {
-      //   taskData.subTasks = answers.subTasks.map(subTask => ({
-      //     text: subTask.subTaskTitle,
-      //     completed: false
-      //   }));
-      // }
-      // if ('tags' in answers && answers.tags.length > 0) {
-      //   taskData.metadata.tags = answers.tags.map(tag => tag.tagName);
-      // }
-      // if ('relations' in answers) {
-      //   taskData.relations = answers.relations.map(relation => ({
-      //     task: relation.relatedTaskId,
-      //     type: relation.relationType
-      //   }));
-      // }
+
+      // Edit or remove sub-tasks
+      if ('editSubTasks' in answers) {
+        for (editSubTask of answers.editSubTasks) {
+          const i = taskData.subTasks.findIndex(subTask => subTask.task === editSubTask.selectSubTask);
+          if (i !== -1) {
+            switch (editSubTask.editSubTask) {
+              case 'remove':
+                taskData.subTasks.splice(i, 1);
+                break;
+              case 'edit':
+                taskData.subTasks[i].completed = editSubTask.completed;
+                break;
+              default:
+                break;
+            }
+          }
+        }
+      }
+
+      // Add sub-tasks
+      if ('addSubTasks' in answers) {
+        taskData.subTasks.push(...answers.addSubTasks.map(addSubTask => ({
+          text: addSubTask.text,
+          completed: addSubTask.completed
+        })));
+      }
+
+      // Remove tags
+      if ('removeTags' in answers && 'metadata' in taskData && 'tags' in taskData.metadata) {
+        for (editTag of answers.editTags) {
+          const i = taskData.metadata.tags.indexOf(editTag.name);
+          if (i !== -1) {
+            taskData.metadata.tags.splice(i, 1);
+          }
+        }
+      }
+
+      // Add tags
+      if ('addTags' in answers && 'metadata' in taskData && 'tags' in taskData.metadata) {
+        taskData.metadata.tags.push(...answers.map(tag => tag.name));
+      }
+
+      // Edit or remove relations
+      if ('editRelations' in answers) {
+        for (editRelation of answers.editRelations) {
+          const i = taskData.relations.findIndex(relation => relation.task === editRelation.selectRelation);
+          if (i !== -1) {
+            switch (editRelation.editRelation) {
+              case 'remove':
+                taskData.relations.splice(i, 1);
+                break;
+              case 'edit':
+                taskData.relations[i].type = editRelation.type;
+                break;
+              default:
+                break;
+            }
+          }
+        }
+      }
+
+      // Add relations
+      if ('addRelations' in answers) {
+        taskData.relations.push(...answers.addRelations.map(addRelation => ({
+          task: addRelation.task,
+          type: addRelation.type
+        })));
+      }
+
+      // Update task
       columnName = answers.column !== currentColumn ? answers.column : null;
       updateTask(taskId, taskData, columnName);
     })
@@ -435,8 +614,7 @@ module.exports = async (args) => {
 
   // Otherwise edit task non-interactively
   } else {
-    console.log('editing...');
     columnName = columnName !== currentColumn ? columnName : null;
-    // updateTask(taskId, taskData, columnName);
+    updateTask(taskId, taskData, columnName);
   }
 };

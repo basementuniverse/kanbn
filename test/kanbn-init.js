@@ -29,9 +29,9 @@ QUnit.test('Initialise with default settings', async assert => {
   // Kanbn should now be initialised
   assert.equal(await kanbn.initialised(), true);
 
-  // Check for default title & columns
+  // Check for default name & columns
   const index = await kanbn.getIndex();
-  assert.equal(index.title, 'Project Title');
+  assert.equal(index.name, 'Project Name');
   assert.deepEqual(Object.keys(index.columns), ['Backlog', 'Todo', 'In Progress', 'Done', 'Archive']);
 });
 
@@ -41,7 +41,7 @@ QUnit.test('Initialise with custom settings', async assert => {
   assert.equal(await kanbn.initialised(), false);
 
   // Initialise kanbn and check that the main folder, index, and tasks folder exists
-  const CUSTOM_TITLE = 'Custom Project Title';
+  const CUSTOM_NAME = 'Custom Project Name';
   const CUSTOM_DESCRIPTION = 'Custom project description...';
   const CUSTOM_COLUMNS = [
     'Column 1',
@@ -49,7 +49,7 @@ QUnit.test('Initialise with custom settings', async assert => {
     'Column 3'
   ];
   await kanbn.initialise({
-    title: CUSTOM_TITLE,
+    name: CUSTOM_NAME,
     description: CUSTOM_DESCRIPTION,
     columns: CUSTOM_COLUMNS
   });
@@ -63,9 +63,9 @@ QUnit.test('Initialise with custom settings', async assert => {
   // Kanbn should now be initialised
   assert.equal(await kanbn.initialised(), true);
 
-  // Check for custom title, description & columns
+  // Check for custom name, description & columns
   const index = await kanbn.getIndex();
-  assert.equal(index.title, CUSTOM_TITLE);
+  assert.equal(index.name, CUSTOM_NAME);
   assert.equal(index.description, CUSTOM_DESCRIPTION)
   assert.deepEqual(Object.keys(index.columns), CUSTOM_COLUMNS);
 });
@@ -88,7 +88,7 @@ QUnit.test('Reinitialise with additional settings', async assert => {
   assert.equal(await kanbn.initialised(), true);
 
   // Reinitialise kanbn with additional settings
-  const CUSTOM_TITLE = 'Custom Project Title';
+  const CUSTOM_NAME = 'Custom Project Name';
   const CUSTOM_DESCRIPTION = 'Custom project description...';
   const CUSTOM_COLUMNS = [
     'Column 1',
@@ -96,7 +96,7 @@ QUnit.test('Reinitialise with additional settings', async assert => {
     'Column 3'
   ];
   await kanbn.initialise({
-    title: CUSTOM_TITLE,
+    name: CUSTOM_NAME,
     description: CUSTOM_DESCRIPTION,
     columns: CUSTOM_COLUMNS
   });
@@ -104,9 +104,9 @@ QUnit.test('Reinitialise with additional settings', async assert => {
   // Kanbn should still be initialised
   assert.equal(await kanbn.initialised(), true);
 
-  // Check for custom title, description & columns
+  // Check for custom name, description & columns
   const index = await kanbn.getIndex();
-  assert.equal(index.title, CUSTOM_TITLE);
+  assert.equal(index.name, CUSTOM_NAME);
   assert.equal(index.description, CUSTOM_DESCRIPTION)
   assert.deepEqual(Object.keys(index.columns), [
     'Backlog',

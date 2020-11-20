@@ -1,15 +1,20 @@
 const kanbn = require('../lib/main');
-const inquirer = require('inquirer');
 const utility = require('../lib/utility');
+const inquirer = require('inquirer');
 
 module.exports = async (args) => {
+
+  // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
     console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
     return;
   }
 
+  // If the force flag is specified, remove kanbn without asking
   if (args.force) {
     await kanbn.nuclear();
+
+  // Otherwise, prompt for confirmation first
   } else {
     inquirer.prompt([
       {

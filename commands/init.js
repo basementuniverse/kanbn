@@ -14,25 +14,32 @@ async function interactive(options, initialised) {
   .prompt([
     {
       type: 'input',
-      name: 'title',
-      message: 'Project title:',
-      default: options.title || '',
-      validate: function (value) {
+      name: 'name',
+      message: 'Project name:',
+      default: options.name || '',
+      validate: value => {
         if ((/.+/).test(value)) {
           return true;
         }
-        return 'Project title cannot be empty';
+        return 'Project name cannot be empty';
       }
     },
     {
-      type: 'input',
+      type: 'confirm',
+      name: 'setDescription',
+      message: initialised ? 'Edit the project description?' : 'Add a project description?'
+    },
+    {
+      type: 'editor',
       name: 'description',
-      message: 'Description:',
-      default: options.description || ''
+      message: 'Project description:',
+      default: options.description || '',
+      when: answers => answers.setDescription
     },
     {
       type: 'recursive',
-      message: 'Add a column?',
+      initialMessage: 'Add a column?',
+      message: 'Add another column?',
       name: 'columns',
       when: () => !initialised,
       prompts: [
@@ -40,11 +47,14 @@ async function interactive(options, initialised) {
           type: 'input',
           name: 'columnName',
           message: 'Column name:',
-          validate: function (value) {
-            if ((/.+/).test(value)) {
-              return true;
+          validate: value => {
+            if (value.length === 0) {
+              return 'Column name cannot be empty';
             }
-            return 'Column name cannot be empty';
+            if (options.columns.indexOf(value) !== -1) {
+              return 'Column name already exists';
+            }
+            return true;
           }
         }
       ]
@@ -75,13 +85,14 @@ function initialise(options, initialised) {
 module.exports = async (args) => {
   let options = {};
 
-  // If this folder is already initialised, set the default title and description using the current values
+  // If this folder is already initialised, set the default name and description using the current values
   const initialised = await kanbn.initialised();
   if (initialised) {
     try {
       const index = await kanbn.getIndex();
-      options.title = index.title;
+      options.name = index.name;
       options.description = index.description;
+      options.columns = Object.keys(index.columns);
     } catch (error) {
       utility.showError(error);
       return;
@@ -89,11 +100,19 @@ module.exports = async (args) => {
   }
 
   // Check for arguments and override the defaults if present
-  if (args.title) {
-    options.title = args.title;
+  // Project name
+  if (args.name) {
+    options.name = args.name;
   }
+
+  // Project description
   if (args.description) {
     options.description = args.description;
+  }
+
+  // Columns
+  if (args.column) {
+    options.columns = Array.isArray(args.column) ? args.column : [args.column];
   }
 
   // Interactive initialisation

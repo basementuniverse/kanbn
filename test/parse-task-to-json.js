@@ -3,7 +3,7 @@ const parseTask = require('../lib/parse-task.js');
 QUnit.module('Task to JSON conversion');
 
 const CASE_1 = `
-# Task Title
+# Task Name
 
 This is a *task* description
 
@@ -50,7 +50,7 @@ Even more data!
 `;
 
 const CASE_2 = `
-# Task Title
+# Task Name
 
 This is a *task* description
 
@@ -66,13 +66,13 @@ tags:
 `;
 
 const CASE_3 = `
-# Task Title
+# Task Name
 
 This is a *task* description
 `;
 
 const CASE_4 = `
-# Task Title
+# Task Name
 `;
 
 const CASE_5 = `
@@ -85,7 +85,7 @@ const validCases = [
   {
     data: CASE_1,
     expected: {
-      title: 'Task Title',
+      name: 'Task Name',
       description: 'This is a *task* description\n' +
         '\n' +
         'It has some code:\n' +
@@ -129,7 +129,7 @@ const validCases = [
   {
     data: CASE_2,
     expected: {
-      title: 'Task Title',
+      name: 'Task Name',
       description: 'This is a *task* description',
       metadata: {
         due: null,
@@ -142,7 +142,7 @@ const validCases = [
   {
     data: CASE_3,
     expected: {
-      title: 'Task Title',
+      name: 'Task Name',
       description: 'This is a *task* description',
       metadata: {},
       subTasks: [],
@@ -152,7 +152,7 @@ const validCases = [
   {
     data: CASE_4,
     expected: {
-      title: 'Task Title',
+      name: 'Task Name',
       description: '',
       metadata: {},
       subTasks: [],

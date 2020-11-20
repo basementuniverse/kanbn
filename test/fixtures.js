@@ -8,7 +8,7 @@ function generateTask() {
   const COUNT_TAGS = faker.random.number(5);
 
   return {
-    title: faker.lorem.sentence(),
+    name: faker.lorem.sentence(),
     description: faker.lorem.paragraph(),
     metadata: {
       created: faker.date.past().toISOString(),
@@ -48,7 +48,7 @@ module.exports = (COUNT_TASKS = null) => {
 
   // Generate tasks
   const tasks = new Array(COUNT_TASKS).fill(null).map(i => generateTask());
-  const taskIds = tasks.map(i => paramCase(i.title));
+  const taskIds = tasks.map(i => paramCase(i.name));
   tasks.forEach(i => addRelations(i, taskIds));
 
   // Generate and populate columns
@@ -60,7 +60,7 @@ module.exports = (COUNT_TASKS = null) => {
 
   // Generate index
   const index = {
-    title: faker.lorem.sentence(),
+    name: faker.lorem.sentence(),
     description: faker.lorem.paragraph(),
     columns
   };
@@ -69,7 +69,7 @@ module.exports = (COUNT_TASKS = null) => {
   mock({
     '.kanbn': {
       'index.md': parseIndex.json2md(index),
-      'tasks': Object.fromEntries(tasks.map(i => [`${paramCase(i.title)}.md`, parseTask.json2md(i)]))
+      'tasks': Object.fromEntries(tasks.map(i => [`${paramCase(i.name)}.md`, parseTask.json2md(i)]))
     }
   });
 

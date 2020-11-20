@@ -16,7 +16,7 @@ module.exports = async () => {
       'json'
     ],
     string: [
-      'title',
+      'name',
       'description',
       'column',
       'filter',
@@ -31,19 +31,19 @@ module.exports = async () => {
     alias: {
       'version': ['v'],
       'help': ['h'],
-      'interactive': ['n'],
-      'title': ['t'],
+      'interactive': ['i'],
+      'name': ['n'],
       'description': ['d'],
       'column': ['c'],
       'untracked': ['u'],
       'force': ['f'],
-      'index': ['i'],
+      'index': ['x'],
       'quiet': ['q'],
       'filter': ['s'],
       'json': ['j'],
       'due': ['e'],
-      'sub-task': ['b'],
-      'tag': ['g'],
+      'sub-task': ['k'],
+      'tag': ['t'],
       'relation': ['r']
     }
   });

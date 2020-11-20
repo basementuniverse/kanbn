@@ -20,20 +20,21 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
   return await inquirer.prompt([
     {
       type: 'input',
-      name: 'title',
-      message: 'Task title:',
-      default: taskData.title || '',
+      name: 'name',
+      message: 'Task name:',
+      default: taskData.name || '',
       validate: async function (value) {
         if ((/.+/).test(value)) {
           return true;
         }
-        return 'Task title cannot be empty';
+        return 'Task name cannot be empty';
       }
     },
     {
       type: 'confirm',
       name: 'setDescription',
-      message: 'Add a description?'
+      message: 'Add a description?',
+      default: false
     },
     {
       type: 'editor',
@@ -66,7 +67,8 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
     {
       type: 'recursive',
       name: 'subTasks',
-      message: 'Add a sub-task?',
+      initialMessage: 'Add a sub-task?',
+      message: 'Add another sub-task?',
       default: false,
       prompts: [
         {
@@ -77,7 +79,7 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
             if ((/.+/).test(value)) {
               return true;
             }
-            return 'Sub-task title cannot be empty';
+            return 'Sub-task text cannot be empty';
           }
         },
         {
@@ -91,7 +93,8 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
     {
       type: 'recursive',
       name: 'tags',
-      message: 'Add a tag?',
+      initialMessage: 'Add a tag?',
+      message: 'Add another tag?',
       default: false,
       prompts: [
         {
@@ -110,7 +113,8 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
     {
       type: 'recursive',
       name: 'relations',
-      message: 'Add a relation?',
+      initialMessage: 'Add a relation?',
+      message: 'Add another relation?',
       default: false,
       when: answers => taskIds.length > 0,
       prompts: [
@@ -227,9 +231,9 @@ module.exports = async (args) => {
   const taskIds = [...await kanbn.findTrackedTasks()];
 
   // Get task settings from arguments
-  // Title
-  if (args.title) {
-    taskData.title = args.title;
+  // Name
+  if (args.name) {
+    taskData.name = args.name;
   }
 
   // Description
@@ -276,11 +280,11 @@ module.exports = async (args) => {
       return parts.length === 1
         ? {
           type: '',
-          task: parts[0]
+          task: parts[0].trim()
         }
         : {
-          type: parts[0],
-          task: parts[1]
+          type: parts[0].trim(),
+          task: parts[1].trim()
         };
     });
 
@@ -298,7 +302,7 @@ module.exports = async (args) => {
   if (args.interactive) {
     interactive(taskData, taskIds, columnName, columnNames)
     .then(answers => {
-      taskData.title = answers.title;
+      taskData.name = answers.name;
       if ('description' in answers) {
         taskData.description = answers.description;
       }

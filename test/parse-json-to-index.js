@@ -72,7 +72,7 @@ const CASE_5 = `
 const validCases = [
   {
     data: {
-      title: 'Project name',
+      name: 'Project name',
       description: 'Project description',
       options: { option1: 'a' },
       columns: { Column1: [ 'task-id-1', 'task-id-2' ], Column2: [ 'task-id-3' ] }
@@ -81,7 +81,7 @@ const validCases = [
   },
   {
     data: {
-      title: 'Project name',
+      name: 'Project name',
       description: '',
       options: { option1: 'a' },
       columns: { Column1: [ 'task-id-1', 'task-id-2' ], Column2: [ 'task-id-3' ] }
@@ -90,7 +90,7 @@ const validCases = [
   },
   {
     data: {
-      title: 'Project name',
+      name: 'Project name',
       description: '',
       options: {},
       columns: { Column1: [ 'task-id-1', 'task-id-2' ], Column2: [ 'task-id-3' ] }
@@ -99,7 +99,7 @@ const validCases = [
   },
   {
     data: {
-      title: 'Project name',
+      name: 'Project name',
       description: '',
       options: {},
       columns: { Column1: [], Column2: [ 'task-id-3' ] }
@@ -108,7 +108,7 @@ const validCases = [
   },
   {
     data: {
-      title: 'Project name',
+      name: 'Project name',
       description: '',
       options: {},
       columns: {}
