@@ -17,6 +17,8 @@ Where {b}<command>{b} is one of:
   {b}move{b} {d}..........{d} move a kanbn task to another column
   {b}find{b} {d}..........{d} search for kanbn tasks
   {b}status{b} {d}........{d} get project and task statistics
+  {b}validate{b} {d}......{d} validate index and task files
+  {b}cache{b} {d}.........{d} update the cache file
   {b}nuclear{b} {d}.......{d} remove the kanbn board and all tasks
 
 For more help with commands, try:
@@ -88,7 +90,7 @@ Options:
     Create a new task and set the due date. The date can be in (almost) any format.
 
   {b}kanbn add --sub-task "sub-task"{b}
-  {b}kanbn add -k "sub-task"{b}
+  {b}kanbn add -s "sub-task"{b}
     Create a new task and add a sub-task. The sub-task text can be prefixed with "[ ] " or "[x] " to set the completion status.
 
   {b}kanbn add --tag "tag"{b}
@@ -150,7 +152,7 @@ Options:
     Remove a sub-task.
 
   {b}kanbn edit --sub-task "sub-task"{b}
-  {b}kanbn edit -k "sub-task"{b}
+  {b}kanbn edit -s "sub-task"{b}
     Add or edit a sub-task. The sub-task text can be prefixed with "[ ] " or "[x] " to edit the completion status.
 
   {b}kanbn edit --remove-tag "tag"{b}
@@ -229,12 +231,7 @@ Options:
   {b}kanbn find -q{b}
     Only show task ids in the output.
 
-  {b}kanbn find --filter "filter"{b}
-  {b}kanbn find -s "filter"{b}
-    Add a search filter. This argument can be repeated to add multiple filters. See below for filter syntax.
-
-Filter syntax:
-  ... // TODO filter syntax help documentation
+  // TODO filter syntax help documentation
 `,
 
   status: `
@@ -244,9 +241,25 @@ Filter syntax:
 Show status information for the current project. // TODO status help documentation needs more information
 
 Options:
+  {b}kanbn status --quiet{b}
+  {b}kanbn status -q{b}
+    Only show a count of tasks in each column, without loading and caching all tracked tasks.
+
   {b}kanbn status --json{b}
   {b}kanbn status -j{b}
     Output status information in JSON format.
+`,
+
+  validate: `
+{b}kanbn validate{b}
+
+Validate kanbn index file and all task files, and report any formatting errors.
+`,
+
+  cache: `
+{b}kanbn cache{b}
+
+Update the cache file if one is configured in the index options.
 `,
 
   nuclear: `

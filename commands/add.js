@@ -16,7 +16,7 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
  * @param {string} columnName
  * @param {string[]} columnNames
  */
-async function interactive(taskData, taskIds, columnName, columnNames) {
+async function interactiveCreateTask(taskData, taskIds, columnName, columnNames) {
   return await inquirer.prompt([
     {
       type: 'input',
@@ -140,20 +140,60 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
   ]);
 }
 
+async function interactiveAddUntrackedTasks(untrackedTasks) {
+  return await inquirer.prompt([
+    {
+      type: 'checkbox',
+      name: 'untrackedTasks',
+      message: 'Choose which tasks to add:',
+      choices: untrackedTasks
+    }
+  ]);
+}
+
 /**
  * Create a task
  * @param {object} taskData
  * @param {string} columnName
  */
 function createTask(taskData, columnName) {
+  const spinner = new Spinner('Creating task...');
+  spinner.setSpinnerString(18);
+  spinner.start();
   kanbn
   .createTask(taskData, columnName)
   .then(taskId => {
+    spinner.stop(true);
     console.log(`Created task "${taskId}" in column "${columnName}"`);
   })
   .catch(error => {
+    spinner.stop(true);
     utility.showError(error);
   });
+}
+
+/**
+ * Add untracked tasks to the index
+ * @param {string[]} untrackedTasks
+ * @param {string} columnName
+ */
+async function addUntrackedTasks(untrackedTasks, columnName) {
+  const spinner = new Spinner('Adding untracked tasks...');
+  spinner.setSpinnerString(18);
+  spinner.start();
+  for (let untrackedTask of untrackedTasks) {
+    try {
+      await kanbn.addUntrackedTaskToIndex(untrackedTask, columnName);
+    } catch (error) {
+      spinner.stop(true);
+      utility.showError(error);
+      return;
+    }
+  }
+  spinner.stop(true);
+  console.log(
+    `Added ${untrackedTasks.length} task${untrackedTasks.length !== 1 ? 's' : ''} to column "${columnName}"`
+  );
 }
 
 module.exports = async args => {
@@ -203,23 +243,27 @@ module.exports = async args => {
         return;
       }
     }
-    const spinner = new Spinner('Adding untracked tasks...');
-    spinner.setSpinnerString(18);
-    spinner.start();
-    for (let untrackedTask of untrackedTasks) {
-      try {
-        await kanbn.addUntrackedTaskToIndex(untrackedTask, columnName);
-      } catch (error) {
-        spinner.stop(true);
-        utility.showError(error);
-        return;
-      }
+
+    // Make sure there are some untracked tasks to add
+    if (untrackedTasks.length === 0) {
+      console.log('No untracked tasks to add');
+      return;
     }
-    spinner.stop(true);
-    console.log(
-      `Added ${untrackedTasks.length} task${untrackedTasks.length !== 1 ? 's' : ''} to column "${columnName}"`
-    );
-    return;
+
+    // Add untracked files interactively
+    if (args.interactive) {
+      interactiveAddUntrackedTasks(untrackedTasks)
+      .then(async answers => {
+        await addUntrackedTasks(answers.untrackedTasks, columnName);
+      })
+      .catch(error => {
+        utility.showError(error);
+      });
+      return;
+    } else {
+      await addUntrackedTasks(untrackedTasks, columnName);
+      return;
+    }
   }
 
   // Otherwise, create a task from arguments or interactively
@@ -300,7 +344,7 @@ module.exports = async args => {
 
   // Create task interactively
   if (args.interactive) {
-    interactive(taskData, taskIds, columnName, columnNames)
+    interactiveCreateTask(taskData, taskIds, columnName, columnNames)
     .then(answers => {
       taskData.name = answers.name;
       if ('description' in answers) {

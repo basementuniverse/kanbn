@@ -19,14 +19,16 @@ module.exports = async () => {
       'name',
       'description',
       'column',
-      'filter',
       'due',
       'sub-task',
       'remove-sub-task',
       'tag',
       'remove-tag',
       'relation',
-      'remove-relation'
+      'remove-relation',
+      'created',
+      'modified',
+      'completed'
     ],
     alias: {
       'version': ['v'],
@@ -39,10 +41,9 @@ module.exports = async () => {
       'force': ['f'],
       'index': ['x'],
       'quiet': ['q'],
-      'filter': ['s'],
       'json': ['j'],
       'due': ['e'],
-      'sub-task': ['k'],
+      'sub-task': ['s'],
       'tag': ['t'],
       'relation': ['r']
     }
@@ -75,6 +76,12 @@ module.exports = async () => {
   }
   if (args.status || command === 's') {
     command = 'status';
+  }
+  if (args.validate) {
+    command = 'validate';
+  }
+  if (args.cache) {
+    command = 'cache';
   }
   if (args.nuclear) {
     command = 'nuclear';
@@ -117,6 +124,12 @@ module.exports = async () => {
       break;
     case 'status':
       await require('./commands/status')(args);
+      break;
+    case 'validate':
+      await require('./commands/validate')(args);
+      break;
+    case 'cache':
+      await require('./commands/cache')(args);
       break;
     case 'nuclear':
       await require('./commands/nuclear')(args);

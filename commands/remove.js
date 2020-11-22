@@ -1,6 +1,7 @@
 const kanbn = require('../lib/main');
 const utility = require('../lib/utility');
 const inquirer = require('inquirer');
+const Spinner = require('cli-spinner').Spinner;
 
 /**
  * Remove a task
@@ -8,12 +9,17 @@ const inquirer = require('inquirer');
  * @param {boolean} removeFile
  */
 function removeTask(taskId, removeFile) {
+  const spinner = new Spinner('Renaming task...');
+  spinner.setSpinnerString(18);
+  spinner.start();
   kanbn
   .deleteTask(taskId, removeFile)
   .then(taskId => {
+    spinner.stop(true);
     console.log(`Removed task "${taskId}"${removeFile ? ' from the index' : ' file and index entry'}`);
   })
   .catch(error => {
+    spinner.stop(true);
     utility.showError(error);
   });
 }

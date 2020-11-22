@@ -1,6 +1,7 @@
 const kanbn = require('../lib/main');
 const utility = require('../lib/utility');
 const inquirer = require('inquirer');
+const Spinner = require('cli-spinner').Spinner;
 
 /**
  * Move a task interactively
@@ -35,12 +36,17 @@ function moveTask(taskId, columnName, currentColumnName) {
   }
 
   // Target column is different to current column, so move the task
+  const spinner = new Spinner('Moving task...');
+  spinner.setSpinnerString(18);
+  spinner.start();
   kanbn
   .moveTask(taskId, columnName)
   .then(taskId => {
+    spinner.stop(true);
     console.log(`Moved task "${taskId}" to column "${columnName}"`);
   })
   .catch(error => {
+    spinner.stop(true);
     utility.showError(error);
   });
 }

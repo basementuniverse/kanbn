@@ -1,6 +1,7 @@
 const kanbn = require('../lib/main');
 const utility = require('../lib/utility');
 const inquirer = require('inquirer');
+const Spinner = require('cli-spinner').Spinner;
 
 /**
  * Rename a task interactively
@@ -38,12 +39,17 @@ function renameTask(taskId, newTaskName, currentTaskName) {
   }
 
   // New name is different to current name, so rename the task
+  const spinner = new Spinner('Renaming task...');
+  spinner.setSpinnerString(18);
+  spinner.start();
   kanbn
   .renameTask(taskId, newTaskName)
   .then(newTaskId => {
+    spinner.stop(true);
     console.log(`Renamed task "${taskId}" to "${newTaskId}"`);
   })
   .catch(error => {
+    spinner.stop(true);
     utility.showError(error);
   });
 }

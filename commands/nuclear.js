@@ -1,6 +1,22 @@
 const kanbn = require('../lib/main');
 const utility = require('../lib/utility');
 const inquirer = require('inquirer');
+const Spinner = require('cli-spinner').Spinner;
+
+function nuclear() {
+  const spinner = new Spinner('Removing kanbn...');
+  spinner.setSpinnerString(18);
+  spinner.start();
+  kanbn.nuclear()
+  .then(() => {
+    spinner.stop(true);
+    console.log('kanbn has been removed');
+  })
+  .catch(error => {
+    spinner.stop(true);
+    utility.showError(error);
+  });
+}
 
 module.exports = async args => {
 
@@ -12,7 +28,7 @@ module.exports = async args => {
 
   // If the force flag is specified, remove kanbn without asking
   if (args.force) {
-    await kanbn.nuclear();
+    nuclear();
 
   // Otherwise, prompt for confirmation first
   } else {
@@ -25,7 +41,7 @@ module.exports = async args => {
       }
     ]).then(async answers => {
       if (answers.sure) {
-        await kanbn.nuclear();
+        nuclear();
       }
     }).catch(error => {
       utility.showError(error);
