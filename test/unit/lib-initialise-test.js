@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const kanbn = require('../../lib/main');
 
-QUnit.module('Kanbn initialise tests', {
+QUnit.module('Kanbn library initialise tests', {
   beforeEach() {
     mockFileSystem();
   },

@@ -1,148 +1,258 @@
 const parseIndex = require('../../lib/parse-index.js');
 
-QUnit.module('Index to JSON conversion');
+QUnit.module('Index markdown to JSON conversion');
 
-const CASE_1 = `
-# Project name
+const TEST_NAME = 'Test Name';
+const TEST_DESCRIPTION = 'Test description...';
+const TEST_COLUMN_1 = 'Column 1';
+const TEST_COLUMN_2 = 'Column 2';
+const TEST_TASK_1 = 'Task-1';
+const TEST_TASK_2 = 'Task-2';
 
-Project description
+// Invalid case 1: data is null
+const INVALID_1 = {
+  md: null,
+  error: /data is null or empty/
+};
+
+// Invalid case 2: data is an empty string
+const INVALID_2 = {
+  md: '',
+  error: /data is null or empty/
+};
+
+// Invalid case 3: data is not a string
+const INVALID_3 = {
+  md: 1,
+  error: /data is not a string/
+};
+
+// Invalid case 4: data is missing a name
+const INVALID_4 = {
+  md: 'test',
+  error: /data is missing a title/
+};
+
+// Invalid case 5: options can't be parsed as an object
+const INVALID_5 = {
+  md: `
+# ${TEST_NAME}
+
+${TEST_DESCRIPTION}
 
 ## Options
-\`\`\`yml
-option1: a
-\`\`\`
 
-## Column1
+Invalid options
+`,
+  error: /options is not a valid object/
+};
 
-- [task-id-1](tasks/task-id-1.md)
-- [task-id-2](tasks/task-id-2.md)
+// Invalid case 6: column doesn't contain a list
+const INVALID_6 = {
+  md: `
+# ${TEST_NAME}
 
-## Column2
+## ${TEST_COLUMN_1}
 
-- [task-id-3](tasks/task-id-3.md)
-`;
+Invalid column contents
+`,
+  error: new RegExp(`column "${TEST_COLUMN_1}" must contain a list`)
+};
 
-const CASE_2 = `
-# Project name
+// Valid case 1: data only contains a name
+const VALID_1 = {
+  md: `
+# ${TEST_NAME}
+`,
+  json: {
+    name: TEST_NAME,
+    description: '',
+    options: {},
+    columns: {}
+  }
+};
+
+// Valid case 2: data contains a name and description
+const VALID_2 = {
+  md: `
+# ${TEST_NAME}
+
+${TEST_DESCRIPTION}
+`,
+  json: {
+    name: TEST_NAME,
+    description: TEST_DESCRIPTION,
+    options: {},
+    columns: {}
+  }
+};
+
+// Valid case 3: data contains a name, description and valid options
+const VALID_3 = {
+  md: `
+# ${TEST_NAME}
+
+${TEST_DESCRIPTION}
 
 ## Options
 
 \`\`\`
-option1: a
+validOptions: test
 \`\`\`
+`,
+  json: {
+    name: TEST_NAME,
+    description: TEST_DESCRIPTION,
+    options: {
+      validOptions: 'test'
+    },
+    columns: {}
+  }
+};
 
-## Column1
+// Valid case 4: data contains a name and valid options inside a code block with language annotation
+const VALID_4 = {
+  md: `
+# ${TEST_NAME}
 
-- [task-id-1](tasks/task-id-1.md)
-- [task-id-2](tasks/task-id-2.md)
+## Options
 
-## Column2
+\`\`\`yaml
+validOptions: test
+\`\`\`
+`,
+  json: {
+    name: TEST_NAME,
+    description: '',
+    options: {
+      validOptions: 'test'
+    },
+    columns: {}
+  }
+};
 
-- [task-id-3](tasks/task-id-3.md)
-`;
+// Valid case 5: data contains a name, description and valid options not inside a code block
+const VALID_5 = {
+  md: `
+# ${TEST_NAME}
 
-const CASE_3 = `
-# Project name
+${TEST_DESCRIPTION}
 
-## Column1
-- [task-id-1](tasks/task-id-1.md)
+## Options
 
-- [task-id-2](tasks/task-id-2.md)
+validOptions: test
+`,
+  json: {
+    name: TEST_NAME,
+    description: TEST_DESCRIPTION,
+    options: {
+      validOptions: 'test'
+    },
+    columns: {}
+  }
+};
 
-## Column2
-- [task-id-3](tasks/task-id-3.md)
-`;
+// Valid case 6: data contains a name and a column with no tasks
+const VALID_6 = {
+  md: `
+# ${TEST_NAME}
 
-const CASE_4 = `
-# Project name
-
-## Column1
-
-- [task-id-1](tasks/task-id-1.md)
-
-## Column2
-`;
-
-const CASE_5 = `
-# Project name
-`;
-
-const CASE_6 = ``;
-
-const CASE_7 = `
-# Project name
-
-## Column1
-
-Some text here...
-`;
-
-const CASE_8 = `
-Some text here...
-`;
-
-const validCases = [
-  {
-    data: CASE_1,
-    expected: {
-      name: 'Project name',
-      description: 'Project description',
-      options: { option1: 'a' },
-      columns: { Column1: [ 'task-id-1', 'task-id-2' ], Column2: [ 'task-id-3' ] }
-    }
-  },
-  {
-    data: CASE_2,
-    expected: {
-      name: 'Project name',
-      description: '',
-      options: { option1: 'a' },
-      columns: { Column1: [ 'task-id-1', 'task-id-2' ], Column2: [ 'task-id-3' ] }
-    }
-  },
-  {
-    data: CASE_3,
-    expected: {
-      name: 'Project name',
-      description: '',
-      options: {},
-      columns: { Column1: [ 'task-id-1', 'task-id-2' ], Column2: [ 'task-id-3' ] }
-    }
-  },
-  {
-    data: CASE_4,
-    expected: {
-      name: 'Project name',
-      description: '',
-      options: {},
-      columns: { Column1: [ 'task-id-1' ], Column2: [] }
-    }
-  },
-  {
-    data: CASE_5,
-    expected: {
-      name: 'Project name',
-      description: '',
-      options: {},
-      columns: {}
+## ${TEST_COLUMN_1}
+`,
+  json: {
+    name: TEST_NAME,
+    description: '',
+    options: {},
+    columns: {
+      [TEST_COLUMN_1]: []
     }
   }
-];
+};
+
+// Valid case 7: data contains a name, description and a column with tasks as strings
+const VALID_7 = {
+  md: `
+# ${TEST_NAME}
+
+${TEST_DESCRIPTION}
+
+## ${TEST_COLUMN_1}
+- ${TEST_TASK_1}
+- ${TEST_TASK_2}
+`,
+  json: {
+    name: TEST_NAME,
+    description: TEST_DESCRIPTION,
+    options: {},
+    columns: {
+      [TEST_COLUMN_1]: [
+        TEST_TASK_1,
+        TEST_TASK_2
+      ]
+    }
+  }
+};
+
+// Valid case 8: data contains a name, description and multiple columns with tasks as links and strings
+const VALID_8 = {
+  md: `
+# ${TEST_NAME}
+
+${TEST_DESCRIPTION}
+
+## ${TEST_COLUMN_1}
+- [${TEST_TASK_1}](${TEST_TASK_1}.md)
+- [${TEST_TASK_2}](${TEST_TASK_2}.md)
+
+## ${TEST_COLUMN_2}
+- [${TEST_TASK_1}](${TEST_TASK_1}.md)
+- [${TEST_TASK_2}](${TEST_TASK_2}.md)
+`,
+  json: {
+    name: TEST_NAME,
+    description: TEST_DESCRIPTION,
+    options: {},
+    columns: {
+      [TEST_COLUMN_1]: [
+        TEST_TASK_1,
+        TEST_TASK_2
+      ],
+      [TEST_COLUMN_2]: [
+        TEST_TASK_1,
+        TEST_TASK_2
+      ]
+    }
+  }
+};
 
 const invalidCases = [
-  CASE_6,
-  CASE_7,
-  CASE_8
+  INVALID_1,
+  INVALID_2,
+  INVALID_3,
+  INVALID_4,
+  INVALID_5,
+  INVALID_6
+];
+
+const validCases = [
+  VALID_1,
+  VALID_2,
+  VALID_3,
+  VALID_4,
+  VALID_5,
+  VALID_6,
+  VALID_7,
+  VALID_8
 ];
 
 QUnit.test('Test index to json conversion with valid markdown', assert => {
   validCases.forEach(validCase => {
-    assert.deepEqual(parseIndex.md2json(validCase.data), validCase.expected);
+    assert.deepEqual(parseIndex.md2json(validCase.md), validCase.json);
   });
 });
 
 QUnit.test('Test index to json conversion with invalid markdown', assert => {
   invalidCases.forEach(invalidCase => {
-    assert.throws(() => { parseIndex.md2json(invalidCase); }, /Unable to parse index/);
+    assert.throws(() => { parseIndex.md2json(invalidCase.md); }, invalidCase.error);
   });
 });
