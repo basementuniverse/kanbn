@@ -51,21 +51,6 @@ function moveTask(taskId, columnName, currentColumnName) {
   });
 }
 
-/**
- * Find a task in the index and returns the column that it's in
- * @param {string} taskId The task id to search for
- * @param {object} index The index data
- * @return {?string} The column name for the specified task, or null if it wasn't found
- */
-function findTaskColumn(taskId, index) {
-  for (let columnName in index.columns) {
-    if (index.columns[columnName].indexOf(taskId) !== -1) {
-      return columnName;
-    }
-  }
-  return null;
-}
-
 module.exports = async args => {
 
   // Make sure kanbn has been initialised
@@ -104,7 +89,7 @@ module.exports = async args => {
   }
 
   // Get column name if specified
-  let currentColumnName = findTaskColumn(taskId, index);
+  let currentColumnName = await kanbn.findTaskColumn(taskId);
   let columnName = currentColumnName;
   if (args.column) {
     if (columnNames.indexOf(args.column) === -1) {

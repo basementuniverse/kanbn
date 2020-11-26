@@ -140,13 +140,20 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
   ]);
 }
 
-async function interactiveAddUntrackedTasks(untrackedTasks) {
+async function interactiveAddUntrackedTasks(untrackedTasks, columnName, columnNames) {
   return await inquirer.prompt([
     {
       type: 'checkbox',
       name: 'untrackedTasks',
       message: 'Choose which tasks to add:',
       choices: untrackedTasks
+    },
+    {
+      type: 'list',
+      name: 'column',
+      message: 'Column:',
+      default: columnName,
+      choices: columnNames
     }
   ]);
 }
@@ -252,9 +259,9 @@ module.exports = async args => {
 
     // Add untracked files interactively
     if (args.interactive) {
-      interactiveAddUntrackedTasks(untrackedTasks)
+      interactiveAddUntrackedTasks(untrackedTasks, columnName, columnNames)
       .then(async answers => {
-        await addUntrackedTasks(answers.untrackedTasks, columnName);
+        await addUntrackedTasks(answers.untrackedTasks, answers.column);
       })
       .catch(error => {
         utility.showError(error);
