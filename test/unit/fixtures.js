@@ -4,11 +4,11 @@ const paramCase = require('param-case').paramCase;
 const parseIndex = require('../../lib/parse-index.js');
 const parseTask = require('../../lib/parse-task.js');
 
-function generateTask() {
+function generateTask(i) {
   const COUNT_TAGS = faker.random.number(5);
 
   return {
-    name: faker.lorem.sentence(),
+    name: `Task ${i + 1}`,
     description: faker.lorem.paragraph(),
     metadata: {
       created: faker.date.past().toISOString(),
@@ -40,22 +40,24 @@ function addRelations(task, taskIds) {
   }));
 }
 
-module.exports = (COUNT_TASKS = null) => {
-  const COUNT_COLUMNS = faker.random.number(4) + 1;
-  if (COUNT_TASKS === null) {
-    COUNT_TASKS = faker.random.number(9) + 1;
-  }
+module.exports = (options = {}) => {
+  const COUNT_COLUMNS = options.columns || faker.random.number(4) + 1;
+  const COUNT_TASKS = options.tasks || faker.random.number(9) + 1;
 
   // Generate tasks
-  const tasks = new Array(COUNT_TASKS).fill(null).map(i => generateTask());
+  const tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
   const taskIds = tasks.map(i => paramCase(i.name));
   tasks.forEach(i => addRelations(i, taskIds));
 
   // Generate and populate columns
-  const columnNames = new Array(COUNT_COLUMNS).fill(null).map(i => faker.lorem.word());
+  const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((v, i) => `Column ${i + 1}`);
   const columns = Object.fromEntries(columnNames.map(i => [i, []]));
   for (let taskId of taskIds) {
-    columns[columnNames[Math.floor(Math.random() * columnNames.length)]].push(taskId);
+    if (options.randomiseColumns === false) {
+      columns[columnNames[0]].push(taskId);
+    } else {
+      columns[columnNames[Math.floor(Math.random() * columnNames.length)]].push(taskId);
+    }
   }
 
   // Generate index

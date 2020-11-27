@@ -1,6 +1,4 @@
 const mockFileSystem = require('mock-fs');
-const fs = require('fs');
-const path = require('path');
 const kanbn = require('../../lib/main');
 
 QUnit.module('Kanbn library addUntrackedTaskToIndex tests', {
@@ -9,10 +7,13 @@ QUnit.module('Kanbn library addUntrackedTaskToIndex tests', {
   },
   beforeEach() {
     mockFileSystem({
-      'index.md': '# Test Project\n\n## Test Column',
-      'tasks': {
-        'test-task-1.md': '# Test Task 1',
-        'test-task-2.md': '# Test Task 2'
+      '.kanbn': {
+        'index.md': '# Test Project\n\n## Test Column\n\n- test-task-1',
+        'tasks': {
+          'test-task-1.md': '# Test Task 1',
+          'test-task-2.md': '# Test Task 2',
+          'test-task-3.md': '# Test Task 3'
+        }
       }
     });
   },
@@ -23,124 +24,62 @@ QUnit.module('Kanbn library addUntrackedTaskToIndex tests', {
 
 QUnit.test('Add untracked task in un-initialised folder', async assert => {
 
-  // Try to create a task without initialising kanbn
+  // Refresh the filesystem to un-initialise kanbn
+  mockFileSystem();
+
+  // Try to add an untracked task without re-initialising kanbn
   assert.throwsAsync(
     async () => {
-      await kanbn.addUntrackedTaskToIndex({ name: 'Test name' }, 'Backlog');
+      await kanbn.addUntrackedTaskToIndex('test-task-2', 'Test Column');
     },
     /Not initialised in this folder/
   );
 });
 
-QUnit.test('Create task with no options', async assert => {
+QUnit.test('Add non-existent untracked task', async assert => {
 
-  // Initialise kanbn
-  await kanbn.initialise();
-
-  // Create a task with no options
+  // Try to add an untracked task that doesn't exist
   assert.throwsAsync(
     async () => {
-      await kanbn.createTask({}, 'Backlog');
+      await kanbn.addUntrackedTaskToIndex('test-task-4', 'Test Column');
     },
-    /Task name cannot be blank/
-  );
-
-  // Create a task with an empty name
-  assert.throwsAsync(
-    async () => {
-      await kanbn.createTask({ name: '' }, 'Backlog');
-    },
-    /Task name cannot be blank/
+    /No task file found with id "test-task-4"/
   );
 });
 
-QUnit.test('Create task in non-existent column', async assert => {
+QUnit.test('Add untracked task in non-existent column', async assert => {
   const NON_EXISTENT_COLUMN = 'Wibble';
 
-  // Initialise kanbn
-  await kanbn.initialise();
-
-  // Create a task in a non-existent column
+  // Add an untracked task in a non-existent column
   assert.throwsAsync(
     async () => {
-      await kanbn.createTask({ name: 'Test name' }, NON_EXISTENT_COLUMN);
+      await kanbn.addUntrackedTaskToIndex('test-task-2', NON_EXISTENT_COLUMN);
     },
     new RegExp(`Column "${NON_EXISTENT_COLUMN}" doesn't exist`)
   );
 });
 
-QUnit.test('Create task with duplicate id in file', async assert => {
-  const TASK_NAME = 'Test name';
-  const TASK_ID = 'test-name';
+QUnit.test('Add untracked task that is already indexed', async assert => {
 
-  // Initialise kanbn
-  await kanbn.initialise();
-
-  // Create a task file without adding it to the index
-  await fs.promises.writeFile(
-    path.join(process.cwd(), `.kanbn/tasks/${TASK_ID}.md`),
-    'Hello, world!'
-  );
-
-  // Try to create a task with a duplicate filename
+  // Add an untracked task in a non-existent column
   assert.throwsAsync(
     async () => {
-      await kanbn.createTask({ name: TASK_NAME }, 'Backlog');
+      await kanbn.addUntrackedTaskToIndex('test-task-1', 'Test Column');
     },
-    new RegExp(`A task with id "${TASK_ID}" already exists`)
+    /Task "test-task-1" is already in the index/
   );
 });
 
-QUnit.test('Create task with duplicate id in index', async assert => {
-  const TASK_NAME = 'Test name';
-  const TASK_ID = 'test-name';
+QUnit.test('Add untracked task', async assert => {
 
-  // Initialise kanbn
-  await kanbn.initialise();
+  // Add an untracked task
+  const TASK_ID = await kanbn.addUntrackedTaskToIndex('test-task-2', 'Test Column');
 
-  // Re-write the index file to contain the task without creating a file
-  await fs.promises.writeFile(
-    path.join(process.cwd(), '.kanbn/index.md'),
-    `# Project title\n\n## Backlog\n\n- [${TASK_ID}](tasks\\${TASK_ID}.md)`
-  );
-
-  // Try to create a task with a duplicate index entry
-  assert.throwsAsync(
-    async () => {
-      await kanbn.createTask({ name: TASK_NAME }, 'Backlog');
-    },
-    new RegExp(`A task with id "${TASK_ID}" is already in the index`)
-  );
-});
-
-QUnit.test('Create task', async assert => {
-  const TASK_NAME = 'Test name';
-
-  // Initialise kanbn
-  await kanbn.initialise();
-
-  // Create a task
-  const TASK_ID = await kanbn.createTask({ name: TASK_NAME }, 'Backlog');
-
-  // Verify that the file exists and is indexed
+  // Verify that the task is indexed
   let taskExists = false;
   try {
     await kanbn.taskExists(TASK_ID);
     taskExists = true;
   } catch (error) {}
   assert.equal(taskExists, true);
-});
-
-QUnit.test('Create task in a completed column', async assert => {
-  const TASK_NAME = 'Test name';
-
-  // Initialise kanbn
-  await kanbn.initialise();
-
-  // Create a task
-  const TASK_ID = await kanbn.createTask({ name: TASK_NAME }, 'Done');
-
-  // Verify that the task has a completed date that matches the created date
-  const task = await kanbn.getTask(TASK_ID);
-  assert.equal(task.metadata.completed, task.metadata.created);
 });

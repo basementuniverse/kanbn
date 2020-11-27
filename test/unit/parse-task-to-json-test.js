@@ -86,6 +86,11 @@ const TEST_RELATION_4_JSON = {
   task: 'test-task-1',
   type: 'relation-type'
 };
+const TEST_RELATION_5 = '[relation type with spaces test-task-1](test-task-1.md)';
+const TEST_RELATION_5_JSON = {
+  task: 'test-task-1',
+  type: 'relation type with spaces'
+};
 
 // Invalid case 1: data is null
 const INVALID_1 = {
@@ -318,6 +323,7 @@ ${TEST_DESCRIPTION_2}
 - ${TEST_RELATION_2}
 - ${TEST_RELATION_3}
 - ${TEST_RELATION_4}
+- ${TEST_RELATION_5}
 `,
   json: {
     name: TEST_NAME,
@@ -328,7 +334,8 @@ ${TEST_DESCRIPTION_2}
       TEST_RELATION_1_JSON,
       TEST_RELATION_2_JSON,
       TEST_RELATION_3_JSON,
-      TEST_RELATION_4_JSON
+      TEST_RELATION_4_JSON,
+      TEST_RELATION_5_JSON
     ]
   }
 };
@@ -358,6 +365,7 @@ ${TEST_METADATA}
 - ${TEST_RELATION_2}
 - ${TEST_RELATION_3}
 - ${TEST_RELATION_4}
+- ${TEST_RELATION_5}
 
 ${TEST_DESCRIPTION_3}
 `,
@@ -376,7 +384,8 @@ ${TEST_DESCRIPTION_3}`,
       TEST_RELATION_1_JSON,
       TEST_RELATION_2_JSON,
       TEST_RELATION_3_JSON,
-      TEST_RELATION_4_JSON
+      TEST_RELATION_4_JSON,
+      TEST_RELATION_5_JSON
     ]
   }
 };
@@ -405,13 +414,13 @@ const validCases = [
 ];
 
 QUnit.test('Test task to json conversion with valid markdown', assert => {
-  validCases.forEach(validCase => {
-    assert.deepEqual(parseTask.md2json(validCase.md), validCase.json);
+  validCases.forEach((validCase, i) => {
+    assert.deepEqual(parseTask.md2json(validCase.md), validCase.json, `Failed on valid case ${i + 1}`);
   });
 });
 
 QUnit.test('Test task to json conversion with invalid markdown', assert => {
-  invalidCases.forEach(invalidCase => {
-    assert.throws(() => { parseTask.md2json(invalidCase.md); }, invalidCase.error);
+  invalidCases.forEach((invalidCase, i) => {
+    assert.throws(() => { parseTask.md2json(invalidCase.md); }, invalidCase.error, `Failed on invalid case ${i + 1}`);
   });
 });

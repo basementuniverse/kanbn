@@ -246,13 +246,13 @@ const validCases = [
 ];
 
 QUnit.test('Test index to json conversion with valid markdown', assert => {
-  validCases.forEach(validCase => {
-    assert.deepEqual(parseIndex.md2json(validCase.md), validCase.json);
+  validCases.forEach((validCase, i) => {
+    assert.deepEqual(parseIndex.md2json(validCase.md), validCase.json, `Failed on valid case ${i + 1}`);
   });
 });
 
 QUnit.test('Test index to json conversion with invalid markdown', assert => {
-  invalidCases.forEach(invalidCase => {
-    assert.throws(() => { parseIndex.md2json(invalidCase.md); }, invalidCase.error);
+  invalidCases.forEach((invalidCase, i) => {
+    assert.throws(() => { parseIndex.md2json(invalidCase.md); }, invalidCase.error, `Failed on invalid case ${i + 1}`);
   });
 });
