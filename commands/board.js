@@ -1,8 +1,6 @@
 const kanbn = require('../lib/main');
 const utility = require('../lib/utility');
-const board = require('./board');
-const Spinner = require('cli-spinner').Spinner;
-const term = require('terminal-kit').terminal;
+const board = require('../app/board');
 
 module.exports = async args => {
 
@@ -26,24 +24,6 @@ module.exports = async args => {
     return;
   }
 
-  // Initialise task cache
-  let taskCache = {};
-
-  // Initialise terminal interface
-  term.grabInput();
-  term.fullscreen();
-
-  // Handle input
-  term.on('key', function(key ,matches ,data) {
-    // console.log("'key' event:", key);
-
-    // Detect CTRL-C and exit
-    if (key === 'CTRL_C') {
-      term.fullscreen(false);
-      process.exit();
-    }
-  });
-
-  // Show kanbn board
+  // Show the board
   board(index);
 };
