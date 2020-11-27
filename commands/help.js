@@ -1,7 +1,7 @@
 const utility = require('../lib/utility');
 
 const menus = {
-  main: `
+  help: `
 Usage:
   {b}kanbn{b} {d}.........{d} Open interactive kanbn board
   {b}kanbn <command> [options]{b}
@@ -10,13 +10,15 @@ Where {b}<command>{b} is one of:
   {b}help{b} {d}..........{d} Show help menu
   {b}version{b} {d}.......{d} Show package version
   {b}init{b} {d}..........{d} Initialise kanbn board
+  {b}board{b} {d}.........{d} Show the kanbn board
   {b}add{b} {d}...........{d} Add a kanbn task
   {b}edit{b} {d}..........{d} Edit a kanbn task
   {b}rename{b} {d}........{d} Rename a kanbn task
-  {b}remove{b} {d}........{d} Remove a kanbn task
   {b}move{b} {d}..........{d} Move a kanbn task to another column
+  {b}remove{b} {d}........{d} Remove a kanbn task
   {b}find{b} {d}..........{d} Search for kanbn tasks
   {b}status{b} {d}........{d} Get project and task statistics
+  {b}sort{b} {d}..........{d} Sort a column in the index
   {b}validate{b} {d}......{d} Validate index and task files
   {b}cache{b} {d}.........{d} Update the cache file
   {b}nuclear{b} {d}.......{d} Remove the kanbn board and all tasks
@@ -60,6 +62,13 @@ Options:
   {b}kanbn init --column "column"{b}
   {b}kanbn init -c "column"{b}
     Initialise a kanbn board and add the specified column. This option can be repeated to add multiple columns.
+`,
+
+  board: `
+{b}kanbn board{b}
+{b}kanbn b{b}
+
+Show the kanbn board.
 `,
 
   add: `
@@ -188,21 +197,6 @@ Options:
     Rename the task with the specified name. This option is required if not renaming a task interactively.
 `,
 
-  remove: `
-{b}kanbn remove "task-id"{b}
-{b}kanbn rm "task-id"{b}
-
-Remove an existing task.
-
-Options:
-  {b}kanbn remove "task-id" --index{b}
-    Only remove the task from the index. The task file will not be deleted.
-
-  {b}kanbn remove "task-id" --force{b}
-  {b}kanbn remove "task-id" -f{b}
-    Force remove the task without asking for confirmation.
-`,
-
   move: `
 {b}kanbn move "task-id"{b}
 {b}kanbn mv "task-id"{b}
@@ -217,6 +211,21 @@ Options:
   {b}kanbn move "task-id" --column "column"{b}
   {b}kanbn move "task-id" -c "column"{b}
     Move the task to this column in the index. This option is required if not moving a task interactively.
+`,
+
+  remove: `
+{b}kanbn remove "task-id"{b}
+{b}kanbn rm "task-id"{b}
+
+Remove an existing task.
+
+Options:
+  {b}kanbn remove "task-id" --index{b}
+    Only remove the task from the index. The task file will not be deleted.
+
+  {b}kanbn remove "task-id" --force{b}
+  {b}kanbn remove "task-id" -f{b}
+    Force remove the task without asking for confirmation.
 `,
 
   find: `
@@ -302,6 +311,12 @@ Options:
     Show a list of untracked task filenames.
 `,
 
+  sort: `
+{b}kanbn sort{b}
+
+// TODO finish sort command help documentation
+`,
+
   validate: `
 {b}kanbn validate{b}
 
@@ -332,5 +347,5 @@ module.exports = args => {
     ? args._[1]
     : args._[0];
 
-  console.log(utility.replaceTags(menus[subCommand] || menus.main).trim());
+  console.log(utility.replaceTags(menus[subCommand] || menus.help).trim());
 };
