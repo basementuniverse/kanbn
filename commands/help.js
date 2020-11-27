@@ -284,7 +284,9 @@ Options:
 {b}kanbn status{b}
 {b}kanbn s{b}
 
-Show status information for the current project. // TODO status help documentation needs more information
+Show status information for the current project.
+
+// TODO finish status command help documentation
 
 Options:
   {b}kanbn status --quiet{b}
@@ -294,6 +296,10 @@ Options:
   {b}kanbn status --json{b}
   {b}kanbn status -j{b}
     Output status information in JSON format.
+
+  {b}kanbn status --untracked{b}
+  {b}kanbn status -u{b}
+    Show a list of untracked task filenames.
 `,
 
   validate: `

@@ -84,7 +84,7 @@ module.exports = async args => {
   }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    console.error(utility.replaceTags('No columns defined in the index\nTry editing {b}index.md{b}'));
+    console.error(utility.replaceTags('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}'));
     return;
   }
 
