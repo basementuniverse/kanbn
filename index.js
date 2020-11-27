@@ -13,7 +13,8 @@ module.exports = async () => {
       'force',
       'index',
       'quiet',
-      'json'
+      'json',
+      'descending'
     ],
     string: [
       'name',
@@ -22,10 +23,13 @@ module.exports = async () => {
       'due',
       'sub-task',
       'remove-sub-task',
+      'count-sub-tasks',
       'tag',
       'remove-tag',
+      'count-tags',
       'relation',
       'remove-relation',
+      'count-relations',
       'created',
       'modified',
       'completed'
@@ -83,11 +87,17 @@ module.exports = async () => {
   if (args.cache) {
     command = 'cache';
   }
-  if (args.nuclear) {
-    command = 'nuclear';
+  if (args.sort) {
+    command = 'sort';
+  }
+  if (args.board || command === 'b') {
+    command = 'board';
   }
   if (args.version || command === 'v') {
     command = 'version';
+  }
+  if (args.nuclear) {
+    command = 'nuclear';
   }
   if (args.help || command === 'h') {
     command = 'help';
@@ -130,6 +140,12 @@ module.exports = async () => {
       break;
     case 'cache':
       await require('./commands/cache')(args);
+      break;
+    case 'sort':
+      await require('./commands/sort')(args);
+      break;
+    case 'board':
+      await require('./commands/board')(args);
       break;
     case 'nuclear':
       await require('./commands/nuclear')(args);
