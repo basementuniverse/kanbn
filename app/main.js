@@ -26,15 +26,13 @@ module.exports = async args => {
     return;
   }
 
-  // Initialise task cache
-  let taskCache = {};
-
   // Initialise terminal interface
   term.grabInput();
   term.fullscreen();
+  board.initialise(index);
 
   // Handle input
-  term.on('key', function(key ,matches ,data) {
+  term.on('key', (key, matches, data) => {
     // console.log("'key' event:", key);
 
     // Detect CTRL-C and exit
@@ -44,6 +42,11 @@ module.exports = async args => {
     }
   });
 
+  // Handle resize
+  term.on('resize', (width, height) => {
+    console.log(`${width}, ${height}`);
+  });
+
   // Show kanbn board
-  board(index);
+  board.show(index);
 };

@@ -25,5 +25,5 @@ module.exports = async args => {
   }
 
   // Show the board
-  board(index);
+  board.show(index);
 };
