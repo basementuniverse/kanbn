@@ -30,7 +30,7 @@ const INVALID_3 = {
 // Invalid case 4: data is missing a name
 const INVALID_4 = {
   md: 'test',
-  error: /data is missing a title/
+  error: /data is missing a name heading/
 };
 
 // Invalid case 5: options can't be parsed as an object
@@ -87,7 +87,7 @@ ${TEST_DESCRIPTION}
   }
 };
 
-// Valid case 3: data contains a name, description and valid options
+// Valid case 3: data contains a name, description and options inside a code block
 const VALID_3 = {
   md: `
 # ${TEST_NAME}
@@ -110,7 +110,7 @@ validOptions: test
   }
 };
 
-// Valid case 4: data contains a name and valid options inside a code block with language annotation
+// Valid case 4: data contains a name and options inside a code block with language annotation
 const VALID_4 = {
   md: `
 # ${TEST_NAME}
@@ -131,7 +131,7 @@ validOptions: test
   }
 };
 
-// Valid case 5: data contains a name, description and valid options not inside a code block
+// Valid case 5: data contains a name, description and options not inside a code block
 const VALID_5 = {
   md: `
 # ${TEST_NAME}
@@ -206,7 +206,7 @@ ${TEST_DESCRIPTION}
 
 ## ${TEST_COLUMN_2}
 - [${TEST_TASK_1}](${TEST_TASK_1}.md)
-- [${TEST_TASK_2}](${TEST_TASK_2}.md)
+- ${TEST_TASK_2}
 `,
   json: {
     name: TEST_NAME,
