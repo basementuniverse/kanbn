@@ -17,6 +17,7 @@ module.exports = async () => {
       'descending'
     ],
     string: [
+      'id',
       'name',
       'description',
       'column',
@@ -84,9 +85,6 @@ module.exports = async () => {
   if (args.validate) {
     command = 'validate';
   }
-  if (args.cache) {
-    command = 'cache';
-  }
   if (args.sort) {
     command = 'sort';
   }
@@ -137,9 +135,6 @@ module.exports = async () => {
       break;
     case 'validate':
       await require('./commands/validate')(args);
-      break;
-    case 'cache':
-      await require('./commands/cache')(args);
       break;
     case 'sort':
       await require('./commands/sort')(args);

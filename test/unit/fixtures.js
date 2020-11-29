@@ -1,8 +1,8 @@
 const mockFileSystem = require('mock-fs');
 const faker = require('faker');
-const paramCase = require('param-case').paramCase;
-const parseIndex = require('../../lib/parse-index.js');
-const parseTask = require('../../lib/parse-task.js');
+const parseIndex = require('../../lib/parse-index');
+const parseTask = require('../../lib/parse-task');
+const utility = require('../../lib/utility');
 
 function generateTask(i) {
   const COUNT_TAGS = faker.random.number(5);
@@ -46,7 +46,7 @@ module.exports = (options = {}) => {
 
   // Generate tasks
   const tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
-  const taskIds = tasks.map(i => paramCase(i.name));
+  const taskIds = tasks.map(i => utility.getTaskId(i.name));
   tasks.forEach(i => addRelations(i, taskIds));
 
   // Generate and populate columns
@@ -71,7 +71,7 @@ module.exports = (options = {}) => {
   mockFileSystem({
     '.kanbn': {
       'index.md': parseIndex.json2md(index),
-      'tasks': Object.fromEntries(tasks.map(i => [`${paramCase(i.name)}.md`, parseTask.json2md(i)]))
+      'tasks': Object.fromEntries(tasks.map(i => [`${utility.getTaskId(i.name)}.md`, parseTask.json2md(i)]))
     }
   });
 

@@ -14,11 +14,11 @@ async function interactive(taskData) {
       name: 'name',
       message: 'Task name:',
       default: taskData.name || '',
-      validate: async function (value) {
-        if ((/.+/).test(value)) {
-          return true;
+      validate: async value => {
+        if (!value) {
+          return 'Task name cannot be empty';
         }
-        return 'Task name cannot be empty';
+        return true;
       }
     }
   ]);
@@ -65,7 +65,7 @@ module.exports = async args => {
   // Get the task that we're renaming
   const taskId = args._[1];
   if (!taskId) {
-    console.error(utility.replaceTags('No task id specified. Try running {b}kanbn rename "task id"{b}'));
+    console.error(utility.replaceTags('No task id specified\nTry running {b}kanbn rename "task id"{b}'));
     return;
   }
 
@@ -88,7 +88,7 @@ module.exports = async args => {
 
   // Get new task name from arguments
   if (args.name) {
-    taskData.name = args.name;
+    taskData.name = utility.argToString(args.name);
   }
 
   // Rename task interactively

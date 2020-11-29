@@ -23,11 +23,11 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
       name: 'name',
       message: 'Task name:',
       default: taskData.name || '',
-      validate: async function (value) {
-        if ((/.+/).test(value)) {
-          return true;
+      validate: async value => {
+        if (!value) {
+          return 'Task name cannot be empty';
         }
-        return 'Task name cannot be empty';
+        return true;
       }
     },
     {
@@ -76,10 +76,10 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
           name: 'text',
           message: 'Sub-task text:',
           validate: value => {
-            if ((/.+/).test(value)) {
-              return true;
+            if (!value) {
+              return 'Sub-task text cannot be empty';
             }
-            return 'Sub-task text cannot be empty';
+            return true;
           }
         },
         {
@@ -102,10 +102,10 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
           name: 'name',
           message: 'Tag name:',
           validate: value => {
-            if ((/.+/).test(value)) {
-              return true;
+            if (!value) {
+              return 'Tag name cannot be empty';
             }
-            return 'Tag name cannot be empty';
+            return true;
           }
         }
       ]
@@ -140,6 +140,12 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
   ]);
 }
 
+/**
+ * Add untracked tasks interactively
+ * @param {string[]} untrackedTasks
+ * @param {string} columnName
+ * @param {string[]} columnNames
+ */
 async function interactiveAddUntrackedTasks(untrackedTasks, columnName, columnNames) {
   return await inquirer.prompt([
     {
@@ -228,11 +234,11 @@ module.exports = async args => {
   // Get column name if specified, otherwise default to the first available column
   let columnName = columnNames[0];
   if (args.column) {
-    if (columnNames.indexOf(args.column) === -1) {
-      console.log(`Column "${args.column}" doesn't exist`);
+    columnName = utility.argToString(args.column);
+    if (columnNames.indexOf(columnName) === -1) {
+      console.log(`Column "${columnName}" doesn't exist`);
       return;
     }
-    columnName = args.column;
   }
 
   // Add untracked file(s)
@@ -284,17 +290,17 @@ module.exports = async args => {
   // Get task settings from arguments
   // Name
   if (args.name) {
-    taskData.name = args.name;
+    taskData.name = utility.argToString(args.name);
   }
 
   // Description
   if (args.description) {
-    taskData.description = args.description;
+    taskData.description = utility.argToString(args.description);
   }
 
   // Due date
   if (args.due) {
-    taskData.metadata.due = chrono.parseDate(args.due);
+    taskData.metadata.due = chrono.parseDate(utility.argToString(args.due));
     if (taskData.metadata.due === null) {
       console.log('Unable to parse due date');
       return;

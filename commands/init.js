@@ -19,10 +19,10 @@ async function interactive(options, initialised) {
       message: 'Project name:',
       default: options.name || '',
       validate: value => {
-        if ((/.+/).test(value)) {
-          return true;
+        if (!value) {
+          return 'Project name cannot be empty';
         }
-        return 'Project name cannot be empty';
+        return true;
       }
     },
     {
@@ -108,12 +108,12 @@ module.exports = async args => {
   // Check for arguments and override the defaults if present
   // Project name
   if (args.name) {
-    options.name = args.name;
+    options.name = utility.argToString(args.name);
   }
 
   // Project description
   if (args.description) {
-    options.description = args.description;
+    options.description = utility.argToString(args.description);
   }
 
   // Columns

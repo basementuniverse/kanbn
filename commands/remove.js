@@ -35,7 +35,7 @@ module.exports = async args => {
   // Get the task that we're removing
   const taskId = args._[1];
   if (!taskId) {
-    console.error(utility.replaceTags('No task id specified. Try running {b}kanbn remove "task id"{b}'));
+    console.error(utility.replaceTags('No task id specified\nTry running {b}kanbn remove "task id"{b}'));
     return;
   }
 

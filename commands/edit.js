@@ -28,11 +28,11 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       name: 'name',
       message: 'Task name:',
       default: taskData.name || '',
-      validate: async function (value) {
-        if ((/.+/).test(value)) {
-          return true;
+      validate: async value => {
+        if (!value) {
+          return 'Task name cannot be empty';
         }
-        return 'Task name cannot be empty';
+        return true;
       }
     },
     {
@@ -107,10 +107,10 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
           name: 'text',
           message: 'Sub-task text:',
           validate: value => {
-            if ((/.+/).test(value)) {
-              return true;
+            if (!value) {
+              return 'Sub-task text cannot be empty';
             }
-            return 'Sub-task text cannot be empty';
+            return true;
           }
         },
         {
@@ -180,10 +180,10 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
           name: 'name',
           message: 'Tag name:',
           validate: value => {
-            if ((/.+/).test(value)) {
-              return true;
+            if (!value) {
+              return 'Tag name cannot be empty';
             }
-            return 'Tag name cannot be empty';
+            return true;
           }
         }
       ]
@@ -318,7 +318,7 @@ module.exports = async args => {
   // Get the task that we're editing
   const taskId = args._[1];
   if (!taskId) {
-    console.error(utility.replaceTags('No task id specified. Try running {b}kanbn edit "task id"{b}'));
+    console.error(utility.replaceTags('No task id specified\nTry running {b}kanbn edit "task id"{b}'));
     return;
   }
 
@@ -356,11 +356,11 @@ module.exports = async args => {
   let currentColumnName = await kanbn.findTaskColumn(taskId);
   let columnName = currentColumnName;
   if (args.column) {
-    if (columnNames.indexOf(args.column) === -1) {
-      console.log(`Column "${args.column}" doesn't exist`);
+    columnName = utility.argToString(args.column);
+    if (columnNames.indexOf(columnName) === -1) {
+      console.log(`Column "${columnName}" doesn't exist`);
       return;
     }
-    columnName = args.column;
   }
 
   // Get a list of existing task ids
@@ -369,12 +369,12 @@ module.exports = async args => {
   // Get task settings from arguments
   // Name
   if (args.name) {
-    taskData.name = args.name;
+    taskData.name = utility.argToString(args.name);
   }
 
   // Description
   if (args.description) {
-    taskData.description = args.description;
+    taskData.description = utility.argToString(args.description);
   }
 
   // Due date
@@ -382,7 +382,7 @@ module.exports = async args => {
     if (!('metadata' in taskData)) {
       taskData.metadata = {};
     }
-    taskData.metadata.due = chrono.parseDate(args.due);
+    taskData.metadata.due = chrono.parseDate(utility.argToString(args.due));
     if (taskData.metadata.due === null) {
       console.log('Unable to parse due date');
       return;

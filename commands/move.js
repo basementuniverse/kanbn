@@ -62,7 +62,7 @@ module.exports = async args => {
   // Get the task that we're moving
   const taskId = args._[1];
   if (!taskId) {
-    console.error(utility.replaceTags('No task id specified. Try running {b}kanbn move "task id"{b}'));
+    console.error(utility.replaceTags('No task id specified\nTry running {b}kanbn move "task id"{b}'));
     return;
   }
 
@@ -92,11 +92,11 @@ module.exports = async args => {
   let currentColumnName = await kanbn.findTaskColumn(taskId);
   let columnName = currentColumnName;
   if (args.column) {
-    if (columnNames.indexOf(args.column) === -1) {
-      console.log(`Column "${args.column}" doesn't exist`);
+    columnName = utility.argToString(args.column);
+    if (columnNames.indexOf(columnName) === -1) {
+      console.log(`Column "${columnName}" doesn't exist`);
       return;
     }
-    columnName = args.column;
   }
 
   // Move task interactively

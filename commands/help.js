@@ -20,7 +20,6 @@ Where {b}<command>{b} is one of:
   {b}status{b} {d}........{d} Get project and task statistics
   {b}sort{b} {d}..........{d} Sort a column in the index
   {b}validate{b} {d}......{d} Validate index and task files
-  {b}cache{b} {d}.........{d} Update the cache file
   {b}nuclear{b} {d}.......{d} Remove the kanbn board and all tasks
 
 For more help with commands, try:
@@ -280,13 +279,25 @@ Options:
   {b}kanbn find -s "search term"{b}
     Find tasks that have sub-tasks matching the search term.
 
+  {b}kanbn find --count-sub-tasks{b}
+    Find tasks that have a specific number of sub-tasks.
+    If multiple counts are specified, find tasks with a number of sub-tasks between the lowest and highest inputs.
+
   {b}kanbn find --tag "search term"{b}
   {b}kanbn find -t "search term"{b}
     Find tasks that have tags matching the search term.
 
+  {b}kanbn find --count-tags{b}
+    Find tasks that have a specific number of tags.
+    If multiple counts are specified, find tasks with a number of tags between the lowest and highest inputs.
+
   {b}kanbn find --relation "search term"{b}
   {b}kanbn find -r "search term"{b}
     Find tasks that have relations matching the search term.
+
+  {b}kanbn find --count-relations{b}
+    Find tasks that have a specific number of relations.
+    If multiple counts are specified, find tasks with a number of relations between the lowest and highest inputs.
 `,
 
   status: `
@@ -321,12 +332,6 @@ Options:
 {b}kanbn validate{b}
 
 Validate kanbn index file and all task files, and report any formatting errors.
-`,
-
-  cache: `
-{b}kanbn cache{b}
-
-Update the cache file if one is configured in the index options.
 `,
 
   nuclear: `
