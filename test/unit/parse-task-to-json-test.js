@@ -2,6 +2,7 @@ const parseTask = require('../../lib/parse-task.js');
 
 QUnit.module('Task markdown to JSON conversion');
 
+const TEST_ID = 'test-name';
 const TEST_NAME = 'Test Name';
 const TEST_DESCRIPTION_1 = 'Test description...';
 const TEST_DESCRIPTION_2 = `This is a *test* description
@@ -160,6 +161,7 @@ const VALID_1 = {
 # ${TEST_NAME}
 `,
   json: {
+    id: TEST_ID,
     name: TEST_NAME,
     description: '',
     metadata: {},
@@ -176,6 +178,7 @@ const VALID_2 = {
 ${TEST_DESCRIPTION_1}
 `,
   json: {
+    id: TEST_ID,
     name: TEST_NAME,
     description: TEST_DESCRIPTION_1,
     metadata: {},
@@ -192,6 +195,7 @@ const VALID_3 = {
 ${TEST_DESCRIPTION_2}
 `,
   json: {
+    id: TEST_ID,
     name: TEST_NAME,
     description: TEST_DESCRIPTION_2,
     metadata: {},
@@ -214,6 +218,7 @@ ${TEST_METADATA}
 \`\`\`
 `,
   json: {
+    id: TEST_ID,
     name: TEST_NAME,
     description: TEST_DESCRIPTION_2,
     metadata: TEST_METADATA_JSON,
@@ -234,6 +239,7 @@ ${TEST_METADATA}
 \`\`\`
 `,
   json: {
+    id: TEST_ID,
     name: TEST_NAME,
     description: '',
     metadata: TEST_METADATA_JSON,
@@ -254,6 +260,7 @@ ${TEST_METADATA}
 \`\`\`
 `,
   json: {
+    id: TEST_ID,
     name: TEST_NAME,
     description: '',
     metadata: TEST_METADATA_JSON,
@@ -272,6 +279,7 @@ const VALID_7 = {
 ${TEST_METADATA}
 `,
   json: {
+    id: TEST_ID,
     name: TEST_NAME,
     description: '',
     metadata: TEST_METADATA_JSON,
@@ -298,6 +306,7 @@ ${TEST_METADATA}
 - ${TEST_SUBTASK_3}
 `,
   json: {
+    id: TEST_ID,
     name: TEST_NAME,
     description: '',
     metadata: TEST_METADATA_JSON,
@@ -326,6 +335,7 @@ ${TEST_DESCRIPTION_2}
 - ${TEST_RELATION_5}
 `,
   json: {
+    id: TEST_ID,
     name: TEST_NAME,
     description: TEST_DESCRIPTION_2,
     metadata: {},
@@ -370,6 +380,7 @@ ${TEST_METADATA}
 ${TEST_DESCRIPTION_3}
 `,
   json: {
+    id: TEST_ID,
     name: TEST_NAME,
     description: `${TEST_DESCRIPTION_2}
 
