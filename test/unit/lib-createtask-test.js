@@ -136,5 +136,19 @@ QUnit.test('Create task in a completed column', async assert => {
 
   // Verify that the task has a completed date that matches the created date
   const task = await kanbn.getTask(TASK_ID);
-  assert.equal(task.metadata.completed, task.metadata.created);
+  assert.equal(task.metadata.completed.toISOString(), task.metadata.created.toISOString());
+});
+
+QUnit.test('Create task in a started column', async assert => {
+  const TASK_NAME = 'Test name';
+
+  // Initialise kanbn
+  await kanbn.initialise();
+
+  // Create a task
+  const TASK_ID = await kanbn.createTask({ name: TASK_NAME }, 'In Progress');
+
+  // Verify that the task has a started date that matches the created date
+  const task = await kanbn.getTask(TASK_ID);
+  assert.equal(task.metadata.started.toISOString(), task.metadata.created.toISOString());
 });

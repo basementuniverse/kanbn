@@ -9,7 +9,7 @@ const Spinner = require('cli-spinner').Spinner;
  * @param {boolean} removeFile
  */
 function removeTask(taskId, removeFile) {
-  const spinner = new Spinner('Renaming task...');
+  const spinner = new Spinner('Deleting task...');
   spinner.setSpinnerString(18);
   spinner.start();
   kanbn

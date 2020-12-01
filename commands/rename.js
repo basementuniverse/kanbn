@@ -34,7 +34,7 @@ function renameTask(taskId, newTaskName, currentTaskName) {
 
   // Check if the new name is the same as the current name
   if (newTaskName === currentTaskName) {
-    console.log(`Task "${taskId}" already has the name "${newTaskName}"`);
+    console.error(`Task "${taskId}" already has the name "${newTaskName}"`);
     return;
   }
 

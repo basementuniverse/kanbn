@@ -31,7 +31,7 @@ function moveTask(taskId, columnName, currentColumnName) {
 
   // Check if the target column is the same as the current column
   if (columnName === currentColumnName) {
-    console.log(`Task "${taskId}" is already in column "${columnName}"`);
+    console.error(`Task "${taskId}" is already in column "${columnName}"`);
     return;
   }
 
@@ -94,7 +94,7 @@ module.exports = async args => {
   if (args.column) {
     columnName = utility.argToString(args.column);
     if (columnNames.indexOf(columnName) === -1) {
-      console.log(`Column "${columnName}" doesn't exist`);
+      console.error(`Column "${columnName}" doesn't exist`);
       return;
     }
   }

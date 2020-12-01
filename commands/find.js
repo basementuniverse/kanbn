@@ -146,7 +146,7 @@ function findTasks(filters, quiet) {
         relations: result.relations
       }));
       Promise.all(processedResults).then(outputResults => console.log(
-        outputResults.map(outputResult => yaml.stringify(removeEmptyProperties(outputResult))).join('\n---\n')
+        outputResults.map(outputResult => yaml.stringify(removeEmptyProperties(outputResult), 4, 2)).join('\n---\n')
       ));
     }
   })
@@ -172,6 +172,56 @@ function addFilterValue(filters, filterName, filterValue) {
   } else {
     filters[filterName] = filterValue;
   }
+}
+
+/**
+ * Convert a filter or array of filters to numeric values
+ * @param {object} filters The current filter object
+ * @param {string} filterName The property name for the filter
+ * @return {boolean} True if all values could be converted
+ */
+function convertNumericFilters(filters, filterName) {
+  if (Array.isArray(filters[filterName])) {
+    for (let i = 0; i < filters[filterName].length; i++) {
+      const numericValue = parseInt(filters[filterName][i]);
+      if (isNaN(numericValue)) {
+        return false;
+      }
+      filters[filterName][i] = numericValue;
+    }
+  } else {
+    const numericValue = parseInt(filters[filterName]);
+    if (isNaN(numericValue)) {
+      return false;
+    }
+    filters[filterName] = numericValue;
+  }
+  return true;
+}
+
+/**
+ * Convert a filter or array of filters to date values
+ * @param {object} filters The current filter object
+ * @param {string} filterName The property name for the filter
+ * @return {boolean} True if all values could be converted
+ */
+function convertDateFilters(filters, filterName) {
+  if (Array.isArray(filters[filterName])) {
+    for (let i = 0; i < filters[filterName].length; i++) {
+      const dateValue = chrono.parseDate(filters[filterName][i]);
+      if (dateValue === null) {
+        return false;
+      }
+      filters[filterName][i] = dateValue;
+    }
+  } else {
+    const dateValue = chrono.parseDate(filters[filterName]);
+    if (dateValue === null) {
+      return false;
+    }
+    filters[filterName] = dateValue;
+  }
+  return true;
 }
 
 const filterPropertyNames = {
@@ -218,6 +268,52 @@ module.exports = async args => {
   for (let filterProperty of Object.values(filterPropertyNames)) {
     if (args[filterProperty]) {
       filters[filterProperty] = args[filterProperty];
+    }
+  }
+
+  // Check and convert numeric filters
+  if ('count-sub-tasks' in filters) {
+    if (!convertNumericFilters(filters, 'count-sub-tasks')) {
+      console.error('Count sub-tasks filter value must be numeric');
+      return;
+    }
+  }
+  if ('count-tags' in filters) {
+    if (!convertNumericFilters(filters, 'count-tags')) {
+      console.error('Count tags filter value must be numeric');
+      return;
+    }
+  }
+  if ('count-relations' in filters) {
+    if (!convertNumericFilters(filters, 'count-relations')) {
+      console.error('Count relations filter value must be numeric');
+      return;
+    }
+  }
+
+  // Check date filters
+  if ('created' in filters) {
+    if (!convertDateFilters(filters, 'created')) {
+      console.error('Unable to parse created date');
+      return;
+    }
+  }
+  if ('updated' in filters) {
+    if (!convertDateFilters(filters, 'updated')) {
+      console.error('Unable to parse updated date');
+      return;
+    }
+  }
+  if ('completed' in filters) {
+    if (!convertDateFilters(filters, 'completed')) {
+      console.error('Unable to parse completed date');
+      return;
+    }
+  }
+  if ('due' in filters) {
+    if (!convertDateFilters(filters, 'due')) {
+      console.error('Unable to parse due date');
+      return;
     }
   }
 

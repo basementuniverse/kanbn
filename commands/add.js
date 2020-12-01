@@ -236,7 +236,7 @@ module.exports = async args => {
   if (args.column) {
     columnName = utility.argToString(args.column);
     if (columnNames.indexOf(columnName) === -1) {
-      console.log(`Column "${columnName}" doesn't exist`);
+      console.error(`Column "${columnName}" doesn't exist`);
       return;
     }
   }
@@ -302,7 +302,7 @@ module.exports = async args => {
   if (args.due) {
     taskData.metadata.due = chrono.parseDate(utility.argToString(args.due));
     if (taskData.metadata.due === null) {
-      console.log('Unable to parse due date');
+      console.error('Unable to parse due date');
       return;
     }
   }
@@ -348,7 +348,7 @@ module.exports = async args => {
     // Make sure each relation is an existing task
     for (let relation of relations) {
       if (taskIds.indexOf(relation.task) === -1) {
-        console.log(`Related task ${relation.task} doesn't exist`);
+        console.error(`Related task ${relation.task} doesn't exist`);
         return;
       }
     }

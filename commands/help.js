@@ -19,6 +19,7 @@ Where {b}<command>{b} is one of:
   {b}find{b} {d}..........{d} Search for kanbn tasks
   {b}status{b} {d}........{d} Get project and task statistics
   {b}sort{b} {d}..........{d} Sort a column in the index
+  {b}sprint{b} {d}........{d} Start a new sprint
   {b}validate{b} {d}......{d} Validate index and task files
   {b}nuclear{b} {d}.......{d} Remove the kanbn board and all tasks
 
@@ -264,6 +265,11 @@ Options:
     This option can be repeated - if multiple dates are specified, find tasks that were updated between the earliest and latest dates.
     The date can be in (almost) any format.
 
+  {b}kanbn find --started "date"{b}
+    Find tasks that have a started date that matches the specified date. The time part of the date will be ignored, unless searching between multiple dates.
+    This option can be repeated - if multiple dates are specified, find tasks that were started between the earliest and latest dates.
+    The date can be in (almost) any format.
+
   {b}kanbn find --completed "date"{b}
     Find tasks that have a completed date that matches the specified date. The time part of the date will be ignored, unless searching between multiple dates.
     This option can be repeated - if multiple dates are specified, find tasks that were completed between the earliest and latest dates.
@@ -279,7 +285,7 @@ Options:
   {b}kanbn find -s "search term"{b}
     Find tasks that have sub-tasks matching the search term.
 
-  {b}kanbn find --count-sub-tasks{b}
+  {b}kanbn find --count-sub-tasks N{b}
     Find tasks that have a specific number of sub-tasks.
     If multiple counts are specified, find tasks with a number of sub-tasks between the lowest and highest inputs.
 
@@ -287,7 +293,7 @@ Options:
   {b}kanbn find -t "search term"{b}
     Find tasks that have tags matching the search term.
 
-  {b}kanbn find --count-tags{b}
+  {b}kanbn find --count-tags N{b}
     Find tasks that have a specific number of tags.
     If multiple counts are specified, find tasks with a number of tags between the lowest and highest inputs.
 
@@ -295,7 +301,7 @@ Options:
   {b}kanbn find -r "search term"{b}
     Find tasks that have relations matching the search term.
 
-  {b}kanbn find --count-relations{b}
+  {b}kanbn find --count-relations N{b}
     Find tasks that have a specific number of relations.
     If multiple counts are specified, find tasks with a number of relations between the lowest and highest inputs.
 `,
@@ -306,12 +312,13 @@ Options:
 
 Show status information for the current project.
 
-// TODO finish status command help documentation
+// TODO add more detail to status command documentation
 
 Options:
   {b}kanbn status --quiet{b}
   {b}kanbn status -q{b}
-    Only show a count of tasks in each column, without loading and caching all tracked tasks.
+    Only show a count of tasks in each column, without loading all tracked tasks.
+    If used with the --untracked option, only show a list of untracked task filenames.
 
   {b}kanbn status --json{b}
   {b}kanbn status -j{b}
@@ -320,12 +327,44 @@ Options:
   {b}kanbn status --untracked{b}
   {b}kanbn status -u{b}
     Show a list of untracked task filenames.
+
+  {b}kanbn status --sprint N{b}
+  {b}kanbn status -p N{b}
+    Show sprint created/started/completed workload for a specific sprint.
+    This option will be ignored if the --quiet option is set or if no sprint options are defined in the index.
+
+  {b}kanbn status --date "date"{b}
+  {b}kanbn status -d "date"{b}
+    Show created/started/completed workload for a specific date. The time part of the date will be ignored, unless searching between multiple dates.
+    This option can be repeated - if multiple dates are specified, show created/started/completed workload for tasks created/started/completed between the earliest and latest dates.
+    The date can be in (almost) any format.
+    This option will be ignored if the --quiet or --sprint options are set.
 `,
 
   sort: `
 {b}kanbn sort{b}
 
 // TODO finish sort command help documentation
+`,
+
+  sprint: `
+{b}kanbn sprint{b}
+{b}kanbn sp{b}
+
+Start a new sprint.
+
+Options:
+  {b}kanbn sprint --interactive{b}
+  {b}kanbn sprint -i{b}
+    Start a new sprint interactively.
+
+  {b}kanbn sprint --name "name"{b}
+  {b}kanbn sprint -n "name"{b}
+    Start a new sprint with the specified name.
+
+  {b}kanbn sprint --description "description"{b}
+  {b}kanbn sprint -d "description"{b}
+    Start a new sprint with the specified description.
 `,
 
   validate: `

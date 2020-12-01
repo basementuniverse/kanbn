@@ -32,7 +32,7 @@ QUnit.test('Initialise with default settings', async assert => {
   // Check for default name & columns
   const index = await kanbn.getIndex();
   assert.equal(index.name, 'Project Name');
-  assert.deepEqual(Object.keys(index.columns), ['Backlog', 'Todo', 'In Progress', 'Done', 'Archive']);
+  assert.deepEqual(Object.keys(index.columns), ['Backlog', 'Todo', 'In Progress', 'Done']);
 });
 
 QUnit.test('Initialise with custom settings', async assert => {
@@ -113,7 +113,6 @@ QUnit.test('Reinitialise with additional settings', async assert => {
     'Todo',
     'In Progress',
     'Done',
-    'Archive',
     ...CUSTOM_COLUMNS
   ]);
 });

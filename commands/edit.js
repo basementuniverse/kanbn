@@ -358,7 +358,7 @@ module.exports = async args => {
   if (args.column) {
     columnName = utility.argToString(args.column);
     if (columnNames.indexOf(columnName) === -1) {
-      console.log(`Column "${columnName}" doesn't exist`);
+      console.error(`Column "${columnName}" doesn't exist`);
       return;
     }
   }
@@ -384,7 +384,7 @@ module.exports = async args => {
     }
     taskData.metadata.due = chrono.parseDate(utility.argToString(args.due));
     if (taskData.metadata.due === null) {
-      console.log('Unable to parse due date');
+      console.error('Unable to parse due date');
       return;
     }
   }
@@ -398,7 +398,7 @@ module.exports = async args => {
     // Check that the sub-tasks being removed currently exist
     for (let removedSubTask of removedSubTasks) {
       if (taskData.subTasks.find(subTask => subTask.text === removedSubTask.text) === undefined) {
-        console.log(`Sub-task "${removedSubTask.text}" doesn't exist`);
+        console.error(`Sub-task "${removedSubTask.text}" doesn't exist`);
         return;
       }
     }
@@ -442,14 +442,14 @@ module.exports = async args => {
 
     // Check that the task has metadata
     if (!('metadata' in taskData) || !('tags' in taskData.metadata) || !Array.isArray(taskData.metadata.tags)) {
-      console.log('Task has no tags to remove');
+      console.error('Task has no tags to remove');
       return;
     }
 
     // Check that the tags being removed currently exist
     for (let removedTag of removedTags) {
       if (taskData.metadata.tags.indexOf(removedTag) === -1) {
-        console.log(`Tag "${removedSubTask.text}" doesn't exist`);
+        console.error(`Tag "${removedSubTask.text}" doesn't exist`);
         return;
       }
     }
@@ -471,7 +471,7 @@ module.exports = async args => {
     // Check that the relations being removed currently exist
     for (let removedRelation of removedRelations) {
       if (taskData.relations.find(relation => relation.task === removedRelation.task) === undefined) {
-        console.log(`Relation "${removedRelation.task}" doesn't exist`);
+        console.error(`Relation "${removedRelation.task}" doesn't exist`);
         return;
       }
     }
