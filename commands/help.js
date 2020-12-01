@@ -312,8 +312,6 @@ Options:
 
 Show status information for the current project.
 
-// TODO add more detail to status command documentation
-
 Options:
   {b}kanbn status --quiet{b}
   {b}kanbn status -q{b}
@@ -328,9 +326,10 @@ Options:
   {b}kanbn status -u{b}
     Show a list of untracked task filenames.
 
-  {b}kanbn status --sprint N{b}
-  {b}kanbn status -p N{b}
-    Show sprint created/started/completed workload for a specific sprint.
+  {b}kanbn status --sprint N|"name"{b}
+  {b}kanbn status -p N|"name"{b}
+    Show sprint workload for a specific sprint.
+    The sprint can be selected by number or name.
     This option will be ignored if the --quiet option is set or if no sprint options are defined in the index.
 
   {b}kanbn status --date "date"{b}

@@ -44,9 +44,6 @@ async function interactiveSprint(name = null, description = null) {
  * @param {string} description
  */
 function startSprint(name, description) {
-  // console.log(name);
-  // console.log(description);
-  // return;
   const spinner = new Spinner('Starting sprint...');
   spinner.setSpinnerString(18);
   spinner.start();
