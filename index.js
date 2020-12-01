@@ -36,7 +36,8 @@ module.exports = async () => {
       'started',
       'completed',
       'sprint',
-      'date'
+      'date',
+      'workload'
     ],
     alias: {
       'version': ['v'],
@@ -54,7 +55,8 @@ module.exports = async () => {
       'sub-task': ['s'],
       'tag': ['t'],
       'relation': ['r'],
-      'sprint': ['p']
+      'sprint': ['p'],
+      'workload': ['w']
     }
   });
 
