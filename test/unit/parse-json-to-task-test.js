@@ -34,7 +34,6 @@ Even more data!
 ## Metadata
 
 \`\`\`yaml
-due: null
 tags:
   - tag1
   - tag2
@@ -61,7 +60,6 @@ This is a *task* description
 ## Metadata
 
 \`\`\`yaml
-due: null
 tags:
   - tag1
   - tag2
@@ -115,7 +113,6 @@ const validCases = [
         '\n' +
         'Even more data!',
       metadata: {
-        due: null,
         tags: [ 'tag1', 'tag2', 'tag3' ]
       },
       subTasks: [
@@ -135,7 +132,6 @@ const validCases = [
       name: 'Task Name',
       description: 'This is a *task* description',
       metadata: {
-        due: null,
         tags: [ 'tag1', 'tag2', 'tag3' ]
       },
       subTasks: [],

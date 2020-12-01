@@ -139,7 +139,7 @@ QUnit.test('Update a task', async assert => {
   // Verify that the task file was updated
   task = await kanbn.getTask('task-1');
   assert.equal(task.description, TEST_DESCRIPTION);
-  assert.equal(task.metadata.updated.substr(0, 9), currentDate.substr(0, 9));
+  assert.equal(task.metadata.updated.toISOString().substr(0, 9), currentDate.substr(0, 9));
   assert.deepEqual(task.metadata.tags, TEST_TAGS);
   assert.deepEqual(task.subTasks, [TEST_SUB_TASK]);
   assert.deepEqual(task.relations, [TEST_RELATION]);

@@ -38,14 +38,12 @@ Some more description text...
 
 Some more description text...`;
 const TEST_METADATA = `
-due: null
 tags:
   - tag1
   - tag2
   - tag3
 `;
 const TEST_METADATA_JSON = {
-  due: null,
   tags: [
     'tag1',
     'tag2',
@@ -128,7 +126,7 @@ ${TEST_DESCRIPTION_1}
 
 Invalid metadata
 `,
-  error: /metadata is not a valid object/
+  error: /instance is not of a type\(s\) object/
 };
 
 // Invalid case 6: sub-tasks doesn't contain a list
@@ -140,7 +138,7 @@ const INVALID_6 = {
 
 Invalid sub-tasks content
 `,
-  error: /Sub-tasks must contain a list/
+  error: /sub-tasks must contain a list/
 };
 
 // Invalid case 7: relations doesn't contain a list
@@ -152,7 +150,67 @@ const INVALID_7 = {
 
 Invalid relations content
 `,
-  error: /Relations must contain a list/
+  error: /relations must contain a list/
+};
+
+// Invalid case 8: metadata contains invalid created date
+const INVALID_8 = {
+  md: `
+# ${TEST_NAME}
+
+## Metadata
+
+created: test
+`,
+  error: /unable to parse created date/
+};
+
+// Invalid case 9: metadata contains invalid updated date
+const INVALID_9 = {
+  md: `
+# ${TEST_NAME}
+
+## Metadata
+
+updated: test
+`,
+  error: /unable to parse updated date/
+};
+
+// Invalid case 10: metadata contains invalid started date
+const INVALID_10 = {
+  md: `
+# ${TEST_NAME}
+
+## Metadata
+
+started: test
+`,
+  error: /unable to parse started date/
+};
+
+// Invalid case 11: metadata contains invalid completed date
+const INVALID_11 = {
+  md: `
+# ${TEST_NAME}
+
+## Metadata
+
+completed: test
+`,
+  error: /unable to parse completed date/
+};
+
+// Invalid case 12: metadata contains invalid due date
+const INVALID_12 = {
+  md: `
+# ${TEST_NAME}
+
+## Metadata
+
+due: test
+`,
+  error: /unable to parse due date/
 };
 
 // Valid case 1: data only contains name
@@ -409,6 +467,11 @@ const invalidCases = [
   INVALID_5,
   INVALID_6,
   INVALID_7,
+  INVALID_8,
+  INVALID_9,
+  INVALID_10,
+  INVALID_11,
+  INVALID_12
 ];
 
 const validCases = [

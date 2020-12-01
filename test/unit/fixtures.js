@@ -11,9 +11,9 @@ function generateTask(i) {
     name: `Task ${i + 1}`,
     description: faker.lorem.paragraph(),
     metadata: {
-      created: faker.date.past().toISOString(),
-      update: faker.date.past().toISOString(),
-      due: faker.date.future().toISOString(),
+      created: faker.date.past(),
+      update: faker.date.past(),
+      due: faker.date.future(),
       tags: new Array(COUNT_TAGS).fill(null).map(i => faker.lorem.word())
     },
     subTasks: generateSubTasks(),

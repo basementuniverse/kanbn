@@ -44,7 +44,7 @@ ${TEST_DESCRIPTION}
 
 Invalid options
 `,
-  error: /options is not a valid object/
+  error: /instance is not of a type\(s\) object/
 };
 
 // Invalid case 6: column doesn't contain a list
