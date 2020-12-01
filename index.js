@@ -33,7 +33,10 @@ module.exports = async () => {
       'count-relations',
       'created',
       'modified',
-      'completed'
+      'started',
+      'completed',
+      'sprint',
+      'date'
     ],
     alias: {
       'version': ['v'],
@@ -50,7 +53,8 @@ module.exports = async () => {
       'due': ['e'],
       'sub-task': ['s'],
       'tag': ['t'],
-      'relation': ['r']
+      'relation': ['r'],
+      'sprint': ['p']
     }
   });
 
@@ -87,6 +91,9 @@ module.exports = async () => {
   }
   if (args.sort) {
     command = 'sort';
+  }
+  if (args.sprint || command === 'sp') {
+    command = 'sprint';
   }
   if (args.board || command === 'b') {
     command = 'board';
@@ -138,6 +145,9 @@ module.exports = async () => {
       break;
     case 'sort':
       await require('./commands/sort')(args);
+      break;
+    case 'sprint':
+      await require('./commands/sprint')(args);
       break;
     case 'board':
       await require('./commands/board')(args);
