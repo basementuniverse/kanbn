@@ -4,6 +4,11 @@ const parseIndex = require('../../lib/parse-index');
 const parseTask = require('../../lib/parse-task');
 const utility = require('../../lib/utility');
 
+/**
+ * Generate a random task
+ * @param {number} i The task index
+ * @return {object} A random task object
+ */
 function generateTask(i) {
   const COUNT_TAGS = faker.random.number(5);
 
@@ -21,6 +26,10 @@ function generateTask(i) {
   };
 }
 
+/**
+ * Generate random sub-tasks
+ * @return {object[]} Random sub-tasks
+ */
 function generateSubTasks() {
   const COUNT_SUB_TASKS = faker.random.number(10);
 
@@ -30,7 +39,12 @@ function generateSubTasks() {
   }));
 }
 
-function addRelations(task, taskIds) {
+/**
+ * Generate random relations
+ * @param {} taskIds A list of existing task ids
+ * @return {object[]} Random relations
+ */
+function addRelations(taskIds) {
   const COUNT_RELATIONS = faker.random.number(4);
 
   const relationTypes = ['', 'blocks ', 'duplicates ', 'requires ', 'obsoletes '];
@@ -47,7 +61,7 @@ module.exports = (options = {}) => {
   // Generate tasks
   const tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
   const taskIds = tasks.map(i => utility.getTaskId(i.name));
-  tasks.forEach(i => addRelations(i, taskIds));
+  tasks.forEach(i => addRelations(taskIds));
 
   // Generate and populate columns
   const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((v, i) => `Column ${i + 1}`);

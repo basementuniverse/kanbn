@@ -5,10 +5,11 @@ const Spinner = require('cli-spinner').Spinner;
 
 /**
  * Start a new sprint interactively
- * @param {?string} name The sprint name
- * @param {?string} description The sprint description
+ * @param {?string} [name=null] The sprint name
+ * @param {?string} [description=null] The sprint description
+ * @return {Promise<any>}
  */
-async function interactiveSprint(name = null, description = null) {
+async function interactive(name = null, description = null) {
   return await inquirer.prompt([
     {
       type: 'input',
@@ -82,7 +83,7 @@ module.exports = async args => {
 
   // Start sprint interactively
   if (args.interactive) {
-    interactiveSprint(name, description)
+    interactive(name, description)
     .then(answers => {
       startSprint(answers.name, answers.description || '');
     })

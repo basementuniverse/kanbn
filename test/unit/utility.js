@@ -1,3 +1,9 @@
+/**
+ * Check if an async function throws an error
+ * @param {Function} block The async function to call
+ * @param {string|RegExp} expected The expected exception message
+ * @param {string} message A message to display if the test fails
+ */
 QUnit.assert.throwsAsync = async (block, expected, message) => {
   let actual, result = false;
   try {

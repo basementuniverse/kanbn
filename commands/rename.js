@@ -6,6 +6,7 @@ const Spinner = require('cli-spinner').Spinner;
 /**
  * Rename a task interactively
  * @param {object} taskData
+ * @return {Promise<any>}
  */
 async function interactive(taskData) {
   return await inquirer.prompt([

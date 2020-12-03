@@ -3,6 +3,9 @@ const utility = require('../lib/utility');
 const inquirer = require('inquirer');
 const Spinner = require('cli-spinner').Spinner;
 
+/**
+ * Nuke kanbn
+ */
 function nuclear() {
   const spinner = new Spinner('Removing kanbn...');
   spinner.setSpinnerString(18);

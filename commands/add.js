@@ -15,6 +15,7 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
  * @param {string[]} taskIds
  * @param {string} columnName
  * @param {string[]} columnNames
+ * @return {Promise<any>}
  */
 async function interactiveCreateTask(taskData, taskIds, columnName, columnNames) {
   return await inquirer.prompt([

@@ -5,11 +5,11 @@ const Spinner = require('cli-spinner').Spinner;
 
 /**
  * Move a task interactively
- * @param {object} taskData
  * @param {string} columnName
  * @param {string[]} columnNames
+ * @return {Promise<any>}
  */
-async function interactive(taskData, columnName, columnNames) {
+async function interactive(columnName, columnNames) {
   return await inquirer.prompt([
     {
       type: 'list',
@@ -101,7 +101,7 @@ module.exports = async args => {
 
   // Move task interactively
   if (args.interactive) {
-    interactive(taskData, columnName, columnNames)
+    interactive(columnName, columnNames)
     .then(answers => {
       moveTask(taskId, columnName, currentColumnName);
     })

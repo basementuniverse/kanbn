@@ -15,6 +15,7 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
  * @param {string[]} taskIds
  * @param {string} columnName
  * @param {string[]} columnNames
+ * @return {Promise<any>}
  */
 async function interactive(taskData, taskIds, columnName, columnNames) {
   const dueDateExists = (
@@ -555,8 +556,8 @@ module.exports = async args => {
 
       // Remove tags
       if ('removeTags' in answers && 'metadata' in taskData && 'tags' in taskData.metadata) {
-        for (editTag of answers.editTags) {
-          const i = taskData.metadata.tags.indexOf(editTag.name);
+        for (removeTag of answers.removeTags) {
+          const i = taskData.metadata.tags.indexOf(removeTag.name);
           if (i !== -1) {
             taskData.metadata.tags.splice(i, 1);
           }
@@ -565,7 +566,7 @@ module.exports = async args => {
 
       // Add tags
       if ('addTags' in answers && 'metadata' in taskData && 'tags' in taskData.metadata) {
-        taskData.metadata.tags.push(...answers.map(tag => tag.name));
+        taskData.metadata.tags.push(...answers.addTags.map(tag => tag.name));
       }
 
       // Edit or remove relations
@@ -596,7 +597,7 @@ module.exports = async args => {
       }
 
       // Update task
-      columnName = answers.column !== currentColumn ? answers.column : null;
+      columnName = answers.column !== currentColumnName ? answers.column : null;
       updateTask(taskId, taskData, columnName);
     })
     .catch(error => {
@@ -605,7 +606,7 @@ module.exports = async args => {
 
   // Otherwise edit task non-interactively
   } else {
-    columnName = columnName !== currentColumn ? columnName : null;
+    columnName = columnName !== currentColumnName ? columnName : null;
     updateTask(taskId, taskData, columnName);
   }
 };

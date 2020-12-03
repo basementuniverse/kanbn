@@ -9,6 +9,7 @@ inquirer.registerPrompt('recursive', require('inquirer-recursive'));
  * Initialise kanbn interactively
  * @param {object} options
  * @param {boolean} initialised
+ * @return {Promise<any>}
  */
 async function interactive(options, initialised) {
   return await inquirer
