@@ -234,9 +234,9 @@ Options:
 
 Search all tasks in the index and show search results. If no filters are specified, this command will list all tracked tasks.
 
-Only tasks that match all of the filters will be returned.
+Search terms are treated as case-insensitive regular expressions.
 
-If search terms are surrounded by "/" (e.g. "/search term/"), they will be treated as regular expressions.
+Only tasks that match all of the filters will be returned.
 
 Options:
   {b}kanbn find --quiet{b}
@@ -341,9 +341,84 @@ Options:
 `,
 
   sort: `
-{b}kanbn sort{b}
+{b}kanbn sort "column"{b}
 
-// TODO finish sort command help documentation
+Sort a column in the index. The "column" value is optional if sorting a column interactively.
+
+Some task attributes can be optionally transformed using case-insensitive regular expressions.
+If a filter is specified, the matched text will be used when sorting.
+
+If the filter regular expression has numbered capturing groups, the value of the first group will be used.
+If the filter regular expression has named capturing groups, the value of all named groups will be concatenated.
+If there are multiple matches, their values will be concatenated.
+
+Options:
+  {b}kanbn sprint --interactive{b}
+  {b}kanbn sprint -i{b}
+    Sort a column interactively.
+
+  {b}kanbn sort --save{b}
+    Save the column sort settings in the index file. This means that any tasks added to the column will be automatically sorted.
+    If this option is not set, any saved sorting settings for the specified column will be removed.
+
+  {b}kanbn sort --ascending{b}
+  {b}kanbn sort -a{b}
+    Sort the column in ascending order. This is the default order. This option can be set after each sorting field. If this option is set before any sorting fields, all fields will be sorted in ascending order.
+
+  {b}kanbn sort --descending{b}
+  {b}kanbn sort -z{b}
+    Sort the column in descending order instead of default ascending order. This option can be set after each sorting field. If this option is set before any sorting fields, all fields will be sorted in descending order.
+
+  {b}kanbn sort --id "filter"{b}
+    Sort tasks by id.
+
+  {b}kanbn sort --name "filter"{b}
+  {b}kanbn sort -n "filter"{b}
+    Sort tasks by name.
+
+  {b}kanbn sort --description "filter"{b}
+  {b}kanbn sort -d "filter"{b}
+    Sort tasks by description.
+
+  {b}kanbn sort --created{b}
+    Sort tasks by created date.
+
+  {b}kanbn sort --updated{b}
+    Sort tasks by updated date.
+
+  {b}kanbn sort --started{b}
+    Sort tasks by started date.
+
+  {b}kanbn sort --completed{b}
+    Sort tasks by completed date.
+
+  {b}kanbn sort --due{b}
+    Sort tasks by due date.
+
+  {b}kanbn sort --sub-task "filter"{b}
+  {b}kanbn sort -s "filter"{b}
+    Sort tasks by sub-tasks.
+
+  {b}kanbn sort --count-sub-tasks{b}
+    Sort tasks by the number of sub-tasks.
+
+  {b}kanbn sort --tag "filter"{b}
+  {b}kanbn sort -t "filter"{b}
+    Sort tasks by tags.
+
+  {b}kanbn sort --count-tags{b}
+    Sort tasks by the number of tags.
+
+  {b}kanbn sort --relation "filter"{b}
+  {b}kanbn sort -r "filter"{b}
+    Sort tasks by relations.
+
+  {b}kanbn sort --count-relations{b}
+    Sort tasks by the number of relations.
+
+  {b}kanbn sort --workload{b}
+  {b}kanbn sort -w{b}
+    Sort tasks by workload.
 `,
 
   sprint: `
@@ -370,6 +445,10 @@ Options:
 {b}kanbn validate{b}
 
 Validate kanbn index file and all task files, and report any formatting errors.
+
+Options:
+  {b}kanbn validate --save{b}
+    Re-save the index and task files. This will ensure that all index column sorting settings are applied and that all tasks are formatted correctly.
 `,
 
   nuclear: `
