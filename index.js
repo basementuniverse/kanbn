@@ -14,6 +14,8 @@ module.exports = async () => {
       'index',
       'quiet',
       'json',
+      'save',
+      'ascending',
       'descending'
     ],
     string: [
@@ -21,7 +23,6 @@ module.exports = async () => {
       'name',
       'description',
       'column',
-      'due',
       'sub-task',
       'remove-sub-task',
       'count-sub-tasks',
@@ -32,9 +33,10 @@ module.exports = async () => {
       'remove-relation',
       'count-relations',
       'created',
-      'modified',
+      'updated',
       'started',
       'completed',
+      'due',
       'sprint',
       'date',
       'workload'
@@ -56,7 +58,9 @@ module.exports = async () => {
       'tag': ['t'],
       'relation': ['r'],
       'sprint': ['p'],
-      'workload': ['w']
+      'workload': ['w'],
+      'ascending': ['a'],
+      'descending': ['z']
     }
   });
 
@@ -146,7 +150,7 @@ module.exports = async () => {
       await require('./commands/validate')(args);
       break;
     case 'sort':
-      await require('./commands/sort')(args);
+      await require('./commands/sort')(args, process.argv.slice(3));
       break;
     case 'sprint':
       await require('./commands/sprint')(args);
