@@ -9,21 +9,16 @@ inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
 /**
  * Build search filters interactively
+ * @return {Promise<any>}
  */
-async function interactiveFind(showFullResults = true) {
+async function interactive() {
   return await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'nonquiet',
-      message: 'Show full task details in results?',
-      default: showFullResults
-    },
     {
       type: 'recursive',
       name: 'filters',
       initialMessage: 'Add a filter?',
       message: 'Add another filter?',
-      default: false,
+      default: true,
       prompts: [
         {
           type: 'rawlist',
@@ -117,8 +112,8 @@ async function interactiveFind(showFullResults = true) {
 
 /**
  * Search tasks
- * @param {object} taskData
- * @param {string} columnName
+ * @param {object} filters
+ * @param {boolean} quiet
  */
 function findTasks(filters, quiet) {
   const removeEmptyProperties = o => Object.fromEntries(Object.entries(o).filter(
@@ -224,6 +219,9 @@ function convertDateFilters(filters, filterName) {
   return true;
 }
 
+/**
+ * Filter names from interactive prompt mapped to property names in the filters object
+ */
 const filterPropertyNames = {
   'Id': 'id',
   'Name': 'name',
@@ -319,12 +317,24 @@ module.exports = async args => {
 
   // Build search filters interactively
   if (args.interactive) {
-    interactiveFind(!args.quiet)
+    interactive()
     .then(answers => {
-      for (let filter of answers.filters) {
-        addFilterValue(filters, filterPropertyNames[filter.type], filter.value);
-      }
-      findTasks(filters, !answers.nonquiet);
+      inquirer
+      .prompt({
+        type: 'confirm',
+        name: 'nonquiet',
+        message: 'Show full task details in results?',
+        default: !args.quiet
+      })
+      .then(nonQuietAnswer => {
+        for (let filter of answers.filters) {
+          addFilterValue(filters, filterPropertyNames[filter.type], filter.value);
+        }
+        findTasks(filters, !nonQuietAnswer.nonquiet);
+      })
+      .catch(error => {
+        utility.showError(error);
+      });
     })
     .catch(error => {
       utility.showError(error);
