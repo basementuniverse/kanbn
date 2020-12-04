@@ -80,6 +80,9 @@ module.exports = (options = {}) => {
     description: faker.lorem.paragraph(),
     columns
   };
+  if ('options' in options) {
+    index.options = options.options;
+  }
 
   // Generate in-memory files
   mockFileSystem({

@@ -1,9 +1,10 @@
 const mockFileSystem = require('mock-fs');
 const kanbn = require('../../lib/main');
+const context = require('./context');
 
-QUnit.module('Kanbn library createTask tests', {
+QUnit.module('Kanbn library updateTask tests', {
   before() {
-    require('./utility');
+    require('./qunit-throws-async');
   },
   beforeEach() {
     require('./fixtures')({
@@ -75,26 +76,17 @@ QUnit.test('Update a task with a blank name', async assert => {
 });
 
 QUnit.test('Rename a task', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
 
-  // Get the first task
-  const task = await kanbn.getTask('task-1');
-
-  // Update task
+  // Rename task
   await kanbn.updateTask('task-1', { name: 'Task 3' });
 
   // Verify that the task file and index were updated
-  let taskUpdated = false;
-  try {
-    await kanbn.taskExists('task-3');
-    taskUpdated = true;
-  } catch (error) {}
-  assert.equal(taskUpdated, true);
+  context.taskFileExists(assert, BASE_PATH, 'task-3');
+  context.indexHasTask(assert, BASE_PATH, 'task-3');
 });
 
 QUnit.test('Rename a task to a name that already exists', async assert => {
-
-  // Get the first task
-  const task = await kanbn.getTask('task-1');
 
   // Try to update a task with a duplicate name
   assert.throwsAsync(
@@ -106,6 +98,7 @@ QUnit.test('Rename a task to a name that already exists', async assert => {
 });
 
 QUnit.test('Update a task', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
   const TEST_DESCRIPTION = 'Test description...';
   const TEST_TAGS = ['Tag 1', 'Tag 2'];
   const TEST_SUB_TASK = {
@@ -137,12 +130,16 @@ QUnit.test('Update a task', async assert => {
   });
 
   // Verify that the task file was updated
+  context.taskHasDescription(assert, BASE_PATH, 'task-1', TEST_DESCRIPTION);
+  context.taskHasMetadata(assert, BASE_PATH, 'task-1', {
+    tags: TEST_TAGS
+  });
+  context.taskHasSubTasks(assert, BASE_PATH, 'task-1', [TEST_SUB_TASK]);
+  context.taskHasRelations(assert, BASE_PATH, 'task-1', [TEST_RELATION]);
+
+  // Verify that the task updated date was updated
   task = await kanbn.getTask('task-1');
-  assert.equal(task.description, TEST_DESCRIPTION);
   assert.equal(task.metadata.updated.toISOString().substr(0, 9), currentDate.substr(0, 9));
-  assert.deepEqual(task.metadata.tags, TEST_TAGS);
-  assert.deepEqual(task.subTasks, [TEST_SUB_TASK]);
-  assert.deepEqual(task.relations, [TEST_RELATION]);
 });
 
 QUnit.test('Move a task', async assert => {
@@ -154,6 +151,5 @@ QUnit.test('Move a task', async assert => {
   await kanbn.updateTask('task-1', task, 'Column 2');
 
   // Verify that the index was updated
-  const tasks = await kanbn.findTrackedTasks('Column 2');
-  assert.equal(tasks.has('task-1'), true);
+  context.indexHasTask(assert, kanbn.getMainFolder(), 'task-1', 'Column 2');
 });

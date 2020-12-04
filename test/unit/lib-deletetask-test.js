@@ -1,10 +1,11 @@
 const mockFileSystem = require('mock-fs');
 const fs = require('fs');
 const kanbn = require('../../lib/main');
+const context = require('./context');
 
 QUnit.module('Kanbn library deleteTask tests', {
   before() {
-    require('./utility');
+    require('./qunit-throws-async');
   },
   beforeEach() {
     require('./fixtures')({
@@ -64,35 +65,27 @@ QUnit.test('Delete an untracked task', async assert => {
 });
 
 QUnit.test('Delete a task from the index but leave the file', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
+
+  // Delete a task and leave the file
   await kanbn.deleteTask('task-1', false);
 
   // Verify that the task was removed from the index
-  assert.throwsAsync(
-    async () => {
-      await kanbn.taskExists('task-1');
-    },
-    /No task with id "task-1" found in the index/
-  );
+  context.indexHasTask(assert, BASE_PATH, 'task-1', null, true);
 
   // Verify that the task file still exists
-  await fs.promises.access('.kanbn/tasks/task-1.md', fs.constants.R_OK | fs.constants.W_OK);
+  context.taskFileExists(assert, BASE_PATH, 'task-1');
 });
 
 QUnit.test('Delete a task from the index and remove the file', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
+
+  // Delete a task
   await kanbn.deleteTask('task-1', true);
 
-  // Verify that the task file was deleted
-  assert.throwsAsync(
-    async () => {
-      await kanbn.taskExists('task-1');
-    },
-    /No task file found with id "task-1"/
-  );
+  // Verify that the task was removed from the index
+  context.indexHasTask(assert, BASE_PATH, 'task-1', null, true);
 
-  // Verify that the task file was removed
-  assert.throwsAsync(
-    async () => {
-      await fs.promises.access('.kanbn/tasks/task-1.md', fs.constants.R_OK | fs.constants.W_OK);
-    }
-  );
+  // Verify that the task file no longer exists
+  context.taskFileExists(assert, BASE_PATH, 'task-1', true);
 });

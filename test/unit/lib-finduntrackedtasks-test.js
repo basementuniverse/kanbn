@@ -3,7 +3,7 @@ const kanbn = require('../../lib/main');
 
 QUnit.module('Kanbn library findUntrackedTasks tests', {
   before() {
-    require('./utility');
+    require('./qunit-throws-async');
   },
   beforeEach() {
     mockFileSystem({

@@ -1,9 +1,10 @@
 const mockFileSystem = require('mock-fs');
 const kanbn = require('../../lib/main');
+const context = require('./context');
 
 QUnit.module('Kanbn library addUntrackedTaskToIndex tests', {
   before() {
-    require('./utility');
+    require('./qunit-throws-async');
   },
   beforeEach() {
     mockFileSystem({
@@ -76,10 +77,5 @@ QUnit.test('Add untracked task', async assert => {
   const TASK_ID = await kanbn.addUntrackedTaskToIndex('test-task-2', 'Test Column');
 
   // Verify that the task is indexed
-  let taskExists = false;
-  try {
-    await kanbn.taskExists(TASK_ID);
-    taskExists = true;
-  } catch (error) {}
-  assert.equal(taskExists, true);
+  context.indexHasTask(assert, kanbn.getMainFolder(), TASK_ID, 'Test Column');
 });

@@ -163,6 +163,6 @@ const validCases = [
 
 QUnit.test('Test json to task conversion with valid json', assert => {
   validCases.forEach(validCase => {
-    assert.equal(parseTask.json2md(validCase.data), validCase.expected.trim());
+    assert.equal(parseTask.json2md(validCase.data), validCase.expected.trimStart());
   });
 });

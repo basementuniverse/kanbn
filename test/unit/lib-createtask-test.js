@@ -2,10 +2,11 @@ const mockFileSystem = require('mock-fs');
 const fs = require('fs');
 const path = require('path');
 const kanbn = require('../../lib/main');
+const context = require('./context');
 
 QUnit.module('Kanbn library createTask tests', {
   before() {
-    require('./utility');
+    require('./qunit-throws-async');
   },
   beforeEach() {
     mockFileSystem();
@@ -64,8 +65,8 @@ QUnit.test('Create task in non-existent column', async assert => {
 });
 
 QUnit.test('Create task with duplicate id in file', async assert => {
-  const TASK_NAME = 'Test name';
   const TASK_ID = 'test-name';
+  const TASK_NAME = 'Test name';
 
   // Initialise kanbn
   await kanbn.initialise();
@@ -86,8 +87,8 @@ QUnit.test('Create task with duplicate id in file', async assert => {
 });
 
 QUnit.test('Create task with duplicate id in index', async assert => {
-  const TASK_NAME = 'Test name';
   const TASK_ID = 'test-name';
+  const TASK_NAME = 'Test name';
 
   // Initialise kanbn
   await kanbn.initialise();
@@ -108,6 +109,7 @@ QUnit.test('Create task with duplicate id in index', async assert => {
 });
 
 QUnit.test('Create task', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
   const TASK_NAME = 'Test name';
 
   // Initialise kanbn
@@ -117,12 +119,8 @@ QUnit.test('Create task', async assert => {
   const TASK_ID = await kanbn.createTask({ name: TASK_NAME }, 'Backlog');
 
   // Verify that the file exists and is indexed
-  let taskExists = false;
-  try {
-    await kanbn.taskExists(TASK_ID);
-    taskExists = true;
-  } catch (error) {}
-  assert.equal(taskExists, true);
+  context.taskFileExists(assert, BASE_PATH, TASK_ID);
+  context.indexHasTask(assert, BASE_PATH, TASK_ID, 'Backlog');
 });
 
 QUnit.test('Create task in a completed column', async assert => {

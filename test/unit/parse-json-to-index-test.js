@@ -119,6 +119,6 @@ const validCases = [
 
 QUnit.test('Test json to index conversion with valid json', assert => {
   validCases.forEach(validCase => {
-    assert.equal(parseIndex.json2md(validCase.data), validCase.expected.trim());
+    assert.equal(parseIndex.json2md(validCase.data), validCase.expected.trimStart());
   });
 });
