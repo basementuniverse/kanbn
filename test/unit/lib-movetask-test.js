@@ -88,7 +88,7 @@ QUnit.test('Move a task', async assert => {
 
   // Verify that the task was moved
   context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 2');
-  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', true);
+  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', false);
 
   // Verify that the task updated date was updated
   task = await kanbn.getTask('task-1');
@@ -104,7 +104,7 @@ QUnit.test('Move a task into a started column', async assert => {
 
   // Verify that the task was moved
   context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 2');
-  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', true);
+  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', false);
 
   // Verify that the task started date was updated
   task = await kanbn.getTask('task-1');
@@ -120,7 +120,7 @@ QUnit.test('Move a task into a completed column', async assert => {
 
   // Verify that the task was moved
   context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 3');
-  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', true);
+  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', false);
 
   // Verify that the task started date was updated
   task = await kanbn.getTask('task-1');

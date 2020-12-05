@@ -13,16 +13,16 @@ function loadTask(basePath, taskId) {
 
 module.exports = {
 
-  kanbnFolderExists(assert, basePath, expectNotExists = false) {
-    assert.equal(fs.existsSync(basePath), !expectNotExists);
+  kanbnFolderExists(assert, basePath, expected = true) {
+    assert.equal(fs.existsSync(basePath), expected);
   },
 
-  tasksFolderExists(assert, basePath, expectNotExists = false) {
-    assert.equal(fs.existsSync(path.join(basePath, 'tasks')), !expectNotExists);
+  tasksFolderExists(assert, basePath, expected = true) {
+    assert.equal(fs.existsSync(path.join(basePath, 'tasks')), expected);
   },
 
-  indexExists(assert, basePath, expectNotExists = false) {
-    assert.equal(fs.existsSync(path.join(basePath, 'index.md')), !expectNotExists);
+  indexExists(assert, basePath, expected = true) {
+    assert.equal(fs.existsSync(path.join(basePath, 'index.md')), expected);
   },
 
   indexHasName(assert, basePath, name = null) {
@@ -67,22 +67,27 @@ module.exports = {
       index.options instanceof Object
     ), true);
     if (options !== null) {
-      assert.deepEqual(index.options, options);
+      for (let optionsProperty in options) {
+        assert.equal(optionsProperty in index.options, true);
+        if (options[optionsProperty] !== null) {
+          assert.deepEqual(index.options[optionsProperty], options[optionsProperty]);
+        }
+      }
     }
   },
 
-  indexHasTask(assert, basePath, taskId, columnName = null, expectNotIndexed = false) {
+  indexHasTask(assert, basePath, taskId, columnName = null, expected = true) {
     const index = loadIndex(basePath);
     if (columnName === null) {
       const indexedTasks = Object.keys(index.columns).map(columnName => index.columns[columnName]).flat();
-      assert[expectNotIndexed ? 'equal' : 'notEqual'](indexedTasks.indexOf(taskId), -1);
+      assert[expected ? 'notEqual' : 'equal'](indexedTasks.indexOf(taskId), -1);
     } else {
-      assert[expectNotIndexed ? 'equal' : 'notEqual'](index.columns[columnName].indexOf(taskId), -1);
+      assert[expected ? 'notEqual' : 'equal'](index.columns[columnName].indexOf(taskId), -1);
     }
   },
 
-  taskFileExists(assert, basePath, taskId, expectNotExists = false) {
-    assert.equal(fs.existsSync(path.join(basePath, 'tasks', `${taskId}.md`)), !expectNotExists);
+  taskFileExists(assert, basePath, taskId, expected = true) {
+    assert.equal(fs.existsSync(path.join(basePath, 'tasks', `${taskId}.md`)), expected);
   },
 
   taskHasName(assert, basePath, taskId, name = null) {

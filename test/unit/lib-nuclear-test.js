@@ -26,7 +26,7 @@ QUnit.test('Nuke kanbn', async assert => {
   assert.equal(await kanbn.initialised(), false);
 
   // Verify that the index and folders have been removed
-  context.indexExists(assert, BASE_PATH, true);
-  context.kanbnFolderExists(assert, BASE_PATH, true);
-  context.tasksFolderExists(assert, BASE_PATH, true);
+  context.indexExists(assert, BASE_PATH, false);
+  context.kanbnFolderExists(assert, BASE_PATH, false);
+  context.tasksFolderExists(assert, BASE_PATH, false);
 });

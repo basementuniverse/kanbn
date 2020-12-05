@@ -84,11 +84,11 @@ QUnit.test('Rename a task', async assert => {
 
   // Verify that the task was renamed
   context.indexHasTask(assert, BASE_PATH, 'task-3');
-  context.indexHasTask(assert, BASE_PATH, 'task-1', null, true);
+  context.indexHasTask(assert, BASE_PATH, 'task-1', null, false);
 
   // Verify that the file was renamed
   context.taskFileExists(assert, BASE_PATH, 'task-3');
-  context.taskFileExists(assert, BASE_PATH, 'task-1', true);
+  context.taskFileExists(assert, BASE_PATH, 'task-1', false);
 
   // Verify that the task updated date was updated
   task = await kanbn.getTask('task-3');
