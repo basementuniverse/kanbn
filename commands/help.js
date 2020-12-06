@@ -144,8 +144,8 @@ Options:
   {b}kanbn edit "task-id" -n "name"{b}
     Modify a task name.
 
-  {b}kanbn add --description "description"{b}
-  {b}kanbn add -d "description"{b}
+  {b}kanbn edit --description "description"{b}
+  {b}kanbn edit -d "description"{b}
     Modify a task description.
 
   {b}kanbn edit "task-id" --column "column"{b}
@@ -353,8 +353,8 @@ If the filter regular expression has named capturing groups, the value of all na
 If there are multiple matches, their values will be concatenated.
 
 Options:
-  {b}kanbn sprint --interactive{b}
-  {b}kanbn sprint -i{b}
+  {b}kanbn sort --interactive{b}
+  {b}kanbn sort -i{b}
     Sort a column interactively.
 
   {b}kanbn sort --save{b}
@@ -419,6 +419,13 @@ Options:
   {b}kanbn sort --workload{b}
   {b}kanbn sort -w{b}
     Sort tasks by workload.
+
+Examples:
+  {b}kanbn sort "Todo" --created -z -n "Task (\\d+)" -w{b}
+    Sort tasks in the "Todo" column first by created date in descending order, then by their name (filtered such that only numeric characters after the string "Task " are used) in ascending order, then by workload in ascending order
+
+  {b}kanbn sort "Todo" -z -n --count-tags{b}
+    Sort tasks in the "Todo" column first by name, then by the number of tags, all in descending order
 `,
 
   sprint: `
