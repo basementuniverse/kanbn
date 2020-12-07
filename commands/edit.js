@@ -304,7 +304,7 @@ function updateTask(taskId, taskData, columnName) {
   })
   .catch(error => {
     spinner.stop(true);
-    utility.showError(error);
+    utility.error(error, true);
   });
 }
 
@@ -312,23 +312,20 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
-    return;
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
   }
 
   // Get the task that we're editing
   const taskId = args._[1];
   if (!taskId) {
-    console.error(utility.replaceTags('No task id specified\nTry running {b}kanbn edit "task id"{b}'));
-    return;
+    utility.error('No task id specified\nTry running {b}kanbn edit "task id"{b}', true);
   }
 
   // Make sure the task exists
   try {
     await kanbn.taskExists(taskId);
   } catch (error) {
-    utility.showError(error);
-    return;
+    utility.error(error, true);
   }
 
   // Get the index and make sure it has some columns
@@ -336,13 +333,11 @@ module.exports = async args => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    utility.showError(error);
-    return;
+    utility.error(error, true);
   }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    console.error(utility.replaceTags('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}'));
-    return;
+    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
   }
 
   // Get the current task data
@@ -350,7 +345,7 @@ module.exports = async args => {
   try {
     taskData = await kanbn.getTask(taskId);
   } catch (error) {
-    utility.showError(error);
+    utility.error(error, true);
   }
 
   // Get column name if specified
@@ -359,8 +354,7 @@ module.exports = async args => {
   if (args.column) {
     columnName = utility.argToString(args.column);
     if (columnNames.indexOf(columnName) === -1) {
-      console.error(`Column "${columnName}" doesn't exist`);
-      return;
+      utility.error(`Column "${columnName}" doesn't exist`, true);
     }
   }
 
@@ -385,8 +379,7 @@ module.exports = async args => {
     }
     taskData.metadata.due = chrono.parseDate(utility.argToString(args.due));
     if (taskData.metadata.due === null) {
-      console.error('Unable to parse due date');
-      return;
+      utility.error('Unable to parse due date', true);
     }
   }
 
@@ -399,8 +392,7 @@ module.exports = async args => {
     // Check that the sub-tasks being removed currently exist
     for (let removedSubTask of removedSubTasks) {
       if (taskData.subTasks.find(subTask => subTask.text === removedSubTask.text) === undefined) {
-        console.error(`Sub-task "${removedSubTask.text}" doesn't exist`);
-        return;
+        utility.error(`Sub-task "${removedSubTask.text}" doesn't exist`, true);
       }
     }
     taskData.subTasks = taskData.subTasks.filter(subTask => removedSubTasks.indexOf(subTask.text) === -1);
@@ -443,15 +435,13 @@ module.exports = async args => {
 
     // Check that the task has metadata
     if (!('metadata' in taskData) || !('tags' in taskData.metadata) || !Array.isArray(taskData.metadata.tags)) {
-      console.error('Task has no tags to remove');
-      return;
+      utility.error('Task has no tags to remove', true);
     }
 
     // Check that the tags being removed currently exist
     for (let removedTag of removedTags) {
       if (taskData.metadata.tags.indexOf(removedTag) === -1) {
-        console.error(`Tag "${removedSubTask.text}" doesn't exist`);
-        return;
+        utility.error(`Tag "${removedSubTask.text}" doesn't exist`, true);
       }
     }
     taskData.tags = taskData.tags.filter(tag => removedTags.indexOf(tag) === -1);
@@ -472,8 +462,7 @@ module.exports = async args => {
     // Check that the relations being removed currently exist
     for (let removedRelation of removedRelations) {
       if (taskData.relations.find(relation => relation.task === removedRelation.task) === undefined) {
-        console.error(`Relation "${removedRelation.task}" doesn't exist`);
-        return;
+        utility.error(`Relation "${removedRelation.task}" doesn't exist`, true);
       }
     }
     taskData.relations = taskData.relations.filter(relation => removedRelations.indexOf(relation.task) === -1);
@@ -601,7 +590,7 @@ module.exports = async args => {
       updateTask(taskId, taskData, columnName);
     })
     .catch(error => {
-      utility.showError(error);
+      utility.error(error, true);
     });
 
   // Otherwise edit task non-interactively

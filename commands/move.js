@@ -31,8 +31,7 @@ function moveTask(taskId, columnName, currentColumnName) {
 
   // Check if the target column is the same as the current column
   if (columnName === currentColumnName) {
-    console.error(`Task "${taskId}" is already in column "${columnName}"`);
-    return;
+    utility.error(`Task "${taskId}" is already in column "${columnName}"`, true);
   }
 
   // Target column is different to current column, so move the task
@@ -47,7 +46,7 @@ function moveTask(taskId, columnName, currentColumnName) {
   })
   .catch(error => {
     spinner.stop(true);
-    utility.showError(error);
+    utility.error(error, true);
   });
 }
 
@@ -55,23 +54,20 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
-    return;
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
   }
 
   // Get the task that we're moving
   const taskId = args._[1];
   if (!taskId) {
-    console.error(utility.replaceTags('No task id specified\nTry running {b}kanbn move "task id"{b}'));
-    return;
+    utility.error('No task id specified\nTry running {b}kanbn move "task id"{b}', true);
   }
 
   // Make sure the task exists
   try {
     await kanbn.taskExists(taskId);
   } catch (error) {
-    utility.showError(error);
-    return;
+    utility.error(error, true);
   }
 
   // Get the index and make sure it has some columns
@@ -79,13 +75,11 @@ module.exports = async args => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    utility.showError(error);
-    return;
+    utility.error(error, true);
   }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    console.error(utility.replaceTags('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}'));
-    return;
+    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
   }
 
   // Get column name if specified
@@ -94,8 +88,7 @@ module.exports = async args => {
   if (args.column) {
     columnName = utility.argToString(args.column);
     if (columnNames.indexOf(columnName) === -1) {
-      console.error(`Column "${columnName}" doesn't exist`);
-      return;
+      utility.error(`Column "${columnName}" doesn't exist`, true);
     }
   }
 
@@ -106,7 +99,7 @@ module.exports = async args => {
       moveTask(taskId, columnName, currentColumnName);
     })
     .catch(error => {
-      utility.showError(error);
+      utility.error(error, true);
     });
 
   // Otherwise move task non-interactively

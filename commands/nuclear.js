@@ -17,7 +17,7 @@ function nuclear() {
   })
   .catch(error => {
     spinner.stop(true);
-    utility.showError(error);
+    utility.error(error, true);
   });
 }
 
@@ -25,8 +25,7 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
-    return;
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
   }
 
   // If the force flag is specified, remove kanbn without asking
@@ -47,7 +46,7 @@ module.exports = async args => {
         nuclear();
       }
     }).catch(error => {
-      utility.showError(error);
+      utility.error(error, true);
     })
   }
 };

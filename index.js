@@ -1,5 +1,6 @@
 const minimist = require('minimist');
 const path = require('path');
+const utility = require('./lib/utility');
 
 module.exports = async () => {
   require('dotenv').config({ path: path.join(__dirname, '.env') });
@@ -165,7 +166,6 @@ module.exports = async () => {
       require('./app/main.js')();
       break;
     default:
-      console.error(`"${command}" is not a valid command`);
-      break;
+      utility.error(`"${command}" is not a valid command`, true);
   }
 };

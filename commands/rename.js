@@ -35,8 +35,7 @@ function renameTask(taskId, newTaskName, currentTaskName) {
 
   // Check if the new name is the same as the current name
   if (newTaskName === currentTaskName) {
-    console.error(`Task "${taskId}" already has the name "${newTaskName}"`);
-    return;
+    utility.error(`Task "${taskId}" already has the name "${newTaskName}"`, true);
   }
 
   // New name is different to current name, so rename the task
@@ -51,7 +50,7 @@ function renameTask(taskId, newTaskName, currentTaskName) {
   })
   .catch(error => {
     spinner.stop(true);
-    utility.showError(error);
+    utility.error(error, true);
   });
 }
 
@@ -59,23 +58,20 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
-    return;
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
   }
 
   // Get the task that we're renaming
   const taskId = args._[1];
   if (!taskId) {
-    console.error(utility.replaceTags('No task id specified\nTry running {b}kanbn rename "task id"{b}'));
-    return;
+    utility.error('No task id specified\nTry running {b}kanbn rename "task id"{b}', true);
   }
 
   // Make sure the task exists
   try {
     await kanbn.taskExists(taskId);
   } catch (error) {
-    utility.showError(error);
-    return;
+    utility.error(error, true);
   }
 
   // Get the current task data
@@ -83,7 +79,7 @@ module.exports = async args => {
   try {
     taskData = await kanbn.getTask(taskId);
   } catch (error) {
-    utility.showError(error);
+    utility.error(error, true);
   }
   const currentTaskName = taskData.name;
 
@@ -99,7 +95,7 @@ module.exports = async args => {
       renameTask(taskId, answers.name, currentTaskName);
     })
     .catch(error => {
-      utility.showError(error);
+      utility.error(error, true);
     });
 
   // Otherwise rename task non-interactively

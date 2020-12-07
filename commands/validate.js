@@ -6,8 +6,7 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
-    return;
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
   }
 
   // Validate kanbn files
@@ -20,11 +19,11 @@ module.exports = async args => {
     if (result === true) {
       console.log('Everything ok');
     } else {
-      console.error(`${result.length} errors found in task files:\n${result.join('\n')}`);
+      utility.error(`${result.length} errors found in task files:\n${result.join('\n')}`, true);
     }
   })
   .catch(error => {
     spinner.stop(true);
-    utility.showError(error);
+    utility.error(error, true);
   });
 };

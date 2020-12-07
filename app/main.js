@@ -8,8 +8,7 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
-    return;
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
   }
 
   // Get the index and make sure it has some columns
@@ -17,13 +16,11 @@ module.exports = async args => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    utility.showError(error);
-    return;
+    utility.error(error, true);
   }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    console.error(utility.replaceTags('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}'));
-    return;
+    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
   }
 
   // Initialise terminal interface

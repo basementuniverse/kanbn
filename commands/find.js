@@ -147,7 +147,7 @@ function findTasks(filters, quiet) {
   })
   .catch(error => {
     spinner.stop(true);
-    utility.showError(error);
+    utility.error(error, true);
   });
 }
 
@@ -243,8 +243,7 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
-    return;
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
   }
 
   // Get the index and make sure it has some columns
@@ -252,13 +251,11 @@ module.exports = async args => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    utility.showError(error);
-    return;
+    utility.error(error, true);
   }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    console.error(utility.replaceTags('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}'));
-    return;
+    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
   }
 
   // Get filters from args
@@ -272,46 +269,39 @@ module.exports = async args => {
   // Check and convert numeric filters
   if ('count-sub-tasks' in filters) {
     if (!convertNumericFilters(filters, 'count-sub-tasks')) {
-      console.error('Count sub-tasks filter value must be numeric');
-      return;
+      utility.error('Count sub-tasks filter value must be numeric', true);
     }
   }
   if ('count-tags' in filters) {
     if (!convertNumericFilters(filters, 'count-tags')) {
-      console.error('Count tags filter value must be numeric');
-      return;
+      utility.error('Count tags filter value must be numeric', true);
     }
   }
   if ('count-relations' in filters) {
     if (!convertNumericFilters(filters, 'count-relations')) {
-      console.error('Count relations filter value must be numeric');
-      return;
+      utility.error('Count relations filter value must be numeric', true);
     }
   }
 
   // Check date filters
   if ('created' in filters) {
     if (!convertDateFilters(filters, 'created')) {
-      console.error('Unable to parse created date');
-      return;
+      utility.error('Unable to parse created date', true);
     }
   }
   if ('updated' in filters) {
     if (!convertDateFilters(filters, 'updated')) {
-      console.error('Unable to parse updated date');
-      return;
+      utility.error('Unable to parse updated date', true);
     }
   }
   if ('completed' in filters) {
     if (!convertDateFilters(filters, 'completed')) {
-      console.error('Unable to parse completed date');
-      return;
+      utility.error('Unable to parse completed date', true);
     }
   }
   if ('due' in filters) {
     if (!convertDateFilters(filters, 'due')) {
-      console.error('Unable to parse due date');
-      return;
+      utility.error('Unable to parse due date', true);
     }
   }
 
@@ -333,11 +323,11 @@ module.exports = async args => {
         findTasks(filters, !nonQuietAnswer.nonquiet);
       })
       .catch(error => {
-        utility.showError(error);
+        utility.error(error, true);
       });
     })
     .catch(error => {
-      utility.showError(error);
+      utility.error(error, true);
     });
 
   // Otherwise create task non-interactively

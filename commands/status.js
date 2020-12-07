@@ -7,8 +7,7 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
-    return;
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
   }
 
   // Get sprint number or name
@@ -27,8 +26,7 @@ module.exports = async args => {
     for (let i = 0; i < dates.length; i++) {
       const dateValue = chrono.parseDate(dates[i]);
       if (dateValue === null) {
-        console.error('Unable to parse date');
-        return;
+        utility.error('Unable to parse date', true);
       }
       dates[i] = dateValue;
     }
@@ -54,6 +52,6 @@ module.exports = async args => {
   })
   .catch(error => {
     spinner.stop(true);
-    utility.showError(error);
+    utility.error(error, true);
   });
 };

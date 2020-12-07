@@ -34,7 +34,7 @@ module.exports = (() => {
           firstCellTextAttr: { bgColor: 'blue' },
           firstRowTextAttr: { bgColor: 'yellow' },
           firstColumnTextAttr: { bgColor: 'red' },
-          width: 60,
+          // width: 100,
           fit: true // Activate all expand/shrink + wordWrap
         }
       );

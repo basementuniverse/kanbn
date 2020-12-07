@@ -85,7 +85,7 @@ function initialise(options, initialised) {
   })
   .catch(error => {
     spinner.stop(true);
-    utility.showError(error);
+    utility.error(error, true);
   });
 }
 
@@ -101,8 +101,7 @@ module.exports = async args => {
       options.description = index.description;
       options.columns = Object.keys(index.columns);
     } catch (error) {
-      utility.showError(error);
-      return;
+      utility.error(error, true);
     }
   }
 
@@ -132,7 +131,7 @@ module.exports = async args => {
       initialise(answers, initialised);
     })
     .catch(error => {
-      utility.showError(error);
+      utility.error(error, true);
     });
 
   // Non-interactive initialisation

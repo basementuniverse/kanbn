@@ -227,7 +227,7 @@ function sortColumn(columnName, sorters, save) {
   })
   .catch(error => {
     spinner.stop(true);
-    utility.showError(error);
+    utility.error(error, true);
   });
 }
 
@@ -259,8 +259,7 @@ module.exports = async (args, argv) => {
 
   // Column name must be defined if not sorting interactively
   if (columnName === null && !args.interactive) {
-    console.error(utility.replaceTags('No column name specified\nTry running {b}kanbn sort "column"{b} or {b}kanbn sort -i{b}'));
-    return;
+    utility.error('No column name specified\nTry running {b}kanbn sort "column"{b} or {b}kanbn sort -i{b}', true);
   }
 
   // Get the index and make sure it has some columns
@@ -268,20 +267,17 @@ module.exports = async (args, argv) => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    utility.showError(error);
-    return;
+    utility.error(error, true);
   }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    console.error(utility.replaceTags('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}'));
-    return;
+    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
   }
 
   // If a column name is defined, make sure it exists in the index
   if (columnName !== null) {
     if (columnNames.indexOf(columnName) === -1) {
-      console.error(utility.replaceTags(`Column "${columnName}" doesn't exist`));
-      return;
+      utility.error(`Column "${columnName}" doesn't exist`, true);
     }
     argv.shift();
   }
@@ -340,11 +336,11 @@ module.exports = async (args, argv) => {
         sortColumn(columnName, answers.sorters, saveAnswer.save);
       })
       .catch(error => {
-        utility.showError(error);
+        utility.error(error, true);
       });
     })
     .catch(error => {
-      utility.showError(error);
+      utility.error(error, true);
     });
 
   // Otherwise sort a column non-interactively

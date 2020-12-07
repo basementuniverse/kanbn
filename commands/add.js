@@ -182,7 +182,7 @@ function createTask(taskData, columnName) {
   })
   .catch(error => {
     spinner.stop(true);
-    utility.showError(error);
+    utility.error(error, true);
   });
 }
 
@@ -200,8 +200,7 @@ async function addUntrackedTasks(untrackedTasks, columnName) {
       await kanbn.addUntrackedTaskToIndex(untrackedTask, columnName);
     } catch (error) {
       spinner.stop(true);
-      utility.showError(error);
-      return;
+      utility.error(error, true);
     }
   }
   spinner.stop(true);
@@ -214,8 +213,7 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    console.error(utility.replaceTags('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}'));
-    return;
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
   }
 
   // Get the index and make sure it has some columns
@@ -223,13 +221,11 @@ module.exports = async args => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    utility.showError(error);
-    return;
+    utility.error(error, true);
   }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    console.error(utility.replaceTags('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}'));
-    return;
+    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
   }
 
   // Get column name if specified, otherwise default to the first available column
@@ -237,8 +233,7 @@ module.exports = async args => {
   if (args.column) {
     columnName = utility.argToString(args.column);
     if (columnNames.indexOf(columnName) === -1) {
-      console.error(`Column "${columnName}" doesn't exist`);
-      return;
+      utility.error(`Column "${columnName}" doesn't exist`, true);
     }
   }
 
@@ -253,8 +248,7 @@ module.exports = async args => {
       try {
         untrackedTasks.push(...await kanbn.findUntrackedTasks());
       } catch (error) {
-        utility.showError(error);
-        return;
+        utility.error(error, true);
       }
     }
 
@@ -271,7 +265,7 @@ module.exports = async args => {
         await addUntrackedTasks(answers.untrackedTasks, answers.column);
       })
       .catch(error => {
-        utility.showError(error);
+        utility.error(error, true);
       });
       return;
     } else {
@@ -303,8 +297,7 @@ module.exports = async args => {
   if (args.due) {
     taskData.metadata.due = chrono.parseDate(utility.argToString(args.due));
     if (taskData.metadata.due === null) {
-      console.error('Unable to parse due date');
-      return;
+      utility.error('Unable to parse due date', true);
     }
   }
 
@@ -349,8 +342,7 @@ module.exports = async args => {
     // Make sure each relation is an existing task
     for (let relation of relations) {
       if (taskIds.indexOf(relation.task) === -1) {
-        console.error(`Related task ${relation.task} doesn't exist`);
-        return;
+        utility.error(`Related task ${relation.task} doesn't exist`, true);
       }
     }
     taskData.relations = relations;
@@ -386,7 +378,7 @@ module.exports = async args => {
       createTask(taskData, columnName);
     })
     .catch(error => {
-      utility.showError(error);
+      utility.error(error, true);
     });
 
   // Otherwise create task non-interactively
