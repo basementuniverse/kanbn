@@ -1,9 +1,9 @@
 const mockFileSystem = require('mock-fs');
 const kanbn = require('../../lib/main');
 
-QUnit.module('Kanbn library findUntrackedTasks tests', {
+QUnit.module('Library findUntrackedTasks tests', {
   before() {
-    require('./qunit-throws-async');
+    require('../qunit-throws-async');
   },
   beforeEach() {
     mockFileSystem({

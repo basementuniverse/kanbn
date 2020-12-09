@@ -1,13 +1,13 @@
 const mockFileSystem = require('mock-fs');
 const kanbn = require('../../lib/main');
-const context = require('./context');
+const context = require('../context');
 
-QUnit.module('Kanbn library renameTask tests', {
+QUnit.module('Library renameTask tests', {
   before() {
-    require('./qunit-throws-async');
+    require('../qunit-throws-async');
   },
   beforeEach() {
-    require('./fixtures')({
+    require('../fixtures')({
       columns: 1,
       tasks: 2,
       randomiseColumns: false

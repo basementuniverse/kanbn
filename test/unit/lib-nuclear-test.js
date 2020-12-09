@@ -1,10 +1,10 @@
 const mockFileSystem = require('mock-fs');
 const kanbn = require('../../lib/main');
-const context = require('./context');
+const context = require('../context');
 
-QUnit.module('Kanbn library nuclear tests', {
+QUnit.module('Library nuclear tests', {
   beforeEach() {
-    require('./fixtures')({
+    require('../fixtures')({
       tasks: 1
     });
   },
