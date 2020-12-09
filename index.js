@@ -87,6 +87,9 @@ module.exports = async () => {
   if (args.move || command === 'mv') {
     command = 'move';
   }
+  if (args.task || command === 't') {
+    command = 'task';
+  }
   if (args.find || command === 'f') {
     command = 'find';
   }
@@ -140,6 +143,9 @@ module.exports = async () => {
       break;
     case 'move':
       await require('./commands/move')(args);
+      break;
+    case 'task':
+      await require('./commands/task')(args);
       break;
     case 'find':
       await require('./commands/find')(args);

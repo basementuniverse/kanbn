@@ -43,6 +43,7 @@ module.exports = async args => {
     args.quiet,
     args.json,
     args.untracked,
+    args.due !== undefined,
     sprint,
     dates
   )

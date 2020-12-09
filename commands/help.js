@@ -11,6 +11,7 @@ Where {b}<command>{b} is one of:
   {b}version{b} {d}.......{d} Show package version
   {b}init{b} {d}..........{d} Initialise kanbn board
   {b}board{b} {d}.........{d} Show the kanbn board
+  {b}task{b} {d}..........{d} Show a kanbn task
   {b}add{b} {d}...........{d} Add a kanbn task
   {b}edit{b} {d}..........{d} Edit a kanbn task
   {b}rename{b} {d}........{d} Rename a kanbn task
@@ -69,6 +70,23 @@ Options:
 {b}kanbn b{b}
 
 Show the kanbn board.
+
+Options:
+  {b}kanbn board --quiet{b}
+  {b}kanbn board -q{b}
+    Show only the task ids in each column.
+`,
+
+  task: `
+{b}kanbn task "task-id"{b}
+{b}kanbn t "task-id"{b}
+
+Show information about a kanbn task.
+
+Options:
+  {b}kanbn task "task-id" --json{b}
+  {b}kanbn task "task-id" -j{b}
+    Show task information in JSON format.
 `,
 
   add: `
@@ -325,6 +343,10 @@ Options:
   {b}kanbn status --untracked{b}
   {b}kanbn status -u{b}
     Show a list of untracked task filenames.
+
+  {b}kanbn status --due{b}
+  {b}kanbn status -e{b}
+    Check for overdue tasks and include time remaining information in the output.
 
   {b}kanbn status --sprint N|"name"{b}
   {b}kanbn status -p N|"name"{b}
