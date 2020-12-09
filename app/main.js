@@ -26,7 +26,6 @@ module.exports = async args => {
   // Initialise terminal interface
   term.grabInput();
   term.fullscreen();
-  board.initialise(index);
 
   // Handle input
   term.on('key', (key, matches, data) => {
@@ -45,5 +44,5 @@ module.exports = async args => {
   });
 
   // Show kanbn board
-  board.show(index);
+  await board.show(index);
 };

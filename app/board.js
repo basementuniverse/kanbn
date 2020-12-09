@@ -1,41 +1,77 @@
 const kanbn = require('../lib/main');
-const utility = require('../lib/utility');
 const Spinner = require('cli-spinner').Spinner;
 const term = require('terminal-kit').terminal;
 
 module.exports = (() => {
+  const TASK_SEPARATOR = '\n\n';
+  const FIELD_SEPARATOR = '\n';
 
-  let currentIndex = null;
-  let taskCache = {};
+  const defaultTaskOutputOptions = [
+    'name'
+  ];
 
-  // show spinner, load tasks into cache...
+  const taskCache = {};
+
+  /**
+   * Show only the selected fields for a task, as specified in the index options
+   * @param {object} index
+   * @param {object} taskData
+   * @return {string} The selected task fields
+   */
+  function getTaskOutput(index, taskData) {
+    return taskData.name;
+  }
 
   return {
-    initialise(index) {
-      currentIndex = index;
-    },
 
-    show(index = null) {
-      index = index ?? currentIndex;
+    /**
+     * Show the kanbn board
+     * @param {object} index The index object
+     * @param {boolean} quiet True if only showing task ids
+     */
+    async show(index, quiet = false) {
+      let tasks;
+      if (!quiet) {
+
+        // Show loading spinner while we load tasks
+        const spinner = new Spinner('Loading kanbn board...');
+        spinner.setSpinnerString(18);
+        spinner.start();
+
+        // Load all tracked tasks and get output from each one
+        const trackedTaskPromises = [...await kanbn.findTrackedTasks()].map(async taskId => {
+          if (!(taskId in taskCache)) {
+            taskCache[taskId] = await kanbn.getTask(taskId);
+          }
+          return taskCache[taskId];
+        });
+        tasks = Object.fromEntries((await Promise.all(trackedTaskPromises)).map(task => [
+          task.id,
+          getTaskOutput(index, task)
+        ]));
+        spinner.stop(true);
+      } else {
+
+        // Only show task ids
+        tasks = Object.fromEntries(Object.values(index.columns).flat().map(taskId => [taskId, taskId]));
+      }
+
+      // Display as a table
       term.table(
         [
-          ['header #1', 'header #2', 'header #3'],
-          ['row #1', 'a much bigger cell, a much bigger cell, a much bigger cell... ', 'cell'],
-          ['row #2', 'cell', 'a medium cell'],
-          ['row #3', 'cell', 'cell'],
-          ['row #4', 'cell\nwith\nnew\nlines', '^YThis ^Mis ^Ca ^Rcell ^Gwith ^Bmarkup^R^+!']
+          Object.keys(index.columns),
+          Object.values(index.columns).map(
+            columnTasks => columnTasks.map(taskId => tasks[taskId]).join(TASK_SEPARATOR)
+          )
         ],
         {
           hasBorder: true,
           contentHasMarkup: true,
           borderChars: 'lightRounded',
-          borderAttr: { color: 'blue' },
+          borderAttr: { color: 'grey' },
           textAttr: { bgColor: 'default' },
-          firstCellTextAttr: { bgColor: 'blue' },
-          firstRowTextAttr: { bgColor: 'yellow' },
-          firstColumnTextAttr: { bgColor: 'red' },
-          // width: 100,
-          fit: true // Activate all expand/shrink + wordWrap
+          width: term.width,
+          fit: true
         }
       );
     }

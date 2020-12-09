@@ -22,5 +22,5 @@ module.exports = async args => {
   }
 
   // Show the board
-  board.show(index);
+  await board.show(index, args.quiet);
 };
