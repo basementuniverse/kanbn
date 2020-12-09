@@ -1,6 +1,6 @@
 const parseIndex = require('../../lib/parse-index.js');
 
-QUnit.module('JSON to Index conversion');
+QUnit.module('JSON to Index conversion tests');
 
 const CASE_1 = `
 # Project name
