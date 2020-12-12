@@ -1,5 +1,3 @@
-const kanbn = require('../lib/main');
-const Spinner = require('cli-spinner').Spinner;
 const term = require('terminal-kit').terminal;
 const formatDate = require('dateformat');
 
@@ -7,7 +5,16 @@ module.exports = (() => {
   const TASK_SEPARATOR = '\n\n';
 
   const defaultDateFormat = 'd mmm yy, H:MM';
-  const defaultTaskTemplate = "^+${selected ? '^_' : ''}${overdue ? '^R' : ''}${name}\n^-${created}";
+  const defaultTaskTemplate = (
+    "^+^_${selected ? '^!' : ''}${overdue ? '^R' : ''}${name}^:" +
+    "${created ? '\\n' : ''}^-^/${created}" +
+    "${tags.join(',').match(/Tiny|Small|Medium|Large|Huge/) ? '\\n' : ''}" +
+    "${tags.indexOf('Tiny') !== -1 ? '^#^c^ktiny^: ' : ''}" +
+    "${tags.indexOf('Small') !== -1 ? '^w^#^gsmall^: ' : ''}" +
+    "${tags.indexOf('Medium') !== -1 ? '^w^#^bmedium^: ' : ''}" +
+    "${tags.indexOf('Large') !== -1 ? '^k^#^ylarge^: ' : ''}" +
+    "${tags.indexOf('Huge') !== -1 ? '^w^#^rhuge^: ' : ''}"
+  );
 
   /**
    * Show only the selected fields for a task, as specified in the index options
@@ -44,27 +51,17 @@ module.exports = (() => {
     /**
      * Show the kanbn board
      * @param {object} index The index object
-     * @param {boolean} [quiet=false] True if only showing task ids
+     * @param {?object[]} [tasks=null] An array of task objects, if this is null then only show task ids
      * @param {string} [selectedTask=null] The selected task, or null if no task is selected
      */
-    async show(index, quiet = false, selectedTask = null) {
-      let tasks;
-      if (!quiet) {
+    async show(index, tasks = null, selectedTask = null) {
+      if (tasks !== null) {
 
-        // Show loading spinner while we load tasks
-        const spinner = new Spinner('Loading kanbn board...');
-        spinner.setSpinnerString(18);
-        spinner.start();
-
-        // Load all tracked tasks
-        const trackedTaskPromises = [...await kanbn.findTrackedTasks()].map(
-          async taskId => kanbn.hydrateTask(index, await kanbn.getTask(taskId))
-        );
-        tasks = Object.fromEntries((await Promise.all(trackedTaskPromises)).map(task => [
+        // Transform each task using a template string
+        tasks = Object.fromEntries(tasks.map(task => [
           task.id,
           getTaskString(index, task, task.id === selectedTask)
         ]));
-        spinner.stop(true);
       } else {
 
         // Only show task ids
@@ -74,7 +71,7 @@ module.exports = (() => {
       // Display as a table
       term.table(
         [
-          Object.keys(index.columns),
+          Object.keys(index.columns).map(columnName => `^+${columnName}^:`),
           Object.values(index.columns).map(
             columnTasks => columnTasks.map(taskId => tasks[taskId]).join(TASK_SEPARATOR)
           )

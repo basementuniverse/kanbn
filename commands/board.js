@@ -1,5 +1,6 @@
 const kanbn = require('../lib/main');
 const utility = require('../lib/utility');
+const Spinner = require('cli-spinner').Spinner;
 const board = require('../app/board');
 
 module.exports = async args => {
@@ -21,6 +22,21 @@ module.exports = async args => {
     utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
   }
 
+  // If not showing the board quietly, load all tracked tasks
+  let tasks = null;
+  if (!args.quiet) {
+    const spinner = new Spinner('Loading tasks...');
+    spinner.setSpinnerString(18);
+    spinner.start();
+
+    // Load and hydrate all tracked tasks
+    const trackedTaskPromises = [...await kanbn.findTrackedTasks()].map(
+      async taskId => kanbn.hydrateTask(index, await kanbn.getTask(taskId))
+    );
+    tasks = await Promise.all(trackedTaskPromises);
+    spinner.stop(true);
+  }
+
   // Show the board
-  await board.show(index, args.quiet);
+  await board.show(index, tasks);
 };
