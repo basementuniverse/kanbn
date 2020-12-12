@@ -40,7 +40,8 @@ module.exports = async () => {
       'due',
       'sprint',
       'date',
-      'workload'
+      'workload',
+      'assigned'
     ],
     alias: {
       'version': ['v'],

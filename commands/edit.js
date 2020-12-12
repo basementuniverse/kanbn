@@ -4,6 +4,7 @@ const inquirer = require('inquirer');
 const Spinner = require('cli-spinner').Spinner;
 const fuzzy = require('fuzzy');
 const chrono = require('chrono-node');
+const getGitUsername = require('git-user-name');
 
 inquirer.registerPrompt('datepicker', require('inquirer-datepicker'));
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
@@ -22,6 +23,11 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
     'metadata' in taskData &&
     'due' in taskData.metadata &&
     taskData.metadata.due != null
+  );
+  const assignedExists = (
+    'metadata' in taskData &&
+    'assigned' in taskData.metadata &&
+    taskData.metadata.assigned != null
   );
   return await inquirer.prompt([
     {
@@ -95,6 +101,45 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       default: dueDateExists ? taskData.metadata.due : new Date(),
       format: ['Y', '/', 'MM', '/', 'DD'],
       when: answers => answers.setDue || answers.editDue === 'edit'
+    },
+    {
+      type: 'expand',
+      name: 'editAssigned',
+      message: 'Edit or remove assigned user?',
+      default: 'none',
+      when: answers => assignedExists,
+      choices: [
+        {
+          key: 'e',
+          name: 'Edit',
+          value: 'edit'
+        },
+        {
+          key: 'r',
+          name: 'Remove',
+          value: 'remove'
+        },
+        new inquirer.Separator(),
+        {
+          key: 'n',
+          name: 'Do nothing',
+          value: 'none'
+        }
+      ]
+    },
+    {
+      type: 'confirm',
+      name: 'setAssigned',
+      message: 'Assign this task?',
+      default: false,
+      when: answers => !assignedExists
+    },
+    {
+      type: 'input',
+      name: 'assigned',
+      message: 'Assigned to:',
+      default: assignedExists ? taskData.metadata.assigned : getGitUsername(),
+      when: answers => answers.setAssigned || answers.editAssigned === 'edit'
     },
     {
       type: 'recursive',
@@ -383,6 +428,21 @@ module.exports = async args => {
     }
   }
 
+  // Assigned
+  if ('assigned' in args) {
+    if (!('metadata' in taskData)) {
+      taskData.metadata = {};
+    }
+    const gitUsername = getGitUsername();
+    if (args.assigned === '') {
+      if (gitUsername) {
+        taskData.metadata.assigned = gitUsername;
+      }
+    } else {
+      taskData.metadata.assigned = args.assigned;
+    }
+  }
+
   // Remove sub-tasks
   if (args['remove-sub-task']) {
     const removedSubTasks = Array.isArray(args['remove-sub-task'])
@@ -511,9 +571,24 @@ module.exports = async args => {
         taskData.description = answers.description;
       }
 
+      // Remove due date
+      if ('editDue' in answers && answers.editDue === 'remove') {
+        delete taskData.metadata.due;
+      }
+
       // Due date
       if ('due' in answers) {
         taskData.metadata.due = answers.due.toISOString();
+      }
+
+      // Remove assigned
+      if ('editAssigned' in answers && answers.editAssigned === 'remove') {
+        delete taskData.metadata.assigned;
+      }
+
+      // Assigned
+      if ('assigned' in answers) {
+        taskData.metadata.assigned = answers.assigned;
       }
 
       // Edit or remove sub-tasks

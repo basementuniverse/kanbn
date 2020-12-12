@@ -116,6 +116,9 @@ Options:
   {b}kanbn add -e "date"{b}
     Create a new task and set the due date. The date can be in (almost) any format.
 
+  {b}kanbn add --assigned "name"{b}
+    Create a new task and set the assigned user name. If this option is left blank, the current git username will be used.
+
   {b}kanbn add --sub-task "sub-task"{b}
   {b}kanbn add -s "sub-task"{b}
     Create a new task with a sub-task. The sub-task text can be prefixed with "[ ] " or "[x] " to set the completion status.
@@ -173,6 +176,9 @@ Options:
   {b}kanbn edit --due "date"{b}
   {b}kanbn edit -e "date"{b}
     Modify a task due date. The date can be in (almost) any format.
+
+  {b}kanbn edit --assigned "name"{b}
+    Modify a task assigned user name. If this option is left blank, the current git username will be used.
 
   {b}kanbn edit --remove-sub-task "sub-task"{b}
     Remove a sub-task.
@@ -299,6 +305,9 @@ Options:
     This option can be repeated - if multiple dates are specified, find tasks that are due between the earliest and latest dates.
     The date can be in (almost) any format.
 
+  {b}kanbn find --assigned "name"{b}
+    Find tasks assigned to a specific user.
+
   {b}kanbn find --sub-task "search term"{b}
   {b}kanbn find -s "search term"{b}
     Find tasks that have sub-tasks matching the search term.
@@ -415,7 +424,11 @@ Options:
     Sort tasks by completed date.
 
   {b}kanbn sort --due{b}
+  {b}kanbn sort -e{b}
     Sort tasks by due date.
+
+  {b}kanbn sort --assigned{b}
+    Sort tasks by assigned user name.
 
   {b}kanbn sort --sub-task "filter"{b}
   {b}kanbn sort -s "filter"{b}

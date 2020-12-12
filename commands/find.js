@@ -236,7 +236,8 @@ const filterPropertyNames = {
   'Tags': 'tag',
   'Count tags': 'count-tags',
   'Relations': 'relation',
-  'Count relations': 'count-relations'
+  'Count relations': 'count-relations',
+  'Assigned user': 'assigned'
 };
 
 module.exports = async args => {

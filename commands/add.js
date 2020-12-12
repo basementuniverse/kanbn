@@ -4,6 +4,7 @@ const inquirer = require('inquirer');
 const Spinner = require('cli-spinner').Spinner;
 const fuzzy = require('fuzzy');
 const chrono = require('chrono-node');
+const getGitUsername = require('git-user-name');
 
 inquirer.registerPrompt('datepicker', require('inquirer-datepicker'));
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
@@ -18,6 +19,16 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
  * @return {Promise<any>}
  */
 async function interactiveCreateTask(taskData, taskIds, columnName, columnNames) {
+  const dueDateExists = (
+    'metadata' in taskData &&
+    'due' in taskData.metadata &&
+    taskData.metadata.due != null
+  );
+  const assignedExists = (
+    'metadata' in taskData &&
+    'assigned' in taskData.metadata &&
+    taskData.metadata.assigned != null
+  );
   return await inquirer.prompt([
     {
       type: 'input',
@@ -55,15 +66,30 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
       type: 'confirm',
       name: 'setDue',
       message: 'Set a due date?',
-      default: false
+      default: false,
+      when: answers => !dueDateExists
     },
     {
       type: 'datepicker',
       name: 'due',
       message: 'Due date:',
-      default: new Date(),
+      default: dueDateExists ? taskData.metadata.due : new Date(),
       format: ['Y', '/', 'MM', '/', 'DD'],
       when: answers => answers.setDue,
+    },
+    {
+      type: 'confirm',
+      name: 'setAssigned',
+      message: 'Assign this task?',
+      default: false,
+      when: answers => !assignedExists
+    },
+    {
+      type: 'input',
+      name: 'assigned',
+      message: 'Assigned to:',
+      default: assignedExists ? taskData.metadata.assigned : getGitUsername(),
+      when: answers => answers.setAssigned || assignedExists
     },
     {
       type: 'recursive',
@@ -301,6 +327,18 @@ module.exports = async args => {
     }
   }
 
+  // Assigned
+  if ('assigned' in args) {
+    const gitUsername = getGitUsername();
+    if (args.assigned === '') {
+      if (gitUsername) {
+        taskData.metadata.assigned = gitUsername;
+      }
+    } else {
+      taskData.metadata.assigned = utility.argToString(args.assigned);
+    }
+  }
+
   // Sub-tasks
   if (args['sub-task']) {
     const subTasks = Array.isArray(args['sub-task']) ? args['sub-task'] : [args['sub-task']];
@@ -358,6 +396,9 @@ module.exports = async args => {
       }
       if ('due' in answers) {
         taskData.metadata.due = answers.due.toISOString();
+      }
+      if ('assigned' in answers) {
+        taskData.metadata.assigned = answers.assigned;
       }
       if ('subTasks' in answers) {
         taskData.subTasks = answers.subTasks.map(subTask => ({
