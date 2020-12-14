@@ -159,5 +159,10 @@ module.exports = {
         )), -1);
       }
     }
+  },
+
+  taskHasPositionInColumn(assert, basePath, taskId, columnName, position, expected = true) {
+    const index = loadIndex(basePath);
+    assert[expected ? 'equal' : 'notEqual'](index.columns[columnName].indexOf(taskId), position);
   }
 };

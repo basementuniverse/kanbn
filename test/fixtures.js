@@ -57,6 +57,7 @@ function addRelations(taskIds) {
 module.exports = (options = {}) => {
   const COUNT_COLUMNS = options.columns || faker.random.number(4) + 1;
   const COUNT_TASKS = options.tasks || faker.random.number(9) + 1;
+  const TASKS_PER_COLUMN = options.tasksPerColumn || -1;
 
   // Generate tasks
   const tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
@@ -66,11 +67,15 @@ module.exports = (options = {}) => {
   // Generate and populate columns
   const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((v, i) => `Column ${i + 1}`);
   const columns = Object.fromEntries(columnNames.map(i => [i, []]));
+  let currentColumn = 0;
   for (let taskId of taskIds) {
-    if (options.randomiseColumns === false) {
+    if (TASKS_PER_COLUMN === -1) {
       columns[columnNames[0]].push(taskId);
     } else {
-      columns[columnNames[Math.floor(Math.random() * columnNames.length)]].push(taskId);
+      if (columns[columnNames[currentColumn]].length === TASKS_PER_COLUMN) {
+        currentColumn = (currentColumn + 1) % columnNames.length;
+      }
+      columns[columnNames[currentColumn]].push(taskId);
     }
   }
 

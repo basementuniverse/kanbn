@@ -8,9 +8,9 @@ QUnit.module('Library moveTask tests', {
   },
   beforeEach() {
     require('../fixtures')({
-      columns: 3,
-      tasks: 2,
-      randomiseColumns: false,
+      columns: 4,
+      tasks: 17,
+      tasksPerColumn: 5,
       options: {
         startedColumns: ['Column 2'],
         completedColumns: ['Column 3']
@@ -41,9 +41,9 @@ QUnit.test('Move non-existent task', async assert => {
   // Try to move a non-existent task
   assert.throwsAsync(
     async () => {
-      await kanbn.moveTask('task-3', 'Column 2');
+      await kanbn.moveTask('task-18', 'Column 2');
     },
-    /No task file found with id "task-3"/
+    /No task file found with id "task-18"/
   );
 });
 
@@ -73,9 +73,9 @@ QUnit.test('Move a task to a non-existent column', async assert => {
   // Try to move a task with to a non-existent column
   assert.throwsAsync(
     async () => {
-      await kanbn.moveTask('task-1', 'Column 4');
+      await kanbn.moveTask('task-1', 'Column 5');
     },
-    /Column "Column 4" doesn't exist/
+    /Column "Column 5" doesn't exist/
   );
 });
 
@@ -125,4 +125,107 @@ QUnit.test('Move a task into a completed column', async assert => {
   // Verify that the task started date was updated
   task = await kanbn.getTask('task-1');
   assert.equal(task.metadata.completed.toISOString().substr(0, 9), currentDate.substr(0, 9));
+});
+
+QUnit.test('Move a task to an absolute position in the same column', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
+
+  await kanbn.moveTask('task-1', 'Column 1', -1);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 0);
+
+  await kanbn.moveTask('task-1', 'Column 1', 0);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 0);
+
+  await kanbn.moveTask('task-1', 'Column 1', 1);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 1);
+
+  await kanbn.moveTask('task-1', 'Column 1', 2);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 2);
+
+  await kanbn.moveTask('task-1', 'Column 1', 3);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 3);
+
+  await kanbn.moveTask('task-1', 'Column 1', 4);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 4);
+
+  await kanbn.moveTask('task-1', 'Column 1', 5);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 4);
+
+  await kanbn.moveTask('task-1', 'Column 1', 0);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 0);
+
+  await kanbn.moveTask('task-1', 'Column 1', 4);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 4);
+
+  await kanbn.moveTask('task-1', 'Column 1', 1);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 1);
+
+  await kanbn.moveTask('task-1', 'Column 1', 3);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 3);
+});
+
+QUnit.test('Move a task to an absolute position in another column', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
+
+  await kanbn.moveTask('task-1', 'Column 2', -1);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 2', 0);
+
+  await kanbn.moveTask('task-1', 'Column 3', 0);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 3', 0);
+
+  await kanbn.moveTask('task-1', 'Column 2', 1);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 2', 1);
+
+  await kanbn.moveTask('task-1', 'Column 3', 2);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 3', 2);
+
+  await kanbn.moveTask('task-1', 'Column 2', 3);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 2', 3);
+
+  await kanbn.moveTask('task-1', 'Column 3', 4);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 3', 4);
+
+  await kanbn.moveTask('task-1', 'Column 2', 5);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 2', 5);
+
+  await kanbn.moveTask('task-1', 'Column 3', 6);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 3', 5);
+});
+
+QUnit.test('Move a task to a relative position in the same column', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
+
+  await kanbn.moveTask('task-1', 'Column 1', -1, true);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 0);
+
+  await kanbn.moveTask('task-1', 'Column 1', 2, true);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 2);
+
+  await kanbn.moveTask('task-1', 'Column 1', -1, true);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 1);
+
+  await kanbn.moveTask('task-1', 'Column 1', -10, true);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 0);
+
+  await kanbn.moveTask('task-1', 'Column 1', 10, true);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 4);
+});
+
+QUnit.test('Move a task to a relative position in another column', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
+
+  await kanbn.moveTask('task-1', 'Column 2', 1, true);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 2', 1);
+
+  await kanbn.moveTask('task-1', 'Column 3', 2, true);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 3', 3);
+
+  await kanbn.moveTask('task-1', 'Column 2', -1, true);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 2', 2);
+
+  await kanbn.moveTask('task-1', 'Column 3', -10, true);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 3', 0);
+
+  await kanbn.moveTask('task-1', 'Column 2', 10, true);
+  context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 2', 5);
 });

@@ -21,7 +21,7 @@ module.exports = async args => {
   }
 
   // Re-use the description arg for dates
-  let dates = [...args.date || [], ...args.description || []].flat();
+  let dates = [...args.date || [], ...args.d || []].flat();
   if (dates.length) {
     for (let i = 0; i < dates.length; i++) {
       const dateValue = chrono.parseDate(dates[i]);

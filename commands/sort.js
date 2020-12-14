@@ -333,7 +333,7 @@ module.exports = async (args, argv) => {
         default: args.save
       })
       .then(saveAnswer => {
-        sortColumn(columnName, answers.sorters, saveAnswer.save);
+        sortColumn(answers.column, answers.sorters, saveAnswer.save);
       })
       .catch(error => {
         utility.error(error, true);

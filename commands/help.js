@@ -235,6 +235,15 @@ Options:
   {b}kanbn move "task-id" --column "column"{b}
   {b}kanbn move "task-id" -c "column"{b}
     Move the task to this column in the index. This option is required if not moving a task interactively.
+
+  {b}kanbn move "task-id" --position N{b}
+  {b}kanbn move "task-id" -p N{b}
+    Move the task to a specific position in the target column.
+
+  {b}kanbn move "task-id" --position N --relative{b}
+    Move the task to a position relative to its current position in the target column.
+    When specifying a negative value for N, the negative sign can be escaped with '/' or '\\' to prevent the value being recognised as an option. For example:
+    {b}kanbn mv "task-1" -p \\-1 --relative{b}
 `,
 
   remove: `

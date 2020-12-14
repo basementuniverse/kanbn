@@ -3,13 +3,19 @@ const utility = require('../lib/utility');
 const inquirer = require('inquirer');
 const Spinner = require('cli-spinner').Spinner;
 
+inquirer.registerPrompt('selectLine', require('inquirer-select-line'));
+
 /**
  * Move a task interactively
+ * @param {object} columns
  * @param {string} columnName
  * @param {string[]} columnNames
+ * @param {string[]} sortedColumnNames
+ * @param {string} taskId
+ * @param {number} position
  * @return {Promise<any>}
  */
-async function interactive(columnName, columnNames) {
+async function interactive(columns, columnName, columnNames, sortedColumnNames, taskId, position) {
   return await inquirer.prompt([
     {
       type: 'list',
@@ -17,6 +23,15 @@ async function interactive(columnName, columnNames) {
       message: 'Column:',
       default: columnName,
       choices: columnNames
+    },
+    {
+      type: 'selectLine',
+      name: 'position',
+      message: 'Move task:',
+      default: answers => Math.max(Math.min(position, columns[answers.column].length), 0),
+      choices: answers => columns[answers.column].filter(t => t !== taskId),
+      placeholder: taskId,
+      when: answers => sortedColumnNames.indexOf(answers.column) === -1
     }
   ]);
 }
@@ -25,21 +40,15 @@ async function interactive(columnName, columnNames) {
  * Move a task
  * @param {string} taskId
  * @param {string} columnName
- * @param {string} currentColumnName
+ * @param {?number} [position=null]
+ * @param {boolean} [relative=false]
  */
-function moveTask(taskId, columnName, currentColumnName) {
-
-  // Check if the target column is the same as the current column
-  if (columnName === currentColumnName) {
-    utility.error(`Task "${taskId}" is already in column "${columnName}"`, true);
-  }
-
-  // Target column is different to current column, so move the task
+function moveTask(taskId, columnName, position = null, relative = false) {
   const spinner = new Spinner('Moving task...');
   spinner.setSpinnerString(18);
   spinner.start();
   kanbn
-  .moveTask(taskId, columnName)
+  .moveTask(taskId, columnName, position, relative)
   .then(taskId => {
     spinner.stop(true);
     console.log(`Moved task "${taskId}" to column "${columnName}"`);
@@ -83,7 +92,7 @@ module.exports = async args => {
   }
 
   // Get column name if specified
-  let currentColumnName = await kanbn.findTaskColumn(taskId);
+  const currentColumnName = await kanbn.findTaskColumn(taskId);
   let columnName = currentColumnName;
   if (args.column) {
     columnName = utility.argToString(args.column);
@@ -92,11 +101,35 @@ module.exports = async args => {
     }
   }
 
+  // Re-use sprint option for position
+  const currentPosition = index.columns[currentColumnName].indexOf(taskId);
+  let newPosition = args.position || args.p;
+  if (newPosition) {
+    newPosition = parseInt(utility.trimLeftEscapeCharacters(newPosition));
+    if (isNaN(newPosition)) {
+      utility.error('Position value must be numeric', true);
+    }
+  } else {
+    newPosition = null;
+  }
+
+  // Get a list of sorted columns
+  const sortedColumnNames = 'columnSorting' in index.options ? Object.keys(index.options.columnSorting) : [];
+
   // Move task interactively
   if (args.interactive) {
-    interactive(columnName, columnNames)
+    interactive(
+      index.columns,
+      columnName,
+      columnNames,
+      sortedColumnNames,
+      taskId,
+      newPosition === null
+        ? currentPosition
+        : (args.relative ? (currentPosition + newPosition) : newPosition)
+    )
     .then(answers => {
-      moveTask(taskId, columnName, currentColumnName);
+      moveTask(taskId, answers.column, answers.position);
     })
     .catch(error => {
       utility.error(error, true);
@@ -104,6 +137,6 @@ module.exports = async args => {
 
   // Otherwise move task non-interactively
   } else {
-    moveTask(taskId, columnName, currentColumnName);
+    moveTask(taskId, columnName, newPosition, args.relative);
   }
 };

@@ -9,8 +9,7 @@ QUnit.module('Library renameTask tests', {
   beforeEach() {
     require('../fixtures')({
       columns: 1,
-      tasks: 2,
-      randomiseColumns: false
+      tasks: 2
     });
   },
   afterEach() {

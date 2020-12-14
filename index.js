@@ -17,7 +17,8 @@ module.exports = async () => {
       'json',
       'save',
       'ascending',
-      'descending'
+      'descending',
+      'relative'
     ],
     string: [
       'id',
@@ -41,7 +42,8 @@ module.exports = async () => {
       'sprint',
       'date',
       'workload',
-      'assigned'
+      'assigned',
+      'position'
     ],
     alias: {
       'version': ['v'],
@@ -69,51 +71,42 @@ module.exports = async () => {
   // Get first command
   let command = args._[0] || '';
 
-  // Check for shortcut arguments
-  if (args.init || command === 'i') {
+  // Check for command shortcuts
+  if (command === 'i') {
     command = 'init';
   }
-  if (args.add || command === 'a') {
+  if (command === 'a') {
     command = 'add';
   }
-  if (args.edit || command === 'e') {
+  if (command === 'e') {
     command = 'edit';
   }
-  if (args.rename || command === 'ren') {
+  if (command === 'ren') {
     command = 'rename';
   }
-  if (args.remove || command === 'rm') {
+  if (command === 'rm') {
     command = 'remove';
   }
-  if (args.move || command === 'mv') {
+  if (command === 'mv') {
     command = 'move';
   }
-  if (args.task || command === 't') {
+  if (command === 't') {
     command = 'task';
   }
-  if (args.find || command === 'f') {
+  if (command === 'f') {
     command = 'find';
   }
-  if (args.status || command === 's') {
+  if (command === 's') {
     command = 'status';
   }
-  if (args.validate) {
-    command = 'validate';
-  }
-  if (args.sort) {
-    command = 'sort';
-  }
-  if (args.sprint || command === 'sp') {
+  if (command === 'sp') {
     command = 'sprint';
   }
-  if (args.board || command === 'b') {
+  if (command === 'b') {
     command = 'board';
   }
   if (args.version || command === 'v') {
     command = 'version';
-  }
-  if (args.nuclear) {
-    command = 'nuclear';
   }
   if (args.help || command === 'h') {
     command = 'help';
