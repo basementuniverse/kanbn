@@ -500,6 +500,10 @@ Validate kanbn index file and all task files, and report any formatting errors.
 Options:
   {b}kanbn validate --save{b}
     Re-save the index and task files. This will ensure that all index column sorting settings are applied and that all tasks are formatted correctly.
+
+  {b}kanbn validate --json{b}
+  {b}kanbn validate -j{b}
+    Output validation errors in JSON format.
 `,
 
   nuclear: `

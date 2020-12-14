@@ -1,5 +1,6 @@
 const term = require('terminal-kit').terminal;
 const formatDate = require('dateformat');
+const figures = require('figures');
 
 module.exports = (() => {
   const TASK_SEPARATOR = '\n\n';
@@ -46,6 +47,35 @@ module.exports = (() => {
     return new Function(...Object.keys(taskData), 'return `' + taskTemplate + '`;')(...Object.values(taskData));
   }
 
+  /**
+   * Get a column heading with icons
+   * @param {object} index
+   * @param {string} columnName
+   * @return {string} The column heading
+   */
+  function getColumnHeading(index, columnName) {
+    let heading = '';
+    if (
+      'completedColumns' in index.options &&
+      index.options.completedColumns.indexOf(columnName) !== -1
+    ) {
+      heading += `^g${figures.tick}^: `;
+    }
+    if (
+      'startedColumns' in index.options &&
+      index.options.startedColumns.indexOf(columnName) !== -1
+    ) {
+      heading += `^c${figures.pointer}^: `;
+    }
+    if (
+      'archiveColumns' in index.options &&
+      index.options.archiveColumns.indexOf(columnName) !== -1
+    ) {
+      heading += `^y${figures.star}^: `;
+    }
+    return heading + `^+${columnName}^:`;
+  }
+
   return {
 
     /**
@@ -68,13 +98,25 @@ module.exports = (() => {
         tasks = Object.fromEntries(Object.values(index.columns).flat().map(taskId => [taskId, taskId]));
       }
 
+      // Prepare table headings and content
+      const headings = [];
+      const cells = [];
+      for (let [columnName, columnTasks] of Object.entries(index.columns)) {
+        if (
+          'hiddenColumns' in index.options &&
+          index.options.hiddenColumns.indexOf(columnName) !== -1
+        ) {
+          continue;
+        }
+        headings.push(getColumnHeading(index, columnName));
+        cells.push(columnTasks.map(taskId => tasks[taskId]).join(TASK_SEPARATOR));
+      }
+
       // Display as a table
       term.table(
         [
-          Object.keys(index.columns).map(columnName => `^+${columnName}^:`),
-          Object.values(index.columns).map(
-            columnTasks => columnTasks.map(taskId => tasks[taskId]).join(TASK_SEPARATOR)
-          )
+          headings,
+          cells
         ],
         {
           hasBorder: true,

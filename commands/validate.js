@@ -1,6 +1,7 @@
 const kanbn = require('../lib/main');
 const utility = require('../lib/utility');
 const Spinner = require('cli-spinner').Spinner;
+const yaml = require('yamljs');
 
 module.exports = async args => {
 
@@ -19,7 +20,14 @@ module.exports = async args => {
     if (result === true) {
       console.log('Everything ok');
     } else {
-      utility.error(`${result.length} errors found in task files:\n${result.join('\n')}`, true);
+      utility.error(
+        `${result.length} errors found in task files:\n${(
+          args.json
+            ? JSON.stringify(result, null, 2)
+            : yaml.stringify(result, 4, 2)
+        )}`,
+        true
+      );
     }
   })
   .catch(error => {
