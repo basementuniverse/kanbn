@@ -43,7 +43,8 @@ module.exports = async () => {
       'date',
       'workload',
       'assigned',
-      'position'
+      'position',
+      'lane'
     ],
     alias: {
       'version': ['v'],
@@ -64,7 +65,8 @@ module.exports = async () => {
       'sprint': ['p'],
       'workload': ['w'],
       'ascending': ['a'],
-      'descending': ['z']
+      'descending': ['z'],
+      'lane': ['l']
     }
   });
 
