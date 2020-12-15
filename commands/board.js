@@ -1,7 +1,7 @@
 const kanbn = require('../lib/main');
 const utility = require('../lib/utility');
+const board = require('../lib/board');
 const Spinner = require('cli-spinner').Spinner;
-const board = require('../app/board');
 
 module.exports = async args => {
 

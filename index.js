@@ -43,8 +43,7 @@ module.exports = async () => {
       'date',
       'workload',
       'assigned',
-      'position',
-      'lane'
+      'position'
     ],
     alias: {
       'version': ['v'],
@@ -65,8 +64,7 @@ module.exports = async () => {
       'sprint': ['p'],
       'workload': ['w'],
       'ascending': ['a'],
-      'descending': ['z'],
-      'lane': ['l']
+      'descending': ['z']
     }
   });
 
@@ -119,9 +117,6 @@ module.exports = async () => {
     case 'version':
       require('./commands/version')(args);
       break;
-    case 'help':
-      require('./commands/help')(args);
-      break;
     case 'init':
       await require('./commands/init')(args);
       break;
@@ -165,7 +160,8 @@ module.exports = async () => {
       await require('./commands/nuclear')(args);
       break;
     case '':
-      require('./app/main.js')();
+    case 'help':
+      require('./commands/help')(args);
       break;
     default:
       utility.error(`"${command}" is not a valid command`, true);

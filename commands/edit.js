@@ -29,11 +29,6 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
     'assigned' in taskData.metadata &&
     taskData.metadata.assigned != null
   );
-  const laneExists = (
-    'metadata' in taskData &&
-    'lane' in taskData.metadata &&
-    taskData.metadata.lane != null
-  );
   return await inquirer.prompt([
     {
       type: 'input',
@@ -145,45 +140,6 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       message: 'Assigned to:',
       default: assignedExists ? taskData.metadata.assigned : getGitUsername(),
       when: answers => answers.setAssigned || answers.editAssigned === 'edit'
-    },
-    {
-      type: 'expand',
-      name: 'editLane',
-      message: 'Edit or remove lane?',
-      default: 'none',
-      when: answers => laneExists,
-      choices: [
-        {
-          key: 'e',
-          name: 'Edit',
-          value: 'edit'
-        },
-        {
-          key: 'r',
-          name: 'Remove',
-          value: 'remove'
-        },
-        new inquirer.Separator(),
-        {
-          key: 'n',
-          name: 'Do nothing',
-          value: 'none'
-        }
-      ]
-    },
-    {
-      type: 'confirm',
-      name: 'setLane',
-      message: 'Add this task to a lane?',
-      default: false,
-      when: answers => !laneExists
-    },
-    {
-      type: 'input',
-      name: 'lane',
-      message: 'Task lane:',
-      default: laneExists ? taskData.metadata.lane : '',
-      when: answers => answers.setLane || answers.editLane === 'edit'
     },
     {
       type: 'recursive',
@@ -487,14 +443,6 @@ module.exports = async args => {
     }
   }
 
-  // Lane
-  if (args.lane) {
-    if (!('metadata' in taskData)) {
-      taskData.metadata = {};
-    }
-    taskData.metadata.lane = utility.argToString(args.lane);
-  }
-
   // Remove sub-tasks
   if (args['remove-sub-task']) {
     const removedSubTasks = Array.isArray(args['remove-sub-task'])
@@ -641,16 +589,6 @@ module.exports = async args => {
       // Assigned
       if ('assigned' in answers) {
         taskData.metadata.assigned = answers.assigned;
-      }
-
-      // Remove lane
-      if ('editLane' in answers && answers.editLane === 'remove') {
-        delete taskData.metadata.lane;
-      }
-
-      // Lane
-      if ('lane' in answers) {
-        taskData.metadata.lane = answers.lane;
       }
 
       // Edit or remove sub-tasks

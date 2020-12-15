@@ -29,11 +29,6 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
     'assigned' in taskData.metadata &&
     taskData.metadata.assigned != null
   );
-  const laneExists = (
-    'metadata' in taskData &&
-    'lane' in taskData.metadata &&
-    taskData.metadata.lane != null
-  );
   return await inquirer.prompt([
     {
       type: 'input',
@@ -95,20 +90,6 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
       message: 'Assigned to:',
       default: assignedExists ? taskData.metadata.assigned : getGitUsername(),
       when: answers => answers.setAssigned || assignedExists
-    },
-    {
-      type: 'confirm',
-      name: 'setLane',
-      message: 'Add this task to a lane?',
-      default: false,
-      when: answers => !laneExists
-    },
-    {
-      type: 'input',
-      name: 'lane',
-      message: 'Task lane:',
-      default: laneExists ? taskData.metadata.lane : '',
-      when: answers => answers.setLane || laneExists
     },
     {
       type: 'recursive',
@@ -358,11 +339,6 @@ module.exports = async args => {
     }
   }
 
-  // Lane
-  if (args.lane) {
-    taskData.metadata.lane = utility.argToString(args.lane);
-  }
-
   // Sub-tasks
   if (args['sub-task']) {
     const subTasks = Array.isArray(args['sub-task']) ? args['sub-task'] : [args['sub-task']];
@@ -423,9 +399,6 @@ module.exports = async args => {
       }
       if ('assigned' in answers) {
         taskData.metadata.assigned = answers.assigned;
-      }
-      if ('lane' in answers) {
-        taskData.metadata.lane = answers.lane;
       }
       if ('subTasks' in answers) {
         taskData.subTasks = answers.subTasks.map(subTask => ({
