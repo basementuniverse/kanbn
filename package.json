@@ -1,6 +1,6 @@
 {
   "name": "kanbn",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A cli Kanban application",
   "main": "index.js",
   "scripts": {
