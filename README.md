@@ -2,6 +2,14 @@
 
 A cli Kanban application.
 
+## Installation
+
+```
+npm install -g git+https://github.com/basementuniverse/kanbn.git
+```
+
+## Usage
+
 ```
 Usage:
   kanbn ......... Show help menu
