@@ -1,19 +1,29 @@
 # KANBN
 
-A cli Kanban application
+A cli Kanban application.
 
-## Plans
+```
+Usage:
+  kanbn ......... Show help menu
+  kanbn <command> [options]
 
-Add, edit and track tasks using the command line, e.g:
-`kanbn init`
-`kanbn add -t "My task"`
-`kanbn mv my-task column-name`
-etc..
+Where <command> is one of:
+  help .......... Show help menu
+  version ....... Show package version
+  init .......... Initialise kanbn board
+  board ......... Show the kanbn board
+  task .......... Show a kanbn task
+  add ........... Add a kanbn task
+  edit .......... Edit a kanbn task
+  rename ........ Rename a kanbn task
+  move .......... Move a kanbn task to another column
+  remove ........ Remove a kanbn task
+  find .......... Search for kanbn tasks
+  status ........ Get project and task statistics
+  sort .......... Sort a column in the index
+  sprint ........ Start a new sprint
+  validate ...... Validate index and task files
+  nuclear ....... Remove the kanbn board and all tasks
+```
 
-All commands should have an interactive mode
-
-There will also be a cli user interface for viewing the kanbn board and making changes in the terminal
-
-There will also be a vscode extension allowing you to view the kanbn board and make changes in a webview/activityview
-
-There will also be https://kanbn.io, allowing you to 'publish' your kanbn board, and will use github webhooks to keep the board up-to-date. This will enable extra abilities, like team collaboration (with swimlanes?), tracking multiple projects in a single board, easily view task history, etc...
+See [/docs](./docs/index.md) for more detailed documentation.
