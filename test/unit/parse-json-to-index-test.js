@@ -1,4 +1,4 @@
-const parseIndex = require('../../lib/parse-index.js');
+const parseIndex = require('../../src/parse-index.js');
 
 QUnit.module('JSON to Index conversion tests');
 

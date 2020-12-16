@@ -1,4 +1,4 @@
-const parseTask = require('../../lib/parse-task.js');
+const parseTask = require('../../src/parse-task.js');
 
 QUnit.module('JSON to Task conversion tests');
 

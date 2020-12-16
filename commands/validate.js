@@ -1,5 +1,5 @@
-const kanbn = require('../lib/main');
-const utility = require('../lib/utility');
+const kanbn = require('../src/main');
+const utility = require('../src/utility');
 const Spinner = require('cli-spinner').Spinner;
 const yaml = require('yamljs');
 
@@ -18,7 +18,7 @@ module.exports = async args => {
   .then(result => {
     spinner.stop(true);
     if (result === true) {
-      console.log('Everything ok');
+      console.log('Everything OK');
     } else {
       utility.error(
         `${result.length} errors found in task files:\n${(

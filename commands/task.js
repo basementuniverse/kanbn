@@ -1,8 +1,8 @@
-const kanbn = require('../lib/main');
-const utility = require('../lib/utility');
+const kanbn = require('../src/main');
+const utility = require('../src/utility');
+const parseTask = require('../src/parse-task');
 const Spinner = require('cli-spinner').Spinner;
 const cliMd = require('cli-markdown');
-const parseTask = require('../lib/parse-task');
 
 /**
  * Show task information

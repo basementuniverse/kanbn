@@ -1,7 +1,7 @@
 const mockFileSystem = require('mock-fs');
 const fs = require('fs');
 const path = require('path');
-const kanbn = require('../../lib/main');
+const kanbn = require('../../src/main');
 const context = require('../context');
 
 QUnit.module('Library createTask tests', {

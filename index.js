@@ -1,6 +1,6 @@
 const minimist = require('minimist');
 const path = require('path');
-const utility = require('./lib/utility');
+const utility = require('./src/utility');
 
 module.exports = async () => {
   require('dotenv').config({ path: path.join(__dirname, '.env') });

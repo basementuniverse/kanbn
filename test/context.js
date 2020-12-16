@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const parseIndex = require('../lib/parse-index');
-const parseTask = require('../lib/parse-task');
+const parseIndex = require('../src/parse-index');
+const parseTask = require('../src/parse-task');
 
 function loadIndex(basePath) {
   return parseIndex.md2json(fs.readFileSync(path.join(basePath, 'index.md'), { encoding: 'utf-8' }));

@@ -11,7 +11,7 @@ QUnit.module('Command initialise tests', {
 QUnit.test('Initialise kanbn with no options', async assert => {
 
   // Mock kanbn library
-  mockRequire('../../lib/main', {
+  mockRequire('../../src/main', {
     async initialised() {
       return false;
     },

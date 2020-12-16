@@ -1,5 +1,5 @@
-const kanbn = require('../lib/main');
-const utility = require('../lib/utility');
+const kanbn = require('../src/main');
+const utility = require('../src/utility');
 const inquirer = require('inquirer');
 const Spinner = require('cli-spinner').Spinner;
 

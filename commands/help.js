@@ -1,9 +1,9 @@
-const utility = require('../lib/utility');
+const utility = require('../src/utility');
 
 const menus = {
   help: `
 Usage:
-  {b}kanbn{b} {d}.........{d} Open interactive kanbn board
+  {b}kanbn{b} {d}.........{d} Show help menu
   {b}kanbn <command> [options]{b}
 
 Where {b}<command>{b} is one of:

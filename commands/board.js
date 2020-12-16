@@ -1,6 +1,6 @@
-const kanbn = require('../lib/main');
-const utility = require('../lib/utility');
-const board = require('../lib/board');
+const kanbn = require('../src/main');
+const utility = require('../src/utility');
+const board = require('../src/board');
 const Spinner = require('cli-spinner').Spinner;
 
 module.exports = async args => {

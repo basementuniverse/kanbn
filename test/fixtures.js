@@ -1,8 +1,8 @@
 const mockFileSystem = require('mock-fs');
 const faker = require('faker');
-const parseIndex = require('../lib/parse-index');
-const parseTask = require('../lib/parse-task');
-const utility = require('../lib/utility');
+const parseIndex = require('../src/parse-index');
+const parseTask = require('../src/parse-task');
+const utility = require('../src/utility');
 
 /**
  * Generate a random task

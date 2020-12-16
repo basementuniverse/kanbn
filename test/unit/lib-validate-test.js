@@ -1,7 +1,7 @@
 const mockFileSystem = require('mock-fs');
 const fs = require('fs');
 const path = require('path');
-const kanbn = require('../../lib/main');
+const kanbn = require('../../src/main');
 
 QUnit.module('Library validate tests', {
   before() {
