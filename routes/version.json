@@ -1,0 +1,10 @@
+{
+  "name": "Version",
+  "commands": [
+    "version",
+    "v"
+  ],
+  "args": {},
+  "controller": "./src/controllers/version",
+  "help": "./docs/commands/version.txt"
+}

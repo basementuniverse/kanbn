@@ -1,0 +1,35 @@
+{
+  "name": "Add Task",
+  "commands": [
+    "add",
+    "a"
+  ],
+  "args": {
+    "boolean": [
+      "interactive"
+    ],
+    "string": [
+      "name",
+      "description",
+      "column",
+      "sub-task",
+      "tag",
+      "relation",
+      "due"
+    ],
+    "alias": {
+      "interactive": ["i"],
+      "name": ["n"],
+      "description": ["d"],
+      "column": ["c"],
+      "sub-task": ["s"],
+      "tag": ["t"],
+      "relation": ["r"],
+      "due": ["e"],
+      "assigned": ["a"],
+      "untracked": ["u"]
+    }
+  },
+  "controller": "./src/controllers/add",
+  "help": "./docs/commands/add.txt"
+}

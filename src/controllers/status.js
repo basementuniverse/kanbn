@@ -1,5 +1,5 @@
-const kanbn = require('../src/main');
-const utility = require('../src/utility');
+const kanbn = require('../main');
+const utility = require('../utility');
 const Spinner = require('cli-spinner').Spinner;
 const chrono = require('chrono-node');
 
@@ -20,18 +20,19 @@ module.exports = async args => {
     }
   }
 
-  // Re-use the description arg for dates
-  let dates = [...args.date || [], ...args.d || []].flat();
-  if (dates.length) {
-    for (let i = 0; i < dates.length; i++) {
-      const dateValue = chrono.parseDate(dates[i]);
-      if (dateValue === null) {
-        utility.error('Unable to parse date', true);
+  // Get filter dates
+  let dates = null;
+  if (args.date) {
+    dates = Array.isArray(args.date) ? args.date : [args.date];
+    if (dates.length) {
+      for (let i = 0; i < dates.length; i++) {
+        const dateValue = chrono.parseDate(dates[i]);
+        if (dateValue === null) {
+          utility.error('Unable to parse date', true);
+        }
+        dates[i] = dateValue;
       }
-      dates[i] = dateValue;
     }
-  } else {
-    dates = null;
   }
 
   // Get status
@@ -43,7 +44,7 @@ module.exports = async args => {
     args.quiet,
     args.json,
     args.untracked,
-    args.due !== undefined,
+    args.due,
     sprint,
     dates
   )

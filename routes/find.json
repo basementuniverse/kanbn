@@ -1,0 +1,44 @@
+{
+  "name": "Find Tasks",
+  "commands": [
+    "find",
+    "f"
+  ],
+  "args": {
+    "boolean": [
+      "interactive",
+      "quiet"
+    ],
+    "string": [
+      "id",
+      "name",
+      "description",
+      "column",
+      "sub-task",
+      "count-sub-tasks",
+      "tag",
+      "count-tags",
+      "relation",
+      "count-relations",
+      "created",
+      "updated",
+      "started",
+      "completed",
+      "due",
+      "assigned"
+    ],
+    "alias": {
+      "interactive": ["i"],
+      "name": ["n"],
+      "description": ["d"],
+      "column": ["c"],
+      "quiet": ["q"],
+      "due": ["e"],
+      "sub-task": ["s"],
+      "tag": ["t"],
+      "relation": ["r"]
+    }
+  },
+  "controller": "./src/controllers/find",
+  "help": "./docs/commands/find.txt"
+}

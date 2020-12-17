@@ -1,6 +1,6 @@
-const kanbn = require('../src/main');
-const utility = require('../src/utility');
-const board = require('../src/board');
+const kanbn = require('../main');
+const utility = require('../utility');
+const board = require('../board');
 const Spinner = require('cli-spinner').Spinner;
 
 module.exports = async args => {
@@ -38,5 +38,5 @@ module.exports = async args => {
   }
 
   // Show the board
-  await board.show(index, tasks);
+  await board.show(index, tasks, args.view);
 };

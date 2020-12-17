@@ -1,0 +1,25 @@
+{
+  "name": "Initialise",
+  "commands": [
+    "init",
+    "i"
+  ],
+  "args": {
+    "string": [
+      "name",
+      "description",
+      "column"
+    ],
+    "boolean": [
+      "interactive"
+    ],
+    "alias": {
+      "name": ["n"],
+      "description": ["d"],
+      "column": ["c"],
+      "interactive": ["i"]
+    }
+  },
+  "controller": "./src/controllers/init",
+  "help": "./docs/commands/init.txt"
+}

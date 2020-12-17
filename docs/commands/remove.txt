@@ -1,0 +1,12 @@
+{b}kanbn remove "task-id"{b}
+{b}kanbn rm "task-id"{b}
+
+Remove an existing task.
+
+Options:
+  {b}kanbn remove "task-id" --index{b}
+    Only remove the task from the index. The task file will not be deleted.
+
+  {b}kanbn remove "task-id" --force{b}
+  {b}kanbn remove "task-id" -f{b}
+    Force remove the task without asking for confirmation.

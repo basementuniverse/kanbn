@@ -1,0 +1,29 @@
+{
+  "name": "Status",
+  "commands": [
+    "status",
+    "s"
+  ],
+  "args": {
+    "boolean": [
+      "quiet",
+      "json",
+      "untracked",
+      "due"
+    ],
+    "string": [
+      "sprint",
+      "date"
+    ],
+    "alias": {
+      "untracked": ["u"],
+      "quiet": ["q"],
+      "json": ["j"],
+      "due": ["e"],
+      "sprint": ["s"],
+      "date": ["d"]
+    }
+  },
+  "controller": "./src/controllers/status",
+  "help": "./docs/commands/status.txt"
+}

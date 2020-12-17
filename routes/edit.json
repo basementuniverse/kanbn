@@ -1,0 +1,37 @@
+{
+  "name": "Edit Task",
+  "commands": [
+    "edit",
+    "e"
+  ],
+  "args": {
+    "boolean": [
+      "interactive"
+    ],
+    "string": [
+      "name",
+      "description",
+      "column",
+      "sub-task",
+      "remove-sub-task",
+      "tag",
+      "remove-tag",
+      "relation",
+      "remove-relation",
+      "due"
+    ],
+    "alias": {
+      "interactive": ["i"],
+      "name": ["n"],
+      "description": ["d"],
+      "column": ["c"],
+      "sub-task": ["s"],
+      "tag": ["t"],
+      "relation": ["r"],
+      "due": ["e"],
+      "assigned": ["a"]
+    }
+  },
+  "controller": "./src/controllers/edit",
+  "help": "./docs/commands/edit.txt"
+}

@@ -65,8 +65,9 @@ module.exports = (() => {
      * Show the kanbn board
      * @param {object} index The index object
      * @param {?object[]} [tasks=null] An array of task objects, if this is null then only show task ids
+     * @param {?string} [view=null] The view to show, or null to show the default view
      */
-    async show(index, tasks = null) {
+    async show(index, tasks = null, view = null) {
       if (tasks !== null) {
 
         // Transform each task using a template string
@@ -79,6 +80,8 @@ module.exports = (() => {
         // Only show task ids
         tasks = Object.fromEntries(Object.values(index.columns).flat().map(taskId => [taskId, taskId]));
       }
+
+      // TODO board views
 
       // Prepare table headings and content
       const headings = [];

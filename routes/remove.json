@@ -1,0 +1,19 @@
+{
+  "name": "Remove Task",
+  "commands": [
+    "remove",
+    "rm"
+  ],
+  "args": {
+    "boolean": [
+      "force",
+      "index"
+    ],
+    "alias": {
+      "force": ["f"],
+      "index": ["x"]
+    }
+  },
+  "controller": "./src/controllers/remove",
+  "help": "./docs/commands/remove.txt"
+}

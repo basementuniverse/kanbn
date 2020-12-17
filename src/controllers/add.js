@@ -1,5 +1,5 @@
-const kanbn = require('../src/main');
-const utility = require('../src/utility');
+const kanbn = require('../main');
+const utility = require('../utility');
 const inquirer = require('inquirer');
 const Spinner = require('cli-spinner').Spinner;
 const fuzzy = require('fuzzy');
@@ -328,9 +328,9 @@ module.exports = async args => {
   }
 
   // Assigned
-  if ('assigned' in args) {
+  if (args.assigned) {
     const gitUsername = getGitUsername();
-    if (args.assigned === '') {
+    if (args.assigned === true) {
       if (gitUsername) {
         taskData.metadata.assigned = gitUsername;
       }

@@ -28,7 +28,8 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "capture-stdout": "^1.0.0",
+    "asciichart": "^1.5.25",
+    "auto-load": "^3.0.4",
     "chrono-node": "^2.1.10",
     "cli-markdown": "^1.7.0",
     "cli-spinner": "^0.2.10",
@@ -44,19 +45,20 @@
     "inquirer-recursive": "github:basementuniverse/inquirer-recursive",
     "inquirer-select-line": "github:basementuniverse/inquirer-select-line",
     "jsonschema": "^1.4.0",
-    "marked": "^1.2.6",
+    "marked": "^1.2.7",
     "md-2-json": "^1.0.6",
     "minimist": "^1.2.5",
     "param-case": "^3.0.4",
-    "strip-ansi": "^6.0.0",
     "terminal-kit": "^1.44.0",
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "capture-stdout": "^1.0.0",
     "faker": "^5.1.0",
     "mock-argv": "^1.1.10",
     "mock-fs": "^4.13.0",
     "mock-require": "^3.0.3",
-    "qunit": "^2.13.0"
+    "qunit": "^2.13.0",
+    "strip-ansi": "^6.0.0"
   }
 }

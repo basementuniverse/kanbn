@@ -1,0 +1,25 @@
+{
+  "name": "Move Task",
+  "commands": [
+    "move",
+    "mv"
+  ],
+  "args": {
+    "boolean": [
+      "interactive",
+      "relative"
+    ],
+    "string": [
+      "column",
+      "position"
+    ],
+    "alias": {
+      "interactive": ["i"],
+      "column": ["c"],
+      "position": ["p"],
+      "relative": ["r"]
+    }
+  },
+  "controller": "./src/controllers/move",
+  "help": "./docs/commands/move.txt"
+}

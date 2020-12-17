@@ -1,0 +1,17 @@
+{b}kanbn sprint{b}
+{b}kanbn sp{b}
+
+Start a new sprint.
+
+Options:
+  {b}kanbn sprint --interactive{b}
+  {b}kanbn sprint -i{b}
+    Start a new sprint interactively.
+
+  {b}kanbn sprint --name "name"{b}
+  {b}kanbn sprint -n "name"{b}
+    Start a new sprint with the specified name.
+
+  {b}kanbn sprint --description "description"{b}
+  {b}kanbn sprint -d "description"{b}
+    Start a new sprint with the specified description.

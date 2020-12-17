@@ -1,0 +1,23 @@
+{b}kanbn move "task-id"{b}
+{b}kanbn mv "task-id"{b}
+
+Move an existing task to a different column in the index. The task 'updated' date will also be set.
+
+Options:
+  {b}kanbn move "task-id" --interactive{b}
+  {b}kanbn move "task-id" -n{b}
+    Move a task interactively.
+
+  {b}kanbn move "task-id" --column "column"{b}
+  {b}kanbn move "task-id" -c "column"{b}
+    Move the task to this column in the index. This option is required if not moving a task interactively.
+
+  {b}kanbn move "task-id" --position N{b}
+  {b}kanbn move "task-id" -p N{b}
+    Move the task to a specific position in the target column.
+
+  {b}kanbn move "task-id" --position N --relative{b}
+  {b}kanbn move "task-id" --position N -r{b}
+    Move the task to a position relative to its current position in the target column.
+    When specifying a negative value for N, the negative sign can be escaped with '/' or '\\' to prevent the value being recognised as an option. For example:
+    {b}kanbn mv "task-1" -p \\-1 --relative{b}

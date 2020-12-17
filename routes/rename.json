@@ -1,0 +1,21 @@
+{
+  "name": "Rename Task",
+  "commands": [
+    "rename",
+    "ren"
+  ],
+  "args": {
+    "boolean": [
+      "interactive"
+    ],
+    "string": [
+      "name"
+    ],
+    "alias": {
+      "interactive": ["i"],
+      "name": ["n"]
+    }
+  },
+  "controller": "./src/controllers/rename",
+  "help": "./docs/commands/rename.txt"
+}

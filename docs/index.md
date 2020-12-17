@@ -1,3 +1,5 @@
 # KANBN
 
-TOC here...
+A CLI Kanban application.
+
+// TODO write detailed documentation...

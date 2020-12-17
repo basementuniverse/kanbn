@@ -1,0 +1,16 @@
+{
+  "name": "Remove Everything",
+  "commands": [
+    "nuclear"
+  ],
+  "args": {
+    "boolean": [
+      "force"
+    ],
+    "alias": {
+      "force": ["f"]
+    }
+  },
+  "controller": "./src/controllers/nuclear",
+  "help": "./docs/commands/nuclear.txt"
+}

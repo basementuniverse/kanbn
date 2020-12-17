@@ -1,0 +1,59 @@
+{b}kanbn add{b}
+{b}kanbn a{b}
+
+Create a new task and add it to the index.
+
+Options:
+  {b}kanbn add --interactive{b}
+  {b}kanbn add -i{b}
+    Create a new task or add untracked tasks interactively.
+
+  {b}kanbn add --name "name"{b}
+  {b}kanbn add --n "name"{b}
+    Create a new task with the specified name. This option is required if not adding a task interactively.
+
+  {b}kanbn add --description "description"{b}
+  {b}kanbn add -d "description"{b}
+    Create a new task with the specified description.
+
+  {b}kanbn add --column "column"{b}
+  {b}kanbn add -c "column"{b}
+    Create a new task and add it to the specified column in the index. If this is not specified, the task will be added to the first available column.
+
+  {b}kanbn add --due "date"{b}
+  {b}kanbn add -e "date"{b}
+    Create a new task and set the due date. The date can be in (almost) any format.
+
+  {b}kanbn add --assigned "name"{b}
+  {b}kanbn add -a "name"{b}
+    Create a new task and set the assigned user name. If this option is left blank, the current git username will be used.
+
+  {b}kanbn add --sub-task "sub-task"{b}
+  {b}kanbn add -s "sub-task"{b}
+    Create a new task with a sub-task. The sub-task text can be prefixed with "[ ] " or "[x] " to set the completion status.
+
+  {b}kanbn add --tag "tag"{b}
+  {b}kanbn add -t "tag"{b}
+    Create a new task with a tag.
+
+  {b}kanbn add --relation "relation"{b}
+  {b}kanbn add -r "relation"{b}
+    Create a new task with a relation. The relation should be an existing task id, optionally prefixed with a relation type.
+    Examples:
+      "blocks my-task-1"
+      "duplicates my-task-2"
+
+  {b}kanbn add --untracked{b}
+  {b}kanbn add -u{b}
+    Find all untracked tasks and add them to the index. If a column name is not specified, the tasks will be added to the first column.
+
+  {b}kanbn add --untracked "filename"{b}
+  {b}kanbn add -u "filename"{b}
+    Add untracked tasks in the specified file(s) to the the index. This option can be repeated to add multiple files.
+
+Examples:
+  {b}kanbn a -n "My Task #1" -c "Todo" -s "[x] My sub-task" -t "Tag 1" -t "Tag 2" -r "duplicates my-task-2"{b}
+    Creates a task with id "my-task-1" in column "Todo" with a completed sub-task, 2 tags, and a "duplicates" relation to "my-task-2".
+
+  {b}kanbn a -ui -f "my-task-3" -f "my-task-4" -c "Done"{b}
+    Interactively adds untracked tasks "my-task-3.md" and "my-task-4.md" to the "Done" column.

@@ -1,0 +1,13 @@
+{b}kanbn rename "task-id"{b}
+{b}kanbn ren "task-id"{b}
+
+Rename a task. This will change the task filename and update the index. The task 'updated' date will also be set.
+
+Options:
+  {b}kanbn rename "task-id" --interactive{b}
+  {b}kanbn rename "task-id" -i{b}
+    Rename a task interactively.
+
+  {b}kanbn rename "task-id" --name "name"{b}
+  {b}kanbn rename "task-id" -n "name"{b}
+    Rename the task with the specified name. This option is required if not renaming a task interactively.

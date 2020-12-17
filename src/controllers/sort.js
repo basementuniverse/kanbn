@@ -1,5 +1,5 @@
-const kanbn = require('../src/main');
-const utility = require('../src/utility');
+const kanbn = require('../main');
+const utility = require('../utility');
 const inquirer = require('inquirer');
 const Spinner = require('cli-spinner').Spinner;
 
@@ -131,6 +131,14 @@ const sorterFields = [
       '-w'
     ],
     filterable: false
+  },
+  {
+    name: 'Assigned user',
+    field: 'assigned',
+    options: [
+      '--assigned'
+    ],
+    filterable: true
   }
 ];
 
@@ -255,6 +263,7 @@ module.exports = async (args, argv) => {
   ];
 
   // Get the column that we're sorting
+  argv = argv.slice(3);
   const columnName = args._.length > 1 ? args._[1] : null;
 
   // Column name must be defined if not sorting interactively

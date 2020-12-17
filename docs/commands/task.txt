@@ -1,0 +1,9 @@
+{b}kanbn task "task-id"{b}
+{b}kanbn t "task-id"{b}
+
+Show information about a kanbn task.
+
+Options:
+  {b}kanbn task "task-id" --json{b}
+  {b}kanbn task "task-id" -j{b}
+    Show task information in JSON format.

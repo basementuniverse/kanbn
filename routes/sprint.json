@@ -1,0 +1,23 @@
+{
+  "name": "Start Sprint",
+  "commands": [
+    "sprint",
+    "sp"
+  ],
+  "args": {
+    "boolean": [
+      "interactive"
+    ],
+    "string": [
+      "name",
+      "description"
+    ],
+    "alias": {
+      "interactive": ["i"],
+      "name": ["n"],
+      "description": ["d"]
+    }
+  },
+  "controller": "./src/controllers/sprint",
+  "help": "./docs/commands/sprint.txt"
+}

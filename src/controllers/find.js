@@ -1,5 +1,5 @@
-const kanbn = require('../src/main');
-const utility = require('../src/utility');
+const kanbn = require('../main');
+const utility = require('../utility');
 const inquirer = require('inquirer');
 const Spinner = require('cli-spinner').Spinner;
 const chrono = require('chrono-node');
@@ -32,6 +32,7 @@ async function interactive() {
             'Column',
             'Created',
             'Updated',
+            'Started',
             'Completed',
             'Due',
             'Sub-tasks',
@@ -40,6 +41,7 @@ async function interactive() {
             'Count tags',
             'Relations',
             'Count relations',
+            'Assigned user',
             new inquirer.Separator(),
             'None'
           ]
@@ -55,7 +57,8 @@ async function interactive() {
             'Description',
             'Sub-tasks',
             'Tags',
-            'Relations'
+            'Relations',
+            'Assigned user'
           ].indexOf(answers.type) !== -1,
           validate: async value => {
             if (!value) {
@@ -72,6 +75,7 @@ async function interactive() {
           when: answers => [
             'Created',
             'Updated',
+            'Started',
             'Completed',
             'Due'
           ].indexOf(answers.type) !== -1,
@@ -229,6 +233,7 @@ const filterPropertyNames = {
   'Column': 'column',
   'Created': 'created',
   'Updated': 'updated',
+  'Started': 'started',
   'Completed': 'completed',
   'Due': 'due',
   'Sub-tasks': 'sub-task',
@@ -293,6 +298,11 @@ module.exports = async args => {
   if ('updated' in filters) {
     if (!convertDateFilters(filters, 'updated')) {
       utility.error('Unable to parse updated date', true);
+    }
+  }
+  if ('started' in filters) {
+    if (!convertDateFilters(filters, 'started')) {
+      utility.error('Unable to parse started date', true);
     }
   }
   if ('completed' in filters) {

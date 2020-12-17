@@ -1,0 +1,52 @@
+{b}kanbn edit "task-id"{b}
+{b}kanbn e "task-id"{b}
+
+Edit an existing task and set its 'updated' date. This command can be used to rename and move tasks as well.
+
+Options:
+  {b}kanbn edit "task-id" --interactive{b}
+  {b}kanbn edit "task-id" -i{b}
+    Edit a task interactively.
+
+  {b}kanbn edit "task-id" --name "name"{b}
+  {b}kanbn edit "task-id" -n "name"{b}
+    Modify a task name.
+
+  {b}kanbn edit "task-id" --description "description"{b}
+  {b}kanbn edit "task-id" -d "description"{b}
+    Modify a task description.
+
+  {b}kanbn edit "task-id" --column "column"{b}
+  {b}kanbn edit "task-id" -c "column"{b}
+    Move a task to a different column.
+
+  {b}kanbn edit "task-id" --due "date"{b}
+  {b}kanbn edit "task-id" -e "date"{b}
+    Modify a task due date. The date can be in (almost) any format.
+
+  {b}kanbn edit "task-id" --assigned "name"{b}
+    Modify a task assigned user name. If this option is left blank, the current git username will be used.
+
+  {b}kanbn edit "task-id" --remove-sub-task "sub-task"{b}
+    Remove a sub-task.
+
+  {b}kanbn edit "task-id" --sub-task "sub-task"{b}
+  {b}kanbn edit "task-id" -s "sub-task"{b}
+    Add or modify a sub-task. The sub-task text can be prefixed with "[ ] " or "[x] " to set the completion status.
+
+  {b}kanbn edit "task-id" --remove-tag "tag"{b}
+    Remove a tag.
+
+  {b}kanbn edit "task-id" --tag "tag"{b}
+  {b}kanbn edit "task-id" -t "tag"{b}
+    Add a tag.
+
+  {b}kanbn edit "task-id" --remove-relation "relation"{b}
+    Remove a relation.
+
+  {b}kanbn edit "task-id" --relation "relation"{b}
+  {b}kanbn edit "task-id" -r "relation"{b}
+    Add or modify a relation. The relation should be an existing task id, optionally prefixed with a relation type.
+    Examples:
+      "blocks my-task-1"
+      "duplicates my-task-2"

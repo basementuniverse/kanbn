@@ -1,0 +1,28 @@
+Usage:
+  {b}kanbn{b} {d}.........{d} Show help menu
+  {b}kanbn <command> [options]{b}
+
+Where {b}<command>{b} is one of:
+  {b}help{b} {d}..........{d} Show help menu
+  {b}version{b} {d}.......{d} Show package version
+  {b}init{b} {d}..........{d} Initialise kanbn board
+  {b}board{b} {d}.........{d} Show the kanbn board
+  {b}task{b} {d}..........{d} Show a kanbn task
+  {b}add{b} {d}...........{d} Add a kanbn task
+  {b}edit{b} {d}..........{d} Edit a kanbn task
+  {b}rename{b} {d}........{d} Rename a kanbn task
+  {b}move{b} {d}..........{d} Move a kanbn task to another column
+  {b}remove{b} {d}........{d} Remove a kanbn task
+  {b}find{b} {d}..........{d} Search for kanbn tasks
+  {b}status{b} {d}........{d} Get project and task statistics
+  {b}sort{b} {d}..........{d} Sort a column in the index
+  {b}sprint{b} {d}........{d} Start a new sprint
+  {b}validate{b} {d}......{d} Validate index and task files
+  {b}nuclear{b} {d}.......{d} Remove the kanbn board and all tasks
+
+For more help with commands, try:
+
+{b}kanbn help <command>{b}
+{b}kanbn h <command>{b}
+{b}kanbn <command> --help{b}
+{b}kanbn <command> -h{b}

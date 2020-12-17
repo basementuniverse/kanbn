@@ -1,0 +1,21 @@
+{b}kanbn init{b}
+{b}kanbn i{b}
+
+Initialise a kanbn board in the current working directory.
+
+Options:
+  {b}kanbn init --interactive{b}
+  {b}kanbn init -i{b}
+    Initialise a kanbn board interactively.
+
+  {b}kanbn init --name "name"{b}
+  {b}kanbn init -n "name"{b}
+    Initialise a kanbn board with the specified name.
+
+  {b}kanbn init --description "description"{b}
+  {b}kanbn init -d "description"{b}
+    Initialise a kanbn board with the specified description.
+
+  {b}kanbn init --column "column"{b}
+  {b}kanbn init -c "column"{b}
+    Initialise a kanbn board and add the specified column. This option can be repeated to add multiple columns.

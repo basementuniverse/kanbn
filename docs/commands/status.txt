@@ -1,0 +1,35 @@
+{b}kanbn status{b}
+{b}kanbn s{b}
+
+Show status information for the current project.
+
+Options:
+  {b}kanbn status --quiet{b}
+  {b}kanbn status -q{b}
+    Only show a count of tasks in each column, without loading all tracked tasks.
+    If used with the --untracked option, only show a list of untracked task filenames.
+
+  {b}kanbn status --json{b}
+  {b}kanbn status -j{b}
+    Output status information in JSON format.
+
+  {b}kanbn status --untracked{b}
+  {b}kanbn status -u{b}
+    Show a list of untracked task filenames.
+
+  {b}kanbn status --due{b}
+  {b}kanbn status -e{b}
+    Check for overdue tasks and include time remaining information in the output.
+
+  {b}kanbn status --sprint N|"name"{b}
+  {b}kanbn status -p N|"name"{b}
+    Show sprint workload for a specific sprint.
+    The sprint can be selected by number or name.
+    This option will be ignored if the --quiet option is set or if no sprint options are defined in the index.
+
+  {b}kanbn status --date "date"{b}
+  {b}kanbn status -d "date"{b}
+    Show created/started/completed workload for a specific date. The time part of the date will be ignored, unless searching between multiple dates.
+    This option can be repeated - if multiple dates are specified, show created/started/completed workload for tasks created/started/completed between the earliest and latest dates.
+    The date can be in (almost) any format.
+    This option will be ignored if the --quiet or --sprint options are set.

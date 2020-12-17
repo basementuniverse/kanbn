@@ -1,0 +1,11 @@
+{
+  "name": "Help",
+  "commands": [
+    "help",
+    "h",
+    ""
+  ],
+  "args": {},
+  "controller": "./src/controllers/help",
+  "help": "./docs/commands/help.txt"
+}

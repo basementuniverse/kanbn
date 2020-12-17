@@ -1,0 +1,21 @@
+{
+  "name": "View Board",
+  "commands": [
+    "board",
+    "b"
+  ],
+  "args": {
+    "boolean": [
+      "quiet"
+    ],
+    "string": [
+      "view"
+    ],
+    "alias": {
+      "view": ["v"],
+      "quiet": ["q"]
+    }
+  },
+  "controller": "./src/controllers/board",
+  "help": "./docs/commands/board.txt"
+}

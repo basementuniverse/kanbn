@@ -1,0 +1,17 @@
+{
+  "name": "View Task",
+  "commands": [
+    "task",
+    "t"
+  ],
+  "args": {
+    "boolean": [
+      "json"
+    ],
+    "alias": {
+      "json": ["j"]
+    }
+  },
+  "controller": "./src/controllers/task",
+  "help": "./docs/commands/task.txt"
+}

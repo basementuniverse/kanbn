@@ -1,0 +1,46 @@
+{
+  "name": "Sort Column",
+  "commands": [
+    "sort"
+  ],
+  "args": {
+    "boolean": [
+      "interactive",
+      "save",
+      "ascending",
+      "descending"
+    ],
+    "string": [
+      "id",
+      "name",
+      "description",
+      "sub-task",
+      "count-sub-tasks",
+      "tag",
+      "count-tags",
+      "relation",
+      "count-relations",
+      "created",
+      "updated",
+      "started",
+      "completed",
+      "due",
+      "workload",
+      "assigned"
+    ],
+    "alias": {
+      "interactive": ["i"],
+      "name": ["n"],
+      "description": ["d"],
+      "sub-task": ["s"],
+      "tag": ["t"],
+      "relation": ["r"],
+      "due": ["e"],
+      "workload": ["w"],
+      "ascending": ["a"],
+      "descending": ["z"]
+    }
+  },
+  "controller": "./src/controllers/sort",
+  "help": "./docs/commands/sort.txt"
+}
