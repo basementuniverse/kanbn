@@ -8,8 +8,8 @@ QUnit.module('Library moveTask tests', {
   },
   beforeEach() {
     require('../fixtures')({
-      columns: 4,
-      tasks: 17,
+      countColumns: 4,
+      countTasks: 17,
       tasksPerColumn: 5,
       options: {
         startedColumns: ['Column 2'],

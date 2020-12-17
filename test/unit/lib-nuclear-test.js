@@ -5,7 +5,7 @@ const context = require('../context');
 QUnit.module('Library nuclear tests', {
   beforeEach() {
     require('../fixtures')({
-      tasks: 1
+      countTasks: 1
     });
   },
   afterEach() {

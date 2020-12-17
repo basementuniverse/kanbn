@@ -8,8 +8,8 @@ QUnit.module('Library renameTask tests', {
   },
   beforeEach() {
     require('../fixtures')({
-      columns: 1,
-      tasks: 2
+      countColumns: 1,
+      countTasks: 2
     });
   },
   afterEach() {

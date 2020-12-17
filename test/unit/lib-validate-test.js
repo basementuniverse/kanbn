@@ -9,7 +9,7 @@ QUnit.module('Library validate tests', {
   },
   beforeEach() {
     require('../fixtures')({
-      tasks: 3
+      countTasks: 3
     });
   },
   afterEach() {

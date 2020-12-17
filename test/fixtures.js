@@ -55,27 +55,37 @@ function addRelations(taskIds) {
 }
 
 module.exports = (options = {}) => {
-  const COUNT_COLUMNS = options.columns || faker.random.number(4) + 1;
-  const COUNT_TASKS = options.tasks || faker.random.number(9) + 1;
-  const TASKS_PER_COLUMN = options.tasksPerColumn || -1;
+  let tasks, taskIds, columns;
 
   // Generate tasks
-  const tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
-  const taskIds = tasks.map(i => utility.getTaskId(i.name));
-  tasks.forEach(i => addRelations(taskIds));
+  if ('tasks' in options) {
+    tasks = new Array(options.tasks.length).fill(null).map((v, i) => Object.assign(generateTask(i), options.tasks[i]));
+    taskIds = tasks.map(i => utility.getTaskId(i.name));
+  } else {
+    const COUNT_TASKS = options.countTasks || faker.random.number(9) + 1;
+    tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
+    taskIds = tasks.map(i => utility.getTaskId(i.name));
+    tasks.forEach(i => addRelations(taskIds));
+  }
 
   // Generate and populate columns
-  const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((v, i) => `Column ${i + 1}`);
-  const columns = Object.fromEntries(columnNames.map(i => [i, []]));
-  let currentColumn = 0;
-  for (let taskId of taskIds) {
-    if (TASKS_PER_COLUMN === -1) {
-      columns[columnNames[0]].push(taskId);
-    } else {
-      if (columns[columnNames[currentColumn]].length === TASKS_PER_COLUMN) {
-        currentColumn = (currentColumn + 1) % columnNames.length;
+  if ('columns' in options) {
+    columns = options.columns;
+  } else {
+    const COUNT_COLUMNS = options.countColumns || faker.random.number(4) + 1;
+    const TASKS_PER_COLUMN = options.tasksPerColumn || -1;
+    const columnNames = options.columnNames || new Array(COUNT_COLUMNS).fill(null).map((v, i) => `Column ${i + 1}`);
+    columns = Object.fromEntries(columnNames.map(i => [i, []]));
+    let currentColumn = 0;
+    for (let taskId of taskIds) {
+      if (TASKS_PER_COLUMN === -1) {
+        columns[columnNames[0]].push(taskId);
+      } else {
+        if (columns[columnNames[currentColumn]].length === TASKS_PER_COLUMN) {
+          currentColumn = (currentColumn + 1) % columnNames.length;
+        }
+        columns[columnNames[currentColumn]].push(taskId);
       }
-      columns[columnNames[currentColumn]].push(taskId);
     }
   }
 

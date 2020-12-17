@@ -8,8 +8,8 @@ QUnit.module('Library deleteTask tests', {
   },
   beforeEach() {
     require('../fixtures')({
-      columns: 3,
-      tasks: 10
+      countColumns: 3,
+      countTasks: 10
     });
   },
   afterEach() {
