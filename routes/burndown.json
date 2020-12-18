@@ -1,0 +1,23 @@
+{
+  "name": "View Burndown Chart",
+  "commands": [
+    "burndown",
+    "bd"
+  ],
+  "args": {
+    "boolean": [
+      "json"
+    ],
+    "string": [
+      "date",
+      "sprint"
+    ],
+    "alias": {
+      "json": ["j"],
+      "date": ["d"],
+      "sprint": ["p"]
+    }
+  },
+  "controller": "./src/controllers/burndown",
+  "help": "./docs/commands/burndown.txt"
+}

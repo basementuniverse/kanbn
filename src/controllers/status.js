@@ -2,6 +2,7 @@ const kanbn = require('../main');
 const utility = require('../utility');
 const Spinner = require('cli-spinner').Spinner;
 const chrono = require('chrono-node');
+const yaml = require('yamljs');
 
 module.exports = async args => {
 
@@ -42,7 +43,6 @@ module.exports = async args => {
   kanbn
   .status(
     args.quiet,
-    args.json,
     args.untracked,
     args.due,
     sprint,
@@ -50,7 +50,7 @@ module.exports = async args => {
   )
   .then(output => {
     spinner.stop(true);
-    console.log(output);
+    console.log(args.json ? JSON.stringify(output, null, 2) : yaml.stringify(output, 4, 2));
   })
   .catch(error => {
     spinner.stop(true);

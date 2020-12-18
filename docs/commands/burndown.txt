@@ -1,0 +1,22 @@
+{b}kanbn burndown{b}
+{b}kanbn bd{b}
+
+Show a burndown chart between a date range, or for a particular sprint.
+If no dates or sprint identifiers are specified, show data for the current sprint.
+If no sprints are defined, show data for the last 10 days.
+
+Options:
+  {b}kanbn burndown --json{b}
+  {b}kanbn burndown -j{b}
+    Output raw data instead of rendering a chart. The data will be returned in JSON format.
+
+  {b}kanbn burndown --sprint N|"name"{b}
+  {b}kanbn burndown -p N|"name"{b}
+    Show burndown data for the specified sprint. This option can be repeated to show burndown data for multiple sprints.
+
+  {b}kanbn burndown --date "date"{b}
+  {b}kanbn burndown -d "date"{b}
+    Show burndown data for the specified dates.
+    If only one date is provided, show burndown data from this date up to the present date.
+    If more than 2 dates are provided, show burndown data from the earliest to latest date.
+    This option will be ignored if a valid sprint number or name is specified.

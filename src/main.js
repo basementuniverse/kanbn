@@ -620,6 +620,7 @@ module.exports = (() => {
     /**
      * Get the column that a task is in or throw an error if the task doesn't exist or isn't indexed
      * @param {string} taskId The task id to find
+     * @return {string} The name of the column the task is in
      */
     async findTaskColumn(taskId) {
 
@@ -1205,14 +1206,13 @@ module.exports = (() => {
     /**
      * Output project status information
      * @param {boolean} [quiet=false] Output full or partial status information
-     * @param {boolean} [json=false] Show output in JSON format, otherwise use YAML
      * @param {boolean} [untracked=false] Show a list of untracked tasks
      * @param {boolean} [due=false] Show information about overdue tasks and time remaining
      * @param {?string|?number} [sprint=null] The sprint name or number to show stats for, or null for current sprint
      * @param {?Date[]} [dates=null] The date(s) to show stats for, or null for no date filter
      * @return {object} Project status information as an object
      */
-    async status(quiet = false, json = false, untracked = false, due = false, sprint = null, dates = null) {
+    async status(quiet = false, untracked = false, due = false, sprint = null, dates = null) {
 
       // Check if this folder has been initialised
       if (!await this.initialised()) {
@@ -1375,7 +1375,7 @@ module.exports = (() => {
         }
       }
 
-      return json ? JSON.stringify(result, null, 2) : yaml.stringify(result, 4, 2);
+      return result;
     },
 
     /**
@@ -1514,6 +1514,16 @@ module.exports = (() => {
       await saveIndex(index);
 
       return sprint;
+    },
+
+    /**
+     * Output burndown chart data
+     * @param {?string|?number} [sprint=null] The sprint name or number to show a chart for, or null for current sprint
+     * @param {?Date[]} [dates=null] The date(s) to show a chart for, or null for no date filter
+     * @return {object} Burndown chart data as an object
+     */
+    async burndown(sprint = null, dates = null) {
+      // TODO burndown
     },
 
     /**

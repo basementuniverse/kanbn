@@ -59,4 +59,10 @@ QUnit.test('Status in un-initialised folder', async assert => {
   );
 });
 
+QUnit.test('Status output', async assert => {
+  const output = await kanbn.status();
+  console.log(output);
+  assert.expect(0);
+});
+
 // TODO finish status tests
