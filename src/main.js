@@ -1521,9 +1521,10 @@ module.exports = (() => {
      * the current sprint
      * @param {?Date[]} [dates=null] The dates to show a chart for, or null for no date filter
      * @param {?string} [assigned=null] The assigned user to filter for, or null for no assigned filter
+     * @param {?string[]} [columns=null] The columns to filter for, or null for no column filter
      * @return {object} Burndown chart data as an object
      */
-    async burndown(sprints = null, dates = null, assigned = null) {
+    async burndown(sprints = null, dates = null, assigned = null, columns = null) {
 
       // Check if this folder has been initialised
       if (!await this.initialised()) {
@@ -1546,7 +1547,10 @@ module.exports = (() => {
         workload: taskWorkload(index, task),
         column: findTaskColumn(index, task.id)
       }))
-      .filter(task => assigned === null || task.assigned === assigned);
+      .filter(task => (
+        (assigned === null || task.assigned === assigned) &&
+        (columns === null || columns.indexOf(task.column) !== -1)
+      ));
 
       // Get sprints and dates to plot from arguments
       const series = [];

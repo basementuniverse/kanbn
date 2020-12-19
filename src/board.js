@@ -81,8 +81,6 @@ module.exports = (() => {
         tasks = Object.fromEntries(Object.values(index.columns).flat().map(taskId => [taskId, taskId]));
       }
 
-      // TODO board views
-
       // Prepare table headings and content
       const headings = [];
       const cells = [];

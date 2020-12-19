@@ -21,6 +21,10 @@ Options:
     If more than 2 dates are provided, show burndown data from the earliest to latest date.
     This option will be ignored if a valid sprint number or name is specified.
 
+  {b}kanbn burndown --column "column"{b}
+  {b}kanbn burndown -c "column"{b}
+    Filter for tasks in a particular column. This option can be repeated to include multiple columns.
+
   {b}kanbn burndown --assigned "user"{b}
   {b}kanbn burndown -a "user"{b}
     Filter for tasks that are assigned to a particular user.

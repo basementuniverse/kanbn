@@ -41,11 +41,19 @@ module.exports = async args => {
   if (args.assigned) {
     assigned = utility.strArg(args.assigned);
   }
+
+  // Get columns
+  let columns = null;
+  if (args.column) {
+    columns = utility.arrayArg(args.column);
+  }
+
+  // Show burndown chart
   const spinner = new Spinner('Getting data...');
   spinner.setSpinnerString(18);
   spinner.start();
   kanbn
-  .burndown(sprints, dates, assigned)
+  .burndown(sprints, dates, assigned, columns)
   .then(data => {
     spinner.stop(true);
     if (args.json) {

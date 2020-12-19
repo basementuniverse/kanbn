@@ -11,13 +11,15 @@
     "string": [
       "date",
       "sprint",
-      "assigned"
+      "assigned",
+      "column"
     ],
     "alias": {
       "json": ["j"],
       "date": ["d"],
       "sprint": ["p"],
-      "assigned": ["a"]
+      "assigned": ["a"],
+      "column": ["c"]
     }
   },
   "controller": "./src/controllers/burndown",
