@@ -7,7 +7,8 @@
   "args": {
     "boolean": [
       "interactive",
-      "quiet"
+      "quiet",
+      "json"
     ],
     "string": [
       "id",
@@ -36,7 +37,8 @@
       "due": ["e"],
       "sub-task": ["s"],
       "tag": ["t"],
-      "relation": ["r"]
+      "relation": ["r"],
+      "json": ["j"]
     }
   },
   "controller": "./src/controllers/find",

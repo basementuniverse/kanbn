@@ -1200,7 +1200,7 @@ module.exports = (() => {
 
       // Return resulting task ids or the full tasks
       return tasks.map(task => {
-        return quiet ? utility.getTaskId(task.name) : task;
+        return quiet ? utility.getTaskId(task.name) : this.hydrateTask(index, task);
       });
     },
 

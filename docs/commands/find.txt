@@ -12,6 +12,10 @@ Options:
   {b}kanbn find -q{b}
     Only show task ids in the output.
 
+  {b}kanbn find --json{b}
+  {b}kanbn find -j{b}
+    Output results in JSON format. If used with the --quiet option, this will return an array of task ids.
+
   {b}kanbn find --name "search term"{b}
   {b}kanbn find -n "search term"{b}
     Find tasks that have a name containing "search term".

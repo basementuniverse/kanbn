@@ -1,7 +1,6 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
-const Spinner = require('cli-spinner').Spinner;
 const chrono = require('chrono-node');
 const yaml = require('yamljs');
 
@@ -118,39 +117,30 @@ async function interactive() {
  * Search tasks
  * @param {object} filters
  * @param {boolean} quiet
+ * @param {boolean} json
  */
-function findTasks(filters, quiet) {
+function findTasks(filters, quiet, json) {
   const removeEmptyProperties = o => Object.fromEntries(Object.entries(o).filter(
     ([k, v]) => !(Array.isArray(v) && v.length == 0) && !!v
   ));
-  const spinner = new Spinner('Finding tasks...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn
   .search(filters, quiet)
   .then(results => {
-    spinner.stop(true);
     if (quiet) {
-      console.log(results.join('\n'));
+      console.log(json ? JSON.stringify(results, null, 2) : results.join('\n'));
     } else {
-      console.log(`Found ${results.length} task${results.length === 1 ? '' : 's'}`);
-      if (results.length > 0) {
-        console.log('---');
+      if (json) {
+        console.log(JSON.stringify(results, null, 2));
+      } else {
+        console.log(`Found ${results.length} task${results.length === 1 ? '' : 's'}`);
+        if (results.length > 0) {
+          console.log('---');
+        }
+        console.log(results.map(result => yaml.stringify(removeEmptyProperties(result), 4, 2).trim()).join('\n---\n'));
       }
-      const processedResults = results.map(async result => ({
-        id: result.id,
-        name: result.name,
-        column: await kanbn.findTaskColumn(result.id),
-        metadata: result.metadata,
-        relations: result.relations
-      }));
-      Promise.all(processedResults).then(outputResults => console.log(
-        outputResults.map(outputResult => yaml.stringify(removeEmptyProperties(outputResult), 4, 2)).join('\n---\n')
-      ));
     }
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 }
@@ -321,17 +311,25 @@ module.exports = async args => {
     interactive()
     .then(answers => {
       inquirer
-      .prompt({
-        type: 'confirm',
-        name: 'nonquiet',
-        message: 'Show full task details in results?',
-        default: !args.quiet
-      })
-      .then(nonQuietAnswer => {
+      .prompt([
+        {
+          type: 'confirm',
+          name: 'nonquiet',
+          message: 'Show full task details in results?',
+          default: !args.quiet
+        },
+        {
+          type: 'confirm',
+          name: 'json',
+          message: 'Show results in JSON format?',
+          default: !!args.json
+        }
+      ])
+      .then(otherAnswers => {
         for (let filter of answers.filters) {
           addFilterValue(filters, filterPropertyNames[filter.type], filter.value);
         }
-        findTasks(filters, !nonQuietAnswer.nonquiet);
+        findTasks(filters, !otherAnswers.nonquiet, otherAnswers.json);
       })
       .catch(error => {
         utility.error(error, true);
@@ -343,6 +341,6 @@ module.exports = async args => {
 
   // Otherwise create task non-interactively
   } else {
-    findTasks(filters, args.quiet);
+    findTasks(filters, args.quiet, args.json);
   }
 };
