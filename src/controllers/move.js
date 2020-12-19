@@ -95,7 +95,7 @@ module.exports = async args => {
   const currentColumnName = await kanbn.findTaskColumn(taskId);
   let columnName = currentColumnName;
   if (args.column) {
-    columnName = utility.argToString(args.column);
+    columnName = utility.strArg(args.column);
     if (columnNames.indexOf(columnName) === -1) {
       utility.error(`Column "${columnName}" doesn't exist`, true);
     }

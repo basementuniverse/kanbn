@@ -71,13 +71,13 @@ module.exports = async args => {
   // Name
   let name = '';
   if (args.name) {
-    name = utility.argToString(args.name);
+    name = utility.strArg(args.name);
   }
 
   // Description
   let description = '';
   if (args.description) {
-    description = utility.argToString(args.description);
+    description = utility.strArg(args.description);
   }
 
   // Start sprint interactively

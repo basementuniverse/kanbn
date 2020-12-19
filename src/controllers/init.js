@@ -108,17 +108,17 @@ module.exports = async args => {
   // Check for arguments and override the defaults if present
   // Project name
   if (args.name) {
-    options.name = utility.argToString(args.name);
+    options.name = utility.strArg(args.name);
   }
 
   // Project description
   if (args.description) {
-    options.description = utility.argToString(args.description);
+    options.description = utility.strArg(args.description);
   }
 
   // Columns
   if (args.column) {
-    options.columns = Array.isArray(args.column) ? args.column : [args.column];
+    options.columns = utility.arrayArg(args.column);
   }
 
   // Interactive initialisation

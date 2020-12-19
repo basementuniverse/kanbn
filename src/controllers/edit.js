@@ -397,7 +397,7 @@ module.exports = async args => {
   let currentColumnName = await kanbn.findTaskColumn(taskId);
   let columnName = currentColumnName;
   if (args.column) {
-    columnName = utility.argToString(args.column);
+    columnName = utility.strArg(args.column);
     if (columnNames.indexOf(columnName) === -1) {
       utility.error(`Column "${columnName}" doesn't exist`, true);
     }
@@ -409,12 +409,12 @@ module.exports = async args => {
   // Get task settings from arguments
   // Name
   if (args.name) {
-    taskData.name = utility.argToString(args.name);
+    taskData.name = utility.strArg(args.name);
   }
 
   // Description
   if (args.description) {
-    taskData.description = utility.argToString(args.description);
+    taskData.description = utility.strArg(args.description);
   }
 
   // Due date
@@ -422,7 +422,7 @@ module.exports = async args => {
     if (!('metadata' in taskData)) {
       taskData.metadata = {};
     }
-    taskData.metadata.due = chrono.parseDate(utility.argToString(args.due));
+    taskData.metadata.due = chrono.parseDate(utility.strArg(args.due));
     if (taskData.metadata.due === null) {
       utility.error('Unable to parse due date', true);
     }
@@ -445,9 +445,7 @@ module.exports = async args => {
 
   // Remove sub-tasks
   if (args['remove-sub-task']) {
-    const removedSubTasks = Array.isArray(args['remove-sub-task'])
-      ? args['remove-sub-task']
-      : [args['remove-sub-task']];
+    const removedSubTasks = utility.arrayArg(args['remove-sub-task']);
 
     // Check that the sub-tasks being removed currently exist
     for (let removedSubTask of removedSubTasks) {
@@ -460,7 +458,7 @@ module.exports = async args => {
 
   // Add or update sub-tasks
   if (args['sub-task']) {
-    const newSubTaskInputs = Array.isArray(args['sub-task']) ? args['sub-task'] : [args['sub-task']];
+    const newSubTaskInputs = utility.arrayArg(args['sub-task']);
     const newSubTasks = newSubTaskInputs.map(subTask => {
       const match = subTask.match(/^\[([x ])\] (.*)/);
       if (match !== null) {
@@ -491,7 +489,7 @@ module.exports = async args => {
 
   // Remove tags
   if (args['remove-tag']) {
-    const removedTags = Array.isArray(args['remove-tag']) ? args['remove-tag'] : [args['remove-tag']];
+    const removedTags = utility.arrayArg(args['remove-tag']);
 
     // Check that the task has metadata
     if (!('metadata' in taskData) || !('tags' in taskData.metadata) || !Array.isArray(taskData.metadata.tags)) {
@@ -509,15 +507,13 @@ module.exports = async args => {
 
   // Add tags and overwrite existing tags
   if (args.tag) {
-    const newTags = Array.isArray(args.tag) ? args.tag : [args.tag];
+    const newTags = utility.arrayArg(args.tag);
     taskData.tags = [...new Set([...taskData.tags, ...newTags])];
   }
 
   // Remove relations
   if (args['remove-relation']) {
-    const removedRelations = Array.isArray(args['remove-relation'])
-      ? args['remove-relation']
-      : [args['remove-relation']];
+    const removedRelations = utility.arrayArg(args['remove-relation']);
 
     // Check that the relations being removed currently exist
     for (let removedRelation of removedRelations) {
@@ -530,7 +526,7 @@ module.exports = async args => {
 
   // Add or update relations
   if (args.relation) {
-    const newRelationInputs = Array.isArray(args.relation) ? args.relation : [args.relation];
+    const newRelationInputs = utility.arrayArg(args.relation);
     const newRelations = newRelationInputs.map(relation => {
       const parts = relation.split(' ');
       return parts.length === 1

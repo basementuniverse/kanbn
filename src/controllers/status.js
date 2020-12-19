@@ -14,7 +14,7 @@ module.exports = async args => {
   // Get sprint number or name
   let sprint = null;
   if (args.sprint) {
-    sprint = utility.argToString(args.sprint);
+    sprint = utility.strArg(args.sprint);
     const sprintNumber = parseInt(sprint);
     if (!isNaN(sprintNumber)) {
       sprint = sprintNumber;
@@ -24,7 +24,7 @@ module.exports = async args => {
   // Get filter dates
   let dates = null;
   if (args.date) {
-    dates = Array.isArray(args.date) ? args.date : [args.date];
+    dates = utility.arrayArg(args.date);
     if (dates.length) {
       for (let i = 0; i < dates.length; i++) {
         const dateValue = chrono.parseDate(dates[i]);

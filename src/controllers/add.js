@@ -257,7 +257,7 @@ module.exports = async args => {
   // Get column name if specified, otherwise default to the first available column
   let columnName = columnNames[0];
   if (args.column) {
-    columnName = utility.argToString(args.column);
+    columnName = utility.strArg(args.column);
     if (columnNames.indexOf(columnName) === -1) {
       utility.error(`Column "${columnName}" doesn't exist`, true);
     }
@@ -311,17 +311,17 @@ module.exports = async args => {
   // Get task settings from arguments
   // Name
   if (args.name) {
-    taskData.name = utility.argToString(args.name);
+    taskData.name = utility.strArg(args.name);
   }
 
   // Description
   if (args.description) {
-    taskData.description = utility.argToString(args.description);
+    taskData.description = utility.strArg(args.description);
   }
 
   // Due date
   if (args.due) {
-    taskData.metadata.due = chrono.parseDate(utility.argToString(args.due));
+    taskData.metadata.due = chrono.parseDate(utility.strArg(args.due));
     if (taskData.metadata.due === null) {
       utility.error('Unable to parse due date', true);
     }
@@ -335,13 +335,13 @@ module.exports = async args => {
         taskData.metadata.assigned = gitUsername;
       }
     } else {
-      taskData.metadata.assigned = utility.argToString(args.assigned);
+      taskData.metadata.assigned = utility.strArg(args.assigned);
     }
   }
 
   // Sub-tasks
   if (args['sub-task']) {
-    const subTasks = Array.isArray(args['sub-task']) ? args['sub-task'] : [args['sub-task']];
+    const subTasks = utility.arrayArg(args['sub-task']);
     taskData.subTasks = subTasks.map(subTask => {
       const match = subTask.match(/^\[([x ])\] (.*)/);
       if (match !== null) {
@@ -359,12 +359,12 @@ module.exports = async args => {
 
   // Tags
   if (args.tag) {
-    taskData.metadata.tags = Array.isArray(args.tag) ? args.tag : [args.tag];
+    taskData.metadata.tags = utility.arrayArg(args.tag);
   }
 
   // Relations
   if (args.relation) {
-    const relations = (Array.isArray(args.relation) ? args.relation : [args.relation]).map(relation => {
+    const relations = utility.arrayArg(args.relation).map(relation => {
       const parts = relation.split(':');
       return parts.length === 1
         ? {

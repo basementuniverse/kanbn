@@ -85,7 +85,7 @@ module.exports = async args => {
 
   // Get new task name from arguments
   if (args.name) {
-    taskData.name = utility.argToString(args.name);
+    taskData.name = utility.strArg(args.name);
   }
 
   // Rename task interactively

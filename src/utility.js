@@ -31,15 +31,28 @@ module.exports = (() => {
     },
 
     /**
-     * Convert an argument into a string. If the argument is an array of strings, use the last element
+     * Convert an argument into a string. If the argument is an array of strings, concatenate them or use the
+     * last element
      * @param {string|string[]} arg An argument that might be a string or an array of strings
-     * @return {string} The argument value
+     * @return {string} The argument value as a string
      */
-    argToString(arg) {
+    strArg(arg, all = false) {
       if (Array.isArray(arg)) {
-        return arg.pop();
+        return all ? arg.join(',') : arg.pop();
       }
       return arg;
+    },
+
+    /**
+     * Convert an argument into an array. If the argument is a string, return it as a single-element array
+     * @param {string|string[]} arg An argument that might be a string or an array of strings
+     * @return {string[]} The argument value as an array
+     */
+    arrayArg(arg) {
+      if (Array.isArray(arg)) {
+        return arg;
+      }
+      return [arg];
     },
 
     /**
