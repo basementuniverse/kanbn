@@ -17,6 +17,7 @@ Where {b}<command>{b} is one of:
   {b}status{b} {d}........{d} Get project and task statistics
   {b}sort{b} {d}..........{d} Sort a column in the index
   {b}sprint{b} {d}........{d} Start a new sprint
+  {b}burndown{b} {d}......{d} View a burndown chart
   {b}validate{b} {d}......{d} Validate index and task files
   {b}nuclear{b} {d}.......{d} Remove the kanbn board and all tasks
 
