@@ -1,7 +1,6 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
-const Spinner = require('cli-spinner').Spinner;
 const fuzzy = require('fuzzy');
 const chrono = require('chrono-node');
 const getGitUsername = require('git-user-name');
@@ -338,17 +337,12 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
  * @param {?string} columnName
  */
 function updateTask(taskId, taskData, columnName) {
-  const spinner = new Spinner('Updating task...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn
   .updateTask(taskId, taskData, columnName)
   .then(taskId => {
-    spinner.stop(true);
     console.log(`Updated task "${taskId}"`);
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 }

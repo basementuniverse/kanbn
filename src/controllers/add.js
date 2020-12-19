@@ -1,7 +1,6 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
-const Spinner = require('cli-spinner').Spinner;
 const fuzzy = require('fuzzy');
 const chrono = require('chrono-node');
 const getGitUsername = require('git-user-name');
@@ -197,17 +196,12 @@ async function interactiveAddUntrackedTasks(untrackedTasks, columnName, columnNa
  * @param {string} columnName
  */
 function createTask(taskData, columnName) {
-  const spinner = new Spinner('Creating task...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn
   .createTask(taskData, columnName)
   .then(taskId => {
-    spinner.stop(true);
     console.log(`Created task "${taskId}" in column "${columnName}"`);
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 }
@@ -218,18 +212,13 @@ function createTask(taskData, columnName) {
  * @param {string} columnName
  */
 async function addUntrackedTasks(untrackedTasks, columnName) {
-  const spinner = new Spinner('Adding untracked tasks...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   for (let untrackedTask of untrackedTasks) {
     try {
       await kanbn.addUntrackedTaskToIndex(untrackedTask, columnName);
     } catch (error) {
-      spinner.stop(true);
       utility.error(error, true);
     }
   }
-  spinner.stop(true);
   console.log(
     `Added ${untrackedTasks.length} task${untrackedTasks.length !== 1 ? 's' : ''} to column "${columnName}"`
   );

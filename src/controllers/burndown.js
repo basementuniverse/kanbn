@@ -1,7 +1,6 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const asciichart = require('asciichart');
-const Spinner = require('cli-spinner').Spinner;
 const term = require('terminal-kit').terminal;
 const chrono = require('chrono-node');
 
@@ -49,13 +48,9 @@ module.exports = async args => {
   }
 
   // Show burndown chart
-  const spinner = new Spinner('Getting data...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn
   .burndown(sprints, dates, assigned, columns)
   .then(data => {
-    spinner.stop(true);
     if (args.json) {
       console.log(JSON.stringify(data, null, 2));
     } else {
@@ -89,7 +84,6 @@ module.exports = async args => {
     }
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 };

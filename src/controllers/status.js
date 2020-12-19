@@ -1,6 +1,5 @@
 const kanbn = require('../main');
 const utility = require('../utility');
-const Spinner = require('cli-spinner').Spinner;
 const chrono = require('chrono-node');
 const yaml = require('yamljs');
 
@@ -37,9 +36,6 @@ module.exports = async args => {
   }
 
   // Get status
-  const spinner = new Spinner('Getting status information...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn
   .status(
     args.quiet,
@@ -49,11 +45,9 @@ module.exports = async args => {
     dates
   )
   .then(output => {
-    spinner.stop(true);
     console.log(args.json ? JSON.stringify(output, null, 2) : yaml.stringify(output, 4, 2));
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 };

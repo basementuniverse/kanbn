@@ -1,6 +1,5 @@
 const kanbn = require('../main');
 const utility = require('../utility');
-const Spinner = require('cli-spinner').Spinner;
 const yaml = require('yamljs');
 
 module.exports = async args => {
@@ -11,12 +10,8 @@ module.exports = async args => {
   }
 
   // Validate kanbn files
-  const spinner = new Spinner('Validating index and task files...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn.validate(args.save)
   .then(result => {
-    spinner.stop(true);
     if (result === true) {
       console.log('Everything OK');
     } else {
@@ -31,7 +26,6 @@ module.exports = async args => {
     }
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 };

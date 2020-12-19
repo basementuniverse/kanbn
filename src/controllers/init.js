@@ -1,7 +1,6 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
-const Spinner = require('cli-spinner').Spinner;
 
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
@@ -70,13 +69,9 @@ async function interactive(options, initialised) {
  * @param {boolean} initialised
  */
 function initialise(options, initialised) {
-  const spinner = new Spinner('Initialising...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn
   .initialise(options)
   .then(() => {
-    spinner.stop(true);
     if (initialised) {
       console.log(`Reinitialised existing kanbn board in ${kanbn.getMainFolder()}`);
     } else {
@@ -84,7 +79,6 @@ function initialise(options, initialised) {
     }
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 }

@@ -1,22 +1,16 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
-const Spinner = require('cli-spinner').Spinner;
 
 /**
  * Nuke kanbn
  */
 function nuclear() {
-  const spinner = new Spinner('Removing kanbn...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn.nuclear()
   .then(() => {
-    spinner.stop(true);
     console.log('kanbn has been removed');
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 }

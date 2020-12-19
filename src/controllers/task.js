@@ -1,7 +1,6 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const parseTask = require('../parse-task');
-const Spinner = require('cli-spinner').Spinner;
 const cliMd = require('cli-markdown');
 
 /**
@@ -9,13 +8,9 @@ const cliMd = require('cli-markdown');
  * @param {string} taskId
  */
 function showTask(taskId, json = false) {
-  const spinner = new Spinner('Loading task...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn
   .getTask(taskId)
   .then(task => {
-    spinner.stop(true);
     if (json) {
       console.log(task);
     } else {
@@ -23,7 +18,6 @@ function showTask(taskId, json = false) {
     }
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 }

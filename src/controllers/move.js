@@ -1,7 +1,6 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
-const Spinner = require('cli-spinner').Spinner;
 
 inquirer.registerPrompt('selectLine', require('inquirer-select-line'));
 
@@ -44,17 +43,12 @@ async function interactive(columns, columnName, columnNames, sortedColumnNames, 
  * @param {boolean} [relative=false]
  */
 function moveTask(taskId, columnName, position = null, relative = false) {
-  const spinner = new Spinner('Moving task...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn
   .moveTask(taskId, columnName, position, relative)
   .then(taskId => {
-    spinner.stop(true);
     console.log(`Moved task "${taskId}" to column "${columnName}"`);
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 }

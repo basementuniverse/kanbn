@@ -1,7 +1,6 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const board = require('../board');
-const Spinner = require('cli-spinner').Spinner;
 
 module.exports = async args => {
 
@@ -25,16 +24,12 @@ module.exports = async args => {
   // If not showing the board quietly, load all tracked tasks
   let tasks = null;
   if (!args.quiet) {
-    const spinner = new Spinner('Loading tasks...');
-    spinner.setSpinnerString(18);
-    spinner.start();
 
     // Load and hydrate all tracked tasks
     const trackedTaskPromises = [...await kanbn.findTrackedTasks()].map(
       async taskId => kanbn.hydrateTask(index, await kanbn.getTask(taskId))
     );
     tasks = await Promise.all(trackedTaskPromises);
-    spinner.stop(true);
   }
 
   // Show the board

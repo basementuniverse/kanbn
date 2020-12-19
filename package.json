@@ -32,7 +32,6 @@
     "auto-load": "^3.0.4",
     "chrono-node": "^2.1.10",
     "cli-markdown": "^1.7.0",
-    "cli-spinner": "^0.2.10",
     "dateformat": "^4.3.1",
     "dotenv": "^8.2.0",
     "fuzzy": "^0.1.3",

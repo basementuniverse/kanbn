@@ -1,7 +1,6 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
-const Spinner = require('cli-spinner').Spinner;
 
 /**
  * Start a new sprint interactively
@@ -45,17 +44,12 @@ async function interactive(name = null, description = null) {
  * @param {string} description
  */
 function startSprint(name, description) {
-  const spinner = new Spinner('Starting sprint...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn
   .sprint(name, description, new Date())
   .then(sprint => {
-    spinner.stop(true);
     console.log(`Started new sprint "${sprint.name}" at ${sprint.start.toISOString()}`);
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 }

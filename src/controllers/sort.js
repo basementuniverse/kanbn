@@ -1,7 +1,6 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
-const Spinner = require('cli-spinner').Spinner;
 
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
@@ -224,17 +223,12 @@ async function interactive(columnName, columnNames, sorters) {
  * @param {boolean} save
  */
 function sortColumn(columnName, sorters, save) {
-  const spinner = new Spinner('Sorting column...');
-  spinner.setSpinnerString(18);
-  spinner.start();
   kanbn
   .sort(columnName, sorters, save)
   .then(() => {
-    spinner.stop(true);
     console.log(`Column "${columnName}" sorted`);
   })
   .catch(error => {
-    spinner.stop(true);
     utility.error(error, true);
   });
 }
