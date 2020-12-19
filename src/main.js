@@ -280,7 +280,6 @@ module.exports = (() => {
 
     // Save the list of tasks back to the index
     index.columns[columnName] = tasks.map(task => task.id);
-
     return index;
   }
 
@@ -393,9 +392,7 @@ module.exports = (() => {
    * @return {boolean} True if the input matches the date filter
    */
   function dateFilter(dates, input) {
-    if (!Array.isArray(dates)) {
-      dates = [dates];
-    }
+    dates = utility.arrayArg(dates);
     if (dates.length === 1) {
       return utility.compareDates(input, dates[0]);
     }
@@ -412,9 +409,7 @@ module.exports = (() => {
    * @return {boolean} True if the input matches the number filter
    */
   function numberFilter(filter, input) {
-    if (!Array.isArray(filter)) {
-      filter = [filter];
-    }
+    filter = utility.arrayArg(filter);
     return input >= Math.min(...filter) && input <= Math.max(...filter);
   }
 
@@ -471,6 +466,18 @@ module.exports = (() => {
       })),
       workload: filteredTasks.reduce((a, task) => a + task.workload, 0)
     };
+  }
+
+  /**
+   * Calculate the total workload at a specific date
+   * @param {object[]} tasks
+   * @param {Date} date
+   * @return {number} The total workload at the specified date
+   */
+  function getWorkloadAtDate(tasks, date) {
+    return tasks
+    .filter(task => task.created <= date && task.completed > date)
+    .reduce((a, task) => a += task.workload, 0);
   }
 
   return {
@@ -701,7 +708,6 @@ module.exports = (() => {
       // Add the task to the index
       index = addTaskToIndex(index, taskId, columnName);
       await saveIndex(index);
-
       return taskId;
     },
 
@@ -757,7 +763,6 @@ module.exports = (() => {
       // Add the task to the column and save the index
       index = addTaskToIndex(index, taskId, columnName);
       await saveIndex(index);
-
       return taskId;
     },
 
@@ -860,7 +865,6 @@ module.exports = (() => {
       } else {
         await saveIndex(index);
       }
-
       return taskId;
     },
 
@@ -913,7 +917,6 @@ module.exports = (() => {
       // Update the task id in the index
       index = renameTaskInIndex(index, taskId, newTaskId);
       await saveIndex(index);
-
       return newTaskId;
     },
 
@@ -982,7 +985,6 @@ module.exports = (() => {
       index = removeTaskFromIndex(index, taskId);
       index = addTaskToIndex(index, taskId, columnName, position);
       await saveIndex(index);
-
       return taskId;
     },
 
@@ -1014,7 +1016,6 @@ module.exports = (() => {
         await fs.promises.unlink(getTaskPath(taskId));
       }
       await saveIndex(index);
-
       return taskId;
     },
 
@@ -1063,7 +1064,7 @@ module.exports = (() => {
 
         // Column
         if ('column' in filters) {
-          const columns = typeof filters.column === 'string' ? [filters.column] : filters.column;
+          const columns = utility.arrayArg(filters.column);
           if (columns.indexOf(findTaskColumn(index, taskId)) === -1) {
             result = false;
           }
@@ -1374,7 +1375,6 @@ module.exports = (() => {
           result.period.due = taskWorkloadInPeriod(tasks, 'due', periodStart, periodEnd);
         }
       }
-
       return result;
     },
 
@@ -1512,18 +1512,142 @@ module.exports = (() => {
       // Add sprint and save the index
       index.options.sprints.push(sprint);
       await saveIndex(index);
-
       return sprint;
     },
 
     /**
      * Output burndown chart data
-     * @param {?string|?number} [sprint=null] The sprint name or number to show a chart for, or null for current sprint
-     * @param {?Date[]} [dates=null] The date(s) to show a chart for, or null for no date filter
+     * @param {?string[]} [sprints=null] The sprint names or numbers to show a chart for, or null for
+     * the current sprint
+     * @param {?Date[]} [dates=null] The dates to show a chart for, or null for no date filter
+     * @param {?string} [assigned=null] The assigned user to filter for, or null for no assigned filter
      * @return {object} Burndown chart data as an object
      */
-    async burndown(sprint = null, dates = null) {
-      // TODO burndown
+    async burndown(sprints = null, dates = null, assigned = null) {
+
+      // Check if this folder has been initialised
+      if (!await this.initialised()) {
+        throw new Error('Not initialised in this folder');
+      }
+
+      // Get index and tasks
+      const index = await loadIndex();
+      const tasks = [...await loadAllTrackedTasks(index)]
+      .map(task => ({
+        ...task,
+        created: 'created' in task.metadata ? task.metadata.created : new Date(0),
+        completed: 'completed' in task.metadata
+          ? task.metadata.completed
+          : (
+            'completedColumns' in index.options &&
+            index.options.completedColumns.indexOf(task.column) !== -1
+          ) ? new Date(0) : new Date(8640000000000000),
+        assigned: 'assigned' in task.metadata ? task.metadata.assigned : null,
+        workload: taskWorkload(index, task),
+        column: findTaskColumn(index, task.id)
+      }))
+      .filter(task => assigned === null || task.assigned === assigned);
+
+      // Get sprints and dates to plot from arguments
+      const series = [];
+      const indexSprints = ('sprints' in index.options && index.options.sprints.length) ? index.options.sprints : null;
+      if (sprints === null && dates === null) {
+        if (indexSprints !== null) {
+
+          // Show current sprint
+          const currentSprint = indexSprints.length - 1;
+          series.push({
+            sprint: indexSprints[currentSprint],
+            from: indexSprints[currentSprint].start,
+            to: new Date()
+          });
+        } else {
+
+          // Show all time
+          series.push({
+            from: Math.min(...tasks.map(
+              t => [
+                'created' in t.metadata && t.metadata.created,
+                'updated' in t.metadata && t.metadata.updated,
+                'started' in t.metadata && t.metadata.started,
+                'completed' in t.metadata && t.metadata.completed,
+                'due' in t.metadata && t.metadata.due
+              ].filter(d => d)
+            ).flat()),
+            to: new Date()
+          });
+        }
+      } else {
+        if (sprints !== null) {
+          if (indexSprints === null) {
+            throw new Error(`No sprints defined`);
+          } else {
+            for (sprint of sprints) {
+              let sprintIndex = null;
+
+              // Select sprint by number (1-based index)
+              if (typeof sprint === 'number') {
+                if (sprint < 1 || sprint > indexSprints.length) {
+                  throw new Error(`Sprint ${sprint} does not exist`);
+                } else {
+                  sprintIndex = sprint - 1;
+                }
+
+              // Or select sprint by name
+              } else if (typeof sprint === 'string') {
+                sprintIndex = sprints.findIndex(s => s.name === sprint);
+                if (sprintIndex === -1) {
+                  throw new Error(`No sprint found with name "${sprint}"`);
+                }
+              }
+              if (sprintIndex === null) {
+                throw new Error(`Invalid sprint "${sprint}"`);
+              }
+
+              // Get sprint start and end
+              series.push({
+                sprint: indexSprints[sprintIndex],
+                from: indexSprints[sprintIndex].start,
+                to: sprintIndex < sprints.length - 1
+                  ? sprints[sprintIndex + 1].start
+                  : new Date()
+              });
+            }
+          }
+        }
+        if (dates !== null) {
+          series.push({
+            from: Math.min(...dates),
+            to: dates.length === 1 ? new Date() : Math.max(...dates)
+          });
+        }
+      }
+
+      // Get workload datapoints for each period
+      series.forEach(s => {
+        s.dataPoints = [
+          {
+            x: s.from,
+            y: getWorkloadAtDate(tasks, s.from)
+          },
+          ...tasks
+          .map(task => [
+            task.created > s.from && task.created < s.to && task.created,
+            task.completed > s.from && task.completed < s.to && task.completed
+          ])
+          .flat()
+          .filter(d => d)
+          .map(x => ({
+            x,
+            y: getWorkloadAtDate(tasks, x)
+          })),
+          {
+            x: s.to,
+            y: getWorkloadAtDate(tasks, s.to)
+          }
+        ].sort((a, b) => a.x - b.x);
+      });
+      return { series };
     },
 
     /**

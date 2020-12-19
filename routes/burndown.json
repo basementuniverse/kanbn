@@ -10,12 +10,14 @@
     ],
     "string": [
       "date",
-      "sprint"
+      "sprint",
+      "assigned"
     ],
     "alias": {
       "json": ["j"],
       "date": ["d"],
-      "sprint": ["p"]
+      "sprint": ["p"],
+      "assigned": ["a"]
     }
   },
   "controller": "./src/controllers/burndown",

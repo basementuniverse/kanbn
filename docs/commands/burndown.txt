@@ -3,7 +3,7 @@
 
 Show a burndown chart between a date range, or for a particular sprint.
 If no dates or sprint identifiers are specified, show data for the current sprint.
-If no sprints are defined, show data for the last 10 days.
+If no sprints are defined, show data from the earliest created date to the current date.
 
 Options:
   {b}kanbn burndown --json{b}
@@ -20,3 +20,7 @@ Options:
     If only one date is provided, show burndown data from this date up to the present date.
     If more than 2 dates are provided, show burndown data from the earliest to latest date.
     This option will be ignored if a valid sprint number or name is specified.
+
+  {b}kanbn burndown --assigned "user"{b}
+  {b}kanbn burndown -a "user"{b}
+    Filter for tasks that are assigned to a particular user.
