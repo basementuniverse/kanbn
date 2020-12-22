@@ -45,7 +45,11 @@ module.exports = async args => {
     dates
   )
   .then(output => {
-    console.log(args.json ? JSON.stringify(output, null, 2) : yaml.stringify(output, 4, 2));
+    if (args.quiet && args.untracked && !args.json) {
+      console.log(output.join('\n'));
+    } else {
+      console.log(args.json ? JSON.stringify(output, null, 2) : yaml.stringify(output, 4, 2));
+    }
   })
   .catch(error => {
     utility.error(error, true);

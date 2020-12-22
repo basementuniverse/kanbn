@@ -527,26 +527,6 @@ module.exports = (() => {
 
       // Calculate task workload
       task.workload = taskWorkload(index, task);
-
-      // Add due information
-      if ('due' in task.metadata) {
-        const delta = (new Date()) - task.metadata.due;
-
-        // A task is overdue if it's due date is in the past and the task is not in a completed column
-        // or doesn't have a completed date
-        const completed = (
-          'completed' in task.metadata || (
-            'completedColumns' in index.options &&
-            index.options.completedColumns.indexOf(task.column) !== -1
-          )
-        );
-        task.overdue = !completed && delta > 0;
-        task.dueDelta = delta;
-        task.dueMessage = `${humanizeDuration(delta, {
-          largest: 3,
-          round: true
-        })} ${task.overdue ? 'overdue' : 'remaining'}`;
-      }
       return task;
     },
 
@@ -1234,7 +1214,7 @@ module.exports = (() => {
         // If output is quiet, output a list of untracked task filenames
         if (quiet) {
           if (result.untrackedTasks.length) {
-            return result.untrackedTasks.join('\n');
+            return result.untrackedTasks;
           } else {
             return 'No untracked tasks found';
           }
@@ -1251,19 +1231,64 @@ module.exports = (() => {
       // If required, load more detailed task information
       if (!quiet) {
 
-        // Load all tracked tasks and populate each one with workload and column
-        const tasks = [...await loadAllTrackedTasks(index)].map(task => this.hydrateTask(index, task));
+        // Load all tracked tasks and populate each one with workload, column and due data
+        const tasks = [...await loadAllTrackedTasks(index)].map(task => {
+
+          task = this.hydrateTask(index, task);
+
+          // Add due information
+          if ('due' in task.metadata) {
+            const dueData = {};
+
+            // A task is overdue if it's due date is in the past and the task is not in a completed column
+            // or doesn't have a completed date
+            const completedDate = 'completed' in task.metadata ? task.metadata.completed : null;
+            const completed = (
+              'completed' in task.metadata || (
+                'completedColumns' in index.options &&
+                index.options.completedColumns.indexOf(task.column) !== -1
+              )
+            );
+
+            // Get task due delta - this is the difference between now and the due date, or if the task is completed
+            // this is the difference between the completed and due dates
+            let delta;
+            if (completedDate !== null) {
+              delta = completedDate - task.metadata.due;
+            } else {
+              delta = (new Date()) - task.metadata.due;
+            }
+
+            // Populate due information
+            dueData.completed = completed;
+            dueData.completedDate = completedDate;
+            dueData.dueDate = task.metadata.due;
+            dueData.overdue = !completed && delta > 0;
+            dueData.dueDelta = delta;
+
+            // Prepare a due message for the task
+            let dueMessage = '';
+            if (completed) {
+              dueMessage += 'Completed ';
+            }
+            dueMessage += `${humanizeDuration(delta, {
+              largest: 3,
+              round: true
+            })} ${delta > 0 ? 'overdue' : 'remaining'}`;
+            dueData.dueMessage = dueMessage;
+            task.dueData = dueData;
+          }
+          return task;
+        });
 
         // If showing due information, calculate time remaining or overdue time for each task
         if (due) {
-          result.overdueTasks = [];
+          result.dueTasks = [];
           tasks.forEach(task => {
-            if ('overdue' in task) {
-              result.overdueTasks.push({
+            if ('dueData' in task) {
+              result.dueTasks.push({
                 task: task.id,
-                overdue: task.overdue,
-                delta: task.dueDelta,
-                message: task.dueMessage
+                ...task.dueData
               });
             }
           });
@@ -1300,7 +1325,9 @@ module.exports = (() => {
           },
           {}
         );
-        result.assigned = assignedTasks;
+        if (Object.keys(assignedTasks).length > 0) {
+          result.assigned = assignedTasks;
+        }
 
         // If any sprints are defined in index options, calculate sprint statistics
         if ('sprints' in index.options && index.options.sprints.length) {
@@ -1337,7 +1364,7 @@ module.exports = (() => {
             start: sprints[sprintIndex].start
           };
           if ((currentSprint - 1) !== sprintIndex) {
-            if (sprintIndex === springs.length - 1) {
+            if (sprintIndex === sprints.length - 1) {
               result.sprint.end = sprints[sprintIndex + 1].start;
             }
             result.sprint.current = currentSprint;
@@ -1349,6 +1376,16 @@ module.exports = (() => {
           const sprintEndDate = sprintIndex === sprints.length - 1
             ? new Date()
             : sprints[sprintIndex + 1].start;
+
+          // Calculate sprint duration
+          const duration = sprintEndDate - sprintStartDate;
+          result.sprint.durationDelta = duration;
+          result.sprint.durationMessage = humanizeDuration(duration, {
+            largest: 3,
+            round: true
+          });
+
+          // Add task workload information for the sprint
           result.sprint.created = taskWorkloadInPeriod(tasks, 'created', sprintStartDate, sprintEndDate);
           result.sprint.started = taskWorkloadInPeriod(tasks, 'started', sprintStartDate, sprintEndDate);
           result.sprint.completed = taskWorkloadInPeriod(tasks, 'completed', sprintStartDate, sprintEndDate);
@@ -1360,14 +1397,15 @@ module.exports = (() => {
           let periodStart, periodEnd;
           result.period = {};
           if (dates.length === 1) {
-            result.period.date = dates[0];
             periodStart = new Date(+dates[0]);
             periodStart.setHours(0, 0, 0, 0);
             periodEnd = new Date(+dates[0]);
             periodEnd.setHours(23, 59, 59, 999);
+            result.period.start = periodStart;
+            result.period.end = periodEnd;
           } else {
-            result.period.start = periodStart = Math.min(...dates);
-            result.period.end = periodEnd = Math.max(...dates);
+            result.period.start = periodStart = new Date(Math.min(...dates));
+            result.period.end = periodEnd = new Date(Math.max(...dates));
           }
           result.period.created = taskWorkloadInPeriod(tasks, 'created', periodStart, periodEnd);
           result.period.started = taskWorkloadInPeriod(tasks, 'started', periodStart, periodEnd);

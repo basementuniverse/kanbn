@@ -60,11 +60,11 @@ module.exports = (options = {}) => {
   // Generate tasks
   if ('tasks' in options) {
     tasks = new Array(options.tasks.length).fill(null).map((v, i) => Object.assign(generateTask(i), options.tasks[i]));
-    taskIds = tasks.map(i => utility.getTaskId(i.name));
+    taskIds = tasks.filter(i => !i.untracked).map(i => utility.getTaskId(i.name));
   } else {
     const COUNT_TASKS = options.countTasks || faker.random.number(9) + 1;
     tasks = new Array(COUNT_TASKS).fill(null).map((v, i) => generateTask(i));
-    taskIds = tasks.map(i => utility.getTaskId(i.name));
+    taskIds = tasks.filter(i => !i.untracked).map(i => utility.getTaskId(i.name));
     tasks.forEach(i => addRelations(taskIds));
   }
 
