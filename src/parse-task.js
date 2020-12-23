@@ -4,6 +4,7 @@ const marked = require('marked');
 const utility = require('./utility');
 const chrono = require('chrono-node');
 const validate = require('jsonschema').validate;
+const { date } = require('faker');
 
 /**
  * Recursively construct a description string from different levels of headings in the data object
@@ -16,7 +17,7 @@ function compileDescription(description, data, level) {
     description.push(data.raw.replace(/[\r\n]{3}/g, '\n\n').trim());
   }
   for (let heading in data) {
-    if (['raw', 'Metadata', 'Sub-tasks', 'Relations'].indexOf(heading) !== -1) {
+    if (['raw', 'Metadata', 'Sub-tasks', 'Relations', 'Comments'].indexOf(heading) !== -1) {
       continue;
     }
     description.push(`${new Array(level + 1).join('#')} ${heading}`);
@@ -138,6 +139,27 @@ function validateRelations(relations) {
   }
 }
 
+/**
+ * Validate the comments object
+ * @param {object} comments
+ */
+function validateComments(comments) {
+  const result = validate(comments, {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        'author': { type: 'string' },
+        'date': { type: 'date' },
+        'text': { type: 'string' }
+      }
+    }
+  });
+  if (result.errors.length) {
+    throw new Error(result.errors.map(error => `\n${error.property} ${error.message}`).join(''));
+  }
+}
+
 module.exports = {
 
   /**
@@ -146,7 +168,7 @@ module.exports = {
    * @return {object}
    */
   md2json(data) {
-    let id = '', name = '', description = '', metadata = {}, subTasks = [], relations = [];
+    let id = '', name = '', description = '', metadata = {}, subTasks = [], relations = [], comments = [];
     try {
 
       // Check data type
@@ -253,6 +275,42 @@ module.exports = {
         }
       }
 
+      // Parse comments
+      if ('Comments' in task) {
+        try {
+          const commentsHeading = '## Comments';
+          const start = data.indexOf(commentsHeading) + commentsHeading.length;
+          let end = data.substring(start).search(/\n#/);
+          if (end >= 0) {
+            end += start;
+          } else {
+            end = data.length;
+          }
+          const parsedComments = marked.lexer(data.slice(start, end).trim())[0].items;
+          for (let parsedComment of parsedComments) {
+            const comment = { text: [] };
+            const parts = parsedComment.text.split('\n');
+            for (let part of parts) {
+              if (part.startsWith('date: ')) {
+                const dateValue = chrono.parseDate(part.substring('date: '.length));
+                if (dateValue === null) {
+                  throw new Error('unable to parse comment date');
+                }
+                comment.date = dateValue;
+              } else if (part.startsWith('author: ')) {
+                comment.author = part.substring('author: '.length);
+              } else {
+                comment.text.push(part);
+              }
+            }
+            comment.text = comment.text.join('\n').trim();
+            comments.push(comment);
+          }
+        } catch (error) {
+          throw new Error('comments must contain a list');
+        }
+      }
+
       // Assemble description
       const descriptionParts = [];
       compileDescription(descriptionParts, task, 2);
@@ -262,7 +320,7 @@ module.exports = {
     }
 
     // Assemble task object
-    return { id, name, description, metadata, subTasks, relations };
+    return { id, name, description, metadata, subTasks, relations, comments };
   },
 
   /**
@@ -324,6 +382,27 @@ module.exports = {
             data.relations.map(
               relation => `- [${relation.type ? `${relation.type} ` : ''}${relation.task}](${relation.task}.md)`
             ).join('\n')
+          );
+        }
+      }
+
+      // Add comments if present
+      if ('comments' in data && data.comments !== null) {
+        validateComments(data.comments);
+        if (data.comments.length > 0) {
+          result.push(
+            '## Comments',
+            data.comments.map(comment => {
+              const commentOutput = [];
+              if ('author' in comment && comment.author) {
+                commentOutput.push(`author: ${comment.author}`);
+              }
+              if ('date' in comment && comment.date) {
+                commentOutput.push(`date: ${comment.date.toISOString()}`);
+              }
+              commentOutput.push(...comment.text.split('\n'));
+              return `- ${commentOutput.map((v, i) => i > 0 ? `  ${v}` : v).join('\n')}`;
+            }).join('\n')
           );
         }
       }
