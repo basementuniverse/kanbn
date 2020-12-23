@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const kanbn = require('../../src/main');
 
-QUnit.module('Library validate tests', {
+QUnit.module('validate tests', {
   before() {
     require('../qunit-throws-async');
   },

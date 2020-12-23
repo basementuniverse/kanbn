@@ -2,7 +2,7 @@ const mockArgv = require('mock-argv');
 const mockRequire = require('mock-require');
 const CaptureStdOut = require('capture-stdout');
 
-QUnit.module('Command initialise tests', {
+QUnit.module('init controller tests', {
   before() {
     require('../qunit-contains');
   }

@@ -1,6 +1,6 @@
 const parseTask = require('../../src/parse-task.js');
 
-QUnit.module('JSON to Task conversion tests');
+QUnit.module('Task JSON to markdown conversion tests');
 
 const CASE_1 = `
 # Task Name

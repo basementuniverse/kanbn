@@ -2,7 +2,7 @@ const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
-QUnit.module('Library nuclear tests', {
+QUnit.module('nuclear tests', {
   beforeEach() {
     require('../fixtures')({
       countTasks: 1

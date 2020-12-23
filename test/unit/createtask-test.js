@@ -4,7 +4,7 @@ const path = require('path');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
-QUnit.module('Library createTask tests', {
+QUnit.module('createTask tests', {
   before() {
     require('../qunit-throws-async');
   },

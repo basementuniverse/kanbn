@@ -2,7 +2,7 @@ const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
-QUnit.module('Library addUntrackedTaskToIndex tests', {
+QUnit.module('addUntrackedTaskToIndex tests', {
   before() {
     require('../qunit-throws-async');
   },

@@ -1,6 +1,6 @@
 const parseIndex = require('../../src/parse-index.js');
 
-QUnit.module('JSON to Index conversion tests');
+QUnit.module('Index JSON to markdown conversion tests');
 
 const CASE_1 = `
 # Project name

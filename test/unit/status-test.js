@@ -4,7 +4,7 @@ const context = require('../context');
 const fixtures = require('../fixtures');
 const mockDate = require('mockdate');
 
-QUnit.module('Library status tests', {
+QUnit.module('status tests', {
   before() {
     require('../qunit-throws-async');
   },
