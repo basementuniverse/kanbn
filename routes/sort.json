@@ -20,6 +20,8 @@
       "count-tags",
       "relation",
       "count-relations",
+      "comment",
+      "count-comments",
       "created",
       "updated",
       "started",

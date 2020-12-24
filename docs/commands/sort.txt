@@ -77,6 +77,12 @@ Options:
   {b}kanbn sort --count-relations{b}
     Sort tasks by the number of relations.
 
+  {b}kanbn sort --comment "filter"{b}
+    Sort tasks by comments.
+
+  {b}kanbn sort --count-comments{b}
+    Sort task by the number of comments.
+
   {b}kanbn sort --workload{b}
   {b}kanbn sort -w{b}
     Sort tasks by workload.

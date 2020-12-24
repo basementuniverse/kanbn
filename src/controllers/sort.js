@@ -83,6 +83,22 @@ const sorterFields = [
     filterable: false
   },
   {
+    name: 'Comments',
+    field: 'comments',
+    options: [
+      '--comment'
+    ],
+    filterable: true
+  },
+  {
+    name: 'Count comments',
+    field: 'countComments',
+    options: [
+      '--count-comments'
+    ],
+    filterable: false
+  },
+  {
     name: 'Created date',
     field: 'created',
     options: [

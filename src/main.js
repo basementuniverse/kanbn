@@ -255,6 +255,8 @@ module.exports = (() => {
       tags: 'tags' in task.metadata ? task.metadata.tags.join('\n') : '',
       countRelations: task.relations.length,
       relations: task.relations.map(relation => `${relation.type} ${relation.task}`).join('\n'),
+      countComments: task.comments.length,
+      comments: task.comments.map(comment => `${comment.author} ${comment.text}`).join('\n'),
       workload: taskWorkload(index, task)
     }));
 
@@ -1175,6 +1177,28 @@ module.exports = (() => {
         ) {
           result = false;
         }
+
+        // Comments
+        if (
+          'comment' in filters &&
+          !stringFilter(
+            filters.comment,
+            task.comments.map(comment => `${comment.author} ${comment.text}`).join('\n')
+          )
+        ) {
+          result = false;
+        }
+
+        // Count comments
+        if (
+          'count-comments' in filters &&
+          !numberFilter(
+            filters['count-comments'],
+            task.comments.length
+          )
+        ) {
+          result = false;
+        }
         return result;
       });
 
@@ -1690,6 +1714,51 @@ module.exports = (() => {
         ].sort((a, b) => a.x - b.x);
       });
       return { series };
+    },
+
+    /**
+     * Add a comment to a task
+     * @param {string} taskId The task id
+     * @param {string} text The comment text
+     * @param {string} author The comment author
+     * @return {string} The task id
+     */
+    async comment(taskId, text, author) {
+
+      // Check if this folder has been initialised
+      if (!await this.initialised()) {
+        throw new Error('Not initialised in this folder');
+      }
+      taskId = removeFileExtension(taskId);
+
+      // Make sure the task file exists
+      if (!await exists(getTaskPath(taskId))) {
+        throw new Error(`No task file found with id "${taskId}"`);
+      }
+
+      // Get index and make sure the task is indexed
+      let index = await loadIndex();
+      if (!taskInIndex(index, taskId)) {
+        throw new Error(`Task "${taskId}" is not in the index`);
+      }
+
+      // Make sure the comment text isn't empty
+      if (!text) {
+        throw new Error('Comment text cannot be empty');
+      }
+
+      // Add the comment
+      const taskData = await loadTask(taskId);
+      const taskPath = getTaskPath(taskId);
+      taskData.comments.push({
+        text,
+        author,
+        date: new Date()
+      });
+
+      // Save the task
+      await saveTask(taskPath, taskData);
+      return taskId;
     },
 
     /**

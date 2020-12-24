@@ -80,3 +80,10 @@ Options:
   {b}kanbn find --count-relations N{b}
     Find tasks that have a specific number of relations.
     If multiple counts are specified, find tasks with a number of relations between the lowest and highest inputs.
+
+  {b}kanbn find --comment "search term"{b}
+    Find tasks that have comments matching the search term.
+
+  {b}kanbn find --count-comments N{b}
+    Find tasks that have a specific number of comments.
+    If multiple counts are specified, find tasks with a number of comments between the lowest and highest inputs.

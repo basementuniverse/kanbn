@@ -1,0 +1,17 @@
+{b}kanbn comment "task-id"{b}
+{b}kanbn c "task-id"{b}
+
+Add a comment to a task.
+
+Options:
+  {b}kanbn comment "task-id" --interactive{b}
+  {b}kanbn comment "task-id" -i{b}
+    Add a comment interactively.
+
+  {b}kanbn comment "task-id" --author "name"{b}
+  {b}kanbn comment "task-id" -a "name"{b}
+    Set the comment author. If this option is left blank or omitted, the current git username will be used.
+
+  {b}kanbn comment "task-id" --text "text"{b}
+  {b}kanbn comment "task-id" -t "text"{b}
+    Set the comment text.

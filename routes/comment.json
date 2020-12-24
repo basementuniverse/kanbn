@@ -1,0 +1,22 @@
+{
+  "name": "Comment",
+  "commands": [
+    "comment",
+    "c"
+  ],
+  "args": {
+    "boolean": [
+      "interactive"
+    ],
+    "string": [
+      "text"
+    ],
+    "alias": {
+      "interactive": ["i"],
+      "author": ["a"],
+      "text": ["t"]
+    }
+  },
+  "controller": "./src/controllers/comment",
+  "help": "./docs/commands/comment.txt"
+}

@@ -433,7 +433,7 @@ module.exports = async args => {
         taskData.metadata.assigned = gitUsername;
       }
     } else {
-      taskData.metadata.assigned = args.assigned;
+      taskData.metadata.assigned = utility.strArg(args.assigned);
     }
   }
 

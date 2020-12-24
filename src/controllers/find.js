@@ -40,6 +40,8 @@ async function interactive() {
             'Count tags',
             'Relations',
             'Count relations',
+            'Comments',
+            'Count comments',
             'Assigned user',
             new inquirer.Separator(),
             'None'
@@ -57,6 +59,7 @@ async function interactive() {
             'Sub-tasks',
             'Tags',
             'Relations',
+            'Comments',
             'Assigned user'
           ].indexOf(answers.type) !== -1,
           validate: async value => {
@@ -96,7 +99,8 @@ async function interactive() {
           when: answers => [
             'Count sub-tasks',
             'Count tags',
-            'Count relations'
+            'Count relations',
+            'Count comments'
           ].indexOf(answers.type) !== -1,
           validate: async value => {
             if (!value) {
@@ -232,6 +236,8 @@ const filterPropertyNames = {
   'Count tags': 'count-tags',
   'Relations': 'relation',
   'Count relations': 'count-relations',
+  'Comments': 'comment',
+  'Count comments': 'count-comments',
   'Assigned user': 'assigned'
 };
 
@@ -276,6 +282,11 @@ module.exports = async args => {
   if ('count-relations' in filters) {
     if (!convertNumericFilters(filters, 'count-relations')) {
       utility.error('Count relations filter value must be numeric', true);
+    }
+  }
+  if ('count-comments' in filters) {
+    if (!convertNumericFilters(filters, 'count-comments')) {
+      utility.error('Count comments filter value must be numeric', true);
     }
   }
 
