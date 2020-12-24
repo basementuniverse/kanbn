@@ -681,8 +681,12 @@ module.exports = (() => {
         taskData = setTaskMetadata(taskData, 'started', new Date());
       }
 
-      // If we're creating the task in a completed column, set the task's completed date
-      if ('completedColumns' in index.options && index.options.completedColumns.indexOf(columnName) !== -1) {
+      // If we're creating the task in a completed column, set the task's completed date, unless already set
+      if (
+        'completedColumns' in index.options &&
+        index.options.completedColumns.indexOf(columnName) !== -1 &&
+        !('completed' in taskData.metadata)
+      ) {
         taskData = setTaskMetadata(taskData, 'completed', new Date());
       }
       await saveTask(taskPath, taskData);
@@ -736,8 +740,12 @@ module.exports = (() => {
         taskData = setTaskMetadata(taskData, 'started', new Date());
       }
 
-      // If we're creating the task in a completed column, set the task's completed date
-      if ('completedColumns' in index.options && index.options.completedColumns.indexOf(columnName) !== -1) {
+      // If we're creating the task in a completed column, set the task's completed date, unless already set
+      if (
+        'completedColumns' in index.options &&
+        index.options.completedColumns.indexOf(columnName) !== -1 &&
+        !('completed' in taskData.metadata)
+      ) {
         taskData = setTaskMetadata(taskData, 'completed', new Date());
       }
       await saveTask(taskPath, taskData);
@@ -947,8 +955,12 @@ module.exports = (() => {
         taskData = setTaskMetadata(taskData, 'started', new Date());
       }
 
-      // If we're moving the task into a completed column, update the task's completed date
-      if ('completedColumns' in index.options && index.options.completedColumns.indexOf(columnName) !== -1) {
+      // If we're moving the task into a completed column, update the task's completed date, unless already set
+      if (
+        'completedColumns' in index.options &&
+        index.options.completedColumns.indexOf(columnName) !== -1 &&
+        !('completed' in taskData.metadata)
+      ) {
         taskData = setTaskMetadata(taskData, 'completed', new Date());
       }
       await saveTask(getTaskPath(taskId), taskData);
