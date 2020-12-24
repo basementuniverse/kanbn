@@ -207,7 +207,8 @@ const validCases = [
       description: '',
       metadata: {},
       subTasks: [],
-      relations: []
+      relations: [],
+      comments: []
     }
   },
   {
@@ -222,7 +223,8 @@ ${TEST_DESCRIPTION_1}
       description: TEST_DESCRIPTION_1,
       metadata: {},
       subTasks: [],
-      relations: []
+      relations: [],
+      comments: []
     }
   },
   {
@@ -237,7 +239,8 @@ ${TEST_DESCRIPTION_2}
       description: TEST_DESCRIPTION_2,
       metadata: {},
       subTasks: [],
-      relations: []
+      relations: [],
+      comments: []
     }
   },
   {
@@ -258,7 +261,8 @@ ${TEST_METADATA}
       description: TEST_DESCRIPTION_2,
       metadata: TEST_METADATA_JSON,
       subTasks: [],
-      relations: []
+      relations: [],
+      comments: []
     }
   },
   {
@@ -277,7 +281,8 @@ ${TEST_METADATA}
       description: '',
       metadata: TEST_METADATA_JSON,
       subTasks: [],
-      relations: []
+      relations: [],
+      comments: []
     }
   },
   {
@@ -296,7 +301,8 @@ ${TEST_METADATA}
       description: '',
       metadata: TEST_METADATA_JSON,
       subTasks: [],
-      relations: []
+      relations: [],
+      comments: []
     }
   },
   {
@@ -313,7 +319,8 @@ ${TEST_METADATA}
       description: '',
       metadata: TEST_METADATA_JSON,
       subTasks: [],
-      relations: []
+      relations: [],
+      comments: []
     }
   },
   {
@@ -342,7 +349,8 @@ ${TEST_METADATA}
         TEST_SUBTASK_2_JSON,
         TEST_SUBTASK_3_JSON
       ],
-      relations: []
+      relations: [],
+      comments: []
     }
   },
   {
@@ -371,7 +379,8 @@ ${TEST_DESCRIPTION_2}
         TEST_RELATION_3_JSON,
         TEST_RELATION_4_JSON,
         TEST_RELATION_5_JSON
-      ]
+      ],
+      comments: []
     }
   },
   {
@@ -420,7 +429,8 @@ ${TEST_DESCRIPTION_3}`,
         TEST_RELATION_3_JSON,
         TEST_RELATION_4_JSON,
         TEST_RELATION_5_JSON
-      ]
+      ],
+      comments: []
     }
   }
 ];
