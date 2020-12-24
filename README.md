@@ -25,6 +25,7 @@ Where <command> is one of:
   edit .......... Edit a kanbn task
   rename ........ Rename a kanbn task
   move .......... Move a kanbn task to another column
+  comment ....... Add a comment to a task
   remove ........ Remove a kanbn task
   find .......... Search for kanbn tasks
   status ........ Get project and task statistics

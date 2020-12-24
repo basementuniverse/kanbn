@@ -64,6 +64,7 @@ This will show a kanbn board, something like this:
 * [edit](edit.md) Edit a kanbn task
 * [rename](rename.md) Rename a kanbn task
 * [move](move.md) Move a kanbn task to another column
+* [comment](comment.md) Add a comment to a task
 * [remove](remove.md) Remove a kanbn task
 * [find](find.md) Search for kanbn tasks
 * [status](status.md) Get project and task statistics

@@ -12,6 +12,7 @@ Where {b}<command>{b} is one of:
   {b}edit{b} {d}..........{d} Edit a kanbn task
   {b}rename{b} {d}........{d} Rename a kanbn task
   {b}move{b} {d}..........{d} Move a kanbn task to another column
+  {b}comment{b} {d}.......{d} Add a comment to a task
   {b}remove{b} {d}........{d} Remove a kanbn task
   {b}find{b} {d}..........{d} Search for kanbn tasks
   {b}status{b} {d}........{d} Get project and task statistics
