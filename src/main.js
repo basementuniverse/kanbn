@@ -329,7 +329,7 @@ module.exports = (() => {
       } catch (error) {
         throw new Error(`Couldn't load config file: ${error.message}`);
       }
-      index.options = config;
+      index.options = { ...index.options, ...config };
     }
     return index;
   }
