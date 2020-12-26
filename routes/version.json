@@ -5,6 +5,6 @@
     "v"
   ],
   "args": {},
-  "controller": "./src/controllers/version",
+  "controller": "./src/controller/version",
   "help": "./docs/commands/version.txt"
 }

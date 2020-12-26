@@ -43,6 +43,6 @@
       "json": ["j"]
     }
   },
-  "controller": "./src/controllers/find",
+  "controller": "./src/controller/find",
   "help": "./docs/commands/find.txt"
 }

@@ -13,6 +13,6 @@
       "save": ["s"]
     }
   },
-  "controller": "./src/controllers/validate",
+  "controller": "./src/controller/validate",
   "help": "./docs/commands/validate.txt"
 }

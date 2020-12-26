@@ -43,6 +43,6 @@
       "descending": ["z"]
     }
   },
-  "controller": "./src/controllers/sort",
+  "controller": "./src/controller/sort",
   "help": "./docs/commands/sort.txt"
 }

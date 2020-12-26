@@ -30,6 +30,6 @@
       "untracked": ["u"]
     }
   },
-  "controller": "./src/controllers/add",
+  "controller": "./src/controller/add",
   "help": "./docs/commands/add.txt"
 }

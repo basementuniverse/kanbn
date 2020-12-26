@@ -11,6 +11,6 @@
       "force": ["f"]
     }
   },
-  "controller": "./src/controllers/nuclear",
+  "controller": "./src/controller/nuclear",
   "help": "./docs/commands/nuclear.txt"
 }

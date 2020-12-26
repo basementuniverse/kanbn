@@ -17,6 +17,6 @@
       "text": ["t"]
     }
   },
-  "controller": "./src/controllers/comment",
+  "controller": "./src/controller/comment",
   "help": "./docs/commands/comment.txt"
 }

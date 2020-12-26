@@ -22,6 +22,6 @@
       "column": ["c"]
     }
   },
-  "controller": "./src/controllers/burndown",
+  "controller": "./src/controller/burndown",
   "help": "./docs/commands/burndown.txt"
 }

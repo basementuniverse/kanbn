@@ -14,6 +14,6 @@
       "index": ["x"]
     }
   },
-  "controller": "./src/controllers/remove",
+  "controller": "./src/controller/remove",
   "help": "./docs/commands/remove.txt"
 }

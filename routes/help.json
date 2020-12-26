@@ -6,6 +6,6 @@
     ""
   ],
   "args": {},
-  "controller": "./src/controllers/help",
+  "controller": "./src/controller/help",
   "help": "./docs/commands/help.txt"
 }

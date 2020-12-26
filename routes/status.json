@@ -24,6 +24,6 @@
       "date": ["d"]
     }
   },
-  "controller": "./src/controllers/status",
+  "controller": "./src/controller/status",
   "help": "./docs/commands/status.txt"
 }

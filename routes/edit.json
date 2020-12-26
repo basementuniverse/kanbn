@@ -32,6 +32,6 @@
       "assigned": ["a"]
     }
   },
-  "controller": "./src/controllers/edit",
+  "controller": "./src/controller/edit",
   "help": "./docs/commands/edit.txt"
 }

@@ -16,6 +16,6 @@
       "quiet": ["q"]
     }
   },
-  "controller": "./src/controllers/board",
+  "controller": "./src/controller/board",
   "help": "./docs/commands/board.txt"
 }

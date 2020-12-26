@@ -20,6 +20,6 @@
       "relative": ["r"]
     }
   },
-  "controller": "./src/controllers/move",
+  "controller": "./src/controller/move",
   "help": "./docs/commands/move.txt"
 }

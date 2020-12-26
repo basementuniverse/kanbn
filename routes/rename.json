@@ -16,6 +16,6 @@
       "name": ["n"]
     }
   },
-  "controller": "./src/controllers/rename",
+  "controller": "./src/controller/rename",
   "help": "./docs/commands/rename.txt"
 }

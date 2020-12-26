@@ -20,6 +20,6 @@
       "interactive": ["i"]
     }
   },
-  "controller": "./src/controllers/init",
+  "controller": "./src/controller/init",
   "help": "./docs/commands/init.txt"
 }
