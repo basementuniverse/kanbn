@@ -483,6 +483,69 @@ module.exports = (() => {
     .reduce((a, task) => a += task.workload, 0);
   }
 
+  /**
+   * If a task's column is linked in the index to a date-type metadata property, update the metadata property date
+   * in the task data
+   * @param {object} index
+   * @param {object} taskData
+   * @param {string} columnName
+   * @return {object} The updated task data
+   */
+  function updateColumnLinkedMetadataProperties(index, taskData, columnName) {
+
+    // Update built-in column-linked metadata properties first (started, completed dates)
+    taskData = updateColumnLinkedMetadataProperty(index, taskData, columnName, 'completed', 'once');
+    taskData = updateColumnLinkedMetadataProperty(index, taskData, columnName, 'started', 'once');
+    if ('metadataProperties' in index.options) {
+      for (let metadataProperty of index.options.metadataProperties) {
+        if (metadataProperty.type === 'date') {
+          taskData = updateColumnLinkedMetadataProperty(
+            index,
+            taskData,
+            columnName,
+            metadataProperty.name,
+            metadataProperty.updateDate || 'none'
+          );
+        }
+      }
+    }
+    return taskData;
+  }
+
+  /**
+   * If index options contains a list of columns linked to a metadata property name and a task's column matches one
+   * of the columns in this list, set the task's metadata property value to the current date depending on criteria:
+   * - if 'once', update the value only if it's not currently set
+   * - if 'always', update the value regardless
+   * - otherwise, don't update the value
+   * @param {object} index
+   * @param {object} taskData
+   * @param {string} columnName
+   * @param {string} propertyName
+   * @param {string} [updateCriteria='none']
+   */
+  function updateColumnLinkedMetadataProperty(index, taskData, columnName, propertyName, updateCriteria = 'none') {
+    const columnList = `${propertyName}Columns`;
+    if (
+      columnList in index.options &&
+      index.options[columnList].indexOf(columnName) !== -1
+    ) {
+      switch (updateCriteria) {
+        case 'always':
+          taskData = setTaskMetadata(taskData, propertyName, new Date());
+          break;
+        case 'once':
+          if (!(propertyName in taskData.metadata && taskData.metadata[propertyName])) {
+            taskData = setTaskMetadata(taskData, propertyName, new Date());
+          }
+          break;
+        default:
+          break;
+      }
+    }
+    return taskData;
+  }
+
   return {
 
     /**
@@ -673,23 +736,8 @@ module.exports = (() => {
       // Set the created date
       taskData = setTaskMetadata(taskData, 'created', new Date());
 
-      // If we're creating the task in a started column, set the task's started date, unless already set
-      if (
-        'startedColumns' in index.options &&
-        index.options.startedColumns.indexOf(columnName) !== -1 &&
-        !('started' in taskData.metadata)
-      ) {
-        taskData = setTaskMetadata(taskData, 'started', new Date());
-      }
-
-      // If we're creating the task in a completed column, set the task's completed date, unless already set
-      if (
-        'completedColumns' in index.options &&
-        index.options.completedColumns.indexOf(columnName) !== -1 &&
-        !('completed' in taskData.metadata)
-      ) {
-        taskData = setTaskMetadata(taskData, 'completed', new Date());
-      }
+      // Update task metadata dates
+      taskData = updateColumnLinkedMetadataProperties(index, taskData, columnName);
       await saveTask(taskPath, taskData);
 
       // Add the task to the index
@@ -729,26 +777,11 @@ module.exports = (() => {
       }
 
       // Load task data
-      const taskData = await loadTask(taskId);
+      let taskData = await loadTask(taskId);
       const taskPath = getTaskPath(taskId);
 
-      // If we're creating the task in a started column, set the task's started date, unless already set
-      if (
-        'startedColumns' in index.options &&
-        index.options.startedColumns.indexOf(columnName) !== -1 &&
-        !('started' in taskData.metadata)
-      ) {
-        taskData = setTaskMetadata(taskData, 'started', new Date());
-      }
-
-      // If we're creating the task in a completed column, set the task's completed date, unless already set
-      if (
-        'completedColumns' in index.options &&
-        index.options.completedColumns.indexOf(columnName) !== -1 &&
-        !('completed' in taskData.metadata)
-      ) {
-        taskData = setTaskMetadata(taskData, 'completed', new Date());
-      }
+      // Update task metadata dates
+      taskData = updateColumnLinkedMetadataProperties(index, taskData, columnName);
       await saveTask(taskPath, taskData);
 
       // Add the task to the column and save the index
@@ -947,23 +980,8 @@ module.exports = (() => {
       let taskData = await loadTask(taskId);
       taskData = setTaskMetadata(taskData, 'updated', new Date());
 
-      // If we're moving the task into a started column, set the task's started date unless already set
-      if (
-        'startedColumns' in index.options &&
-        index.options.startedColumns.indexOf(columnName) !== -1 &&
-        !('started' in taskData.metadata)
-      ) {
-        taskData = setTaskMetadata(taskData, 'started', new Date());
-      }
-
-      // If we're moving the task into a completed column, update the task's completed date, unless already set
-      if (
-        'completedColumns' in index.options &&
-        index.options.completedColumns.indexOf(columnName) !== -1 &&
-        !('completed' in taskData.metadata)
-      ) {
-        taskData = setTaskMetadata(taskData, 'completed', new Date());
-      }
+      // Update task metadata dates
+      taskData = updateColumnLinkedMetadataProperties(index, taskData, columnName);
       await saveTask(getTaskPath(taskId), taskData);
 
       // If we're moving the task to a new position, calculate the absolute position
@@ -1427,6 +1445,20 @@ module.exports = (() => {
           result.sprint.started = taskWorkloadInPeriod(tasks, 'started', sprintStartDate, sprintEndDate);
           result.sprint.completed = taskWorkloadInPeriod(tasks, 'completed', sprintStartDate, sprintEndDate);
           result.sprint.due = taskWorkloadInPeriod(tasks, 'due', sprintStartDate, sprintEndDate);
+
+          // Add custom date property workload information for the sprint
+          if ('metadataProperties' in index.options) {
+            for (let metadataProperty of index.options.metadataProperties) {
+              if (metadataProperty.type === 'date') {
+                result.sprint[metadataProperty.name] = taskWorkloadInPeriod(
+                  tasks,
+                  metadataProperty.name,
+                  sprintStartDate,
+                  sprintEndDate
+                );
+              }
+            }
+          }
         }
 
         // If any dates were specified, calculate task statistics for these dates
@@ -1448,6 +1480,20 @@ module.exports = (() => {
           result.period.started = taskWorkloadInPeriod(tasks, 'started', periodStart, periodEnd);
           result.period.completed = taskWorkloadInPeriod(tasks, 'completed', periodStart, periodEnd);
           result.period.due = taskWorkloadInPeriod(tasks, 'due', periodStart, periodEnd);
+
+          // Add custom date property workload information for the selected date range
+          if ('metadataProperties' in index.options) {
+            for (let metadataProperty of index.options.metadataProperties) {
+              if (metadataProperty.type === 'date') {
+                result.sprint[metadataProperty.name] = taskWorkloadInPeriod(
+                  tasks,
+                  metadataProperty.name,
+                  periodStart,
+                  periodEnd
+                );
+              }
+            }
+          }
         }
       }
       return result;

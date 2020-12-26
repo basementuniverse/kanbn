@@ -34,6 +34,33 @@ function validateOptions(options) {
           },
           required: ['start', 'name']
         }
+      },
+      'metadataProperties': {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            'name': { type: 'string' },
+            'type': {
+              type: 'string',
+              enum: [
+                'boolean',
+                'string',
+                'number',
+                'date'
+              ]
+            },
+            'updateDate': {
+              type: 'string',
+              enum: [
+                'always',
+                'once',
+                'none'
+              ]
+            }
+          },
+          required: ['name', 'type']
+        }
       }
     }
   });
