@@ -375,6 +375,53 @@ module.exports = async args => {
     taskData.relations = relations;
   }
 
+  // Check metadata field types
+  if ('metadataProperties' in index.options) {
+    for (let arg of Object.keys(args)) {
+      if (arg.startsWith('metadata:')) {
+        const fieldName = arg.substring('metadata:'.length);
+        const metadataProperty = index.options.metadataProperties.find(p => p.name === fieldName);
+        if (metadataProperty !== undefined) {
+
+          // Check value type
+          switch (metadataProperty.type) {
+            case 'boolean':
+              if (typeof args[arg] === 'boolean') {
+                taskData.metadata[fieldName] = args[arg];
+              } else {
+                utility.error(`Metadata argument "${fieldName}" is not a boolean`, true);
+              }
+              break;
+            case 'number':
+              const numberValue = parseFloat(args[arg]);
+              if (!isNaN(numberValue)) {
+                taskData.metadata[fieldName] = numberValue;
+              } else {
+                utility.error(`Metadata argument "${fieldName}" is not a number`, true);
+              }
+              break;
+            case 'string':
+              if (typeof args[arg] === 'string') {
+                taskData.metadata[fieldName] = args[arg];
+              } else {
+                utility.error(`Metadata argument "${fieldName}" is not a string`, true);
+              }
+              break;
+            case 'date':
+              const dateValue = chrono.parseDate(args[arg]);
+              if (dateValue instanceof Date) {
+                taskData.metadata[fieldName] = dateValue;
+              } else {
+                utility.error(`Unable to parse date for metadata argument "${fieldName}"`, true);
+              }
+              break;
+            default: break;
+          }
+        }
+      }
+    }
+  }
+
   // Create task interactively
   if (args.interactive) {
     interactiveCreateTask(taskData, taskIds, columnName, columnNames)
