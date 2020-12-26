@@ -1,6 +1,7 @@
 const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
+const mockDate = require('mockdate');
 
 QUnit.module('moveTask tests', {
   before() {
@@ -91,7 +92,7 @@ QUnit.test('Move a task', async assert => {
   context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', false);
 
   // Verify that the task updated date was updated
-  task = await kanbn.getTask('task-1');
+  const task = await kanbn.getTask('task-1');
   assert.equal(task.metadata.updated.toISOString().substr(0, 9), currentDate.substr(0, 9));
 });
 
@@ -107,7 +108,7 @@ QUnit.test('Move a task into a started column', async assert => {
   context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', false);
 
   // Verify that the task started date was updated
-  task = await kanbn.getTask('task-1');
+  const task = await kanbn.getTask('task-1');
   assert.equal(task.metadata.started.toISOString().substr(0, 9), currentDate.substr(0, 9));
 });
 
@@ -123,8 +124,96 @@ QUnit.test('Move a task into a completed column', async assert => {
   context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', false);
 
   // Verify that the task started date was updated
-  task = await kanbn.getTask('task-1');
+  const task = await kanbn.getTask('task-1');
   assert.equal(task.metadata.completed.toISOString().substr(0, 9), currentDate.substr(0, 9));
+});
+
+QUnit.test('Move a task into a custom metadata-linked column (update date once)', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
+  const TEST_DATE_1 = '2000-01-01T00:00:00.000Z';
+  const TEST_DATE_2 = '2000-01-02T00:00:00.000Z';
+
+  require('../fixtures')({
+    countColumns: 3,
+    countTasks: 1,
+    options: {
+      testColumns: [
+        'Column 2',
+        'Column 3'
+      ],
+      metadataProperties: [
+        {
+          name: 'test',
+          type: 'date',
+          updateDate: 'once'
+        }
+      ]
+    }
+  });
+
+  // Move task
+  mockDate.set(TEST_DATE_1);
+  await kanbn.moveTask('task-1', 'Column 2');
+
+  // Verify that the task was moved
+  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 2');
+  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', false);
+
+  // Verify that the task's metadata property was updated
+  let task = await kanbn.getTask('task-1');
+  assert.equal(task.metadata.test.toISOString(), TEST_DATE_1);
+
+  // Move the task again
+  mockDate.set(TEST_DATE_2);
+  await kanbn.moveTask('task-1', 'Column 3');
+
+  // Verify that the task's metadata property was not updated again
+  task = await kanbn.getTask('task-1');
+  assert.equal(task.metadata.test.toISOString(), TEST_DATE_1);
+});
+
+QUnit.test('Move a task into a custom metadata-linked column (update date always)', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
+  const TEST_DATE_1 = '2000-01-01T00:00:00.000Z';
+  const TEST_DATE_2 = '2000-01-02T00:00:00.000Z';
+
+  require('../fixtures')({
+    countColumns: 3,
+    countTasks: 1,
+    options: {
+      testColumns: [
+        'Column 2',
+        'Column 3'
+      ],
+      metadataProperties: [
+        {
+          name: 'test',
+          type: 'date',
+          updateDate: 'always'
+        }
+      ]
+    }
+  });
+
+  // Move task
+  mockDate.set(TEST_DATE_1);
+  await kanbn.moveTask('task-1', 'Column 2');
+
+  // Verify that the task was moved
+  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 2');
+  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', false);
+
+  // Verify that the task's metadata property was updated
+  let task = await kanbn.getTask('task-1');
+  assert.equal(task.metadata.test.toISOString(), TEST_DATE_1);
+
+  // Move the task again
+  mockDate.set(TEST_DATE_2);
+  await kanbn.moveTask('task-1', 'Column 3');
+
+  // Verify that the task's metadata property was not updated again
+  task = await kanbn.getTask('task-1');
+  assert.equal(task.metadata.test.toISOString(), TEST_DATE_2);
 });
 
 QUnit.test('Move a task to an absolute position in the same column', async assert => {

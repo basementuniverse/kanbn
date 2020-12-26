@@ -348,7 +348,8 @@ QUnit.test('Status non-quiet with sprints defined', async assert => {
         metadata: {
           tags: ['Small'],
           created: new Date('02 December 1999 00:00:00 GMT'),
-          due: new Date('03 December 1999 00:00:00 GMT')
+          due: new Date('03 December 1999 00:00:00 GMT'),
+          test: new Date('04 December 1999 00:00:00 GMT')
         }
       },
       {
@@ -356,7 +357,8 @@ QUnit.test('Status non-quiet with sprints defined', async assert => {
         metadata: {
           tags: ['Medium'],
           created: new Date('10 December 1999 00:00:00 GMT'),
-          completed: new Date('11 December 1999 00:00:00 GMT')
+          completed: new Date('11 December 1999 00:00:00 GMT'),
+          test: new Date('12 December 1999 00:00:00 GMT')
         }
       },
       {
@@ -365,7 +367,8 @@ QUnit.test('Status non-quiet with sprints defined', async assert => {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
           started: new Date('16 December 1999 01:00:00 GMT'),
-          completed: new Date('17 December 1999 00:00:00 GMT')
+          completed: new Date('17 December 1999 00:00:00 GMT'),
+          test: new Date('17 December 1999 00:00:00 GMT')
         }
       },
       {
@@ -373,7 +376,8 @@ QUnit.test('Status non-quiet with sprints defined', async assert => {
         metadata: {
           tags: ['Huge'],
           created: new Date('18 December 1999 00:00:00 GMT'),
-          due: new Date('19 December 1999 00:00:00 GMT')
+          due: new Date('19 December 1999 00:00:00 GMT'),
+          test: new Date('20 December 1999 00:00:00 GMT')
         }
       }
     ],
@@ -400,6 +404,12 @@ QUnit.test('Status non-quiet with sprints defined', async assert => {
           name: 'Sprint 2',
           description: 'Test sprint 2',
           start: new Date('12 December 1999 00:00:00 GMT')
+        }
+      ],
+      metadataProperties: [
+        {
+          name: 'test',
+          type: 'date'
         }
       ]
     }
@@ -455,6 +465,26 @@ QUnit.test('Status non-quiet with sprints defined', async assert => {
         }
       ],
       workload: 8
+    },
+    test: {
+      tasks: [
+        {
+          id: 'task-2',
+          column: 'Column 2',
+          workload: 3
+        },
+        {
+          id: 'task-3',
+          column: 'Column 3',
+          workload: 5
+        },
+        {
+          id: 'task-4',
+          column: 'Column 3',
+          workload: 8
+        }
+      ],
+      workload: 16
     }
   });
 });

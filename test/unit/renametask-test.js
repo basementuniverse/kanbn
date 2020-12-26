@@ -90,6 +90,6 @@ QUnit.test('Rename a task', async assert => {
   context.taskFileExists(assert, BASE_PATH, 'task-1', false);
 
   // Verify that the task updated date was updated
-  task = await kanbn.getTask('task-3');
+  const task = await kanbn.getTask('task-3');
   assert.equal(task.metadata.updated.toISOString().substr(0, 9), currentDate.substr(0, 9));
 });
