@@ -141,7 +141,7 @@ QUnit.test('Move a task into a custom metadata-linked column (update date once)'
         'Column 2',
         'Column 3'
       ],
-      metadataProperties: [
+      customFields: [
         {
           name: 'test',
           type: 'date',
@@ -185,7 +185,7 @@ QUnit.test('Move a task into a custom metadata-linked column (update date always
         'Column 2',
         'Column 3'
       ],
-      metadataProperties: [
+      customFields: [
         {
           name: 'test',
           type: 'date',

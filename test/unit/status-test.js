@@ -406,7 +406,7 @@ QUnit.test('Status non-quiet with sprints defined', async assert => {
           start: new Date('12 December 1999 00:00:00 GMT')
         }
       ],
-      metadataProperties: [
+      customFields: [
         {
           name: 'test',
           type: 'date'

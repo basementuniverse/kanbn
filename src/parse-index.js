@@ -35,7 +35,7 @@ function validateOptions(options) {
           required: ['start', 'name']
         }
       },
-      'metadataProperties': {
+      'customFields': {
         type: 'array',
         items: {
           type: 'object',

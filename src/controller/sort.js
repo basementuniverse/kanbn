@@ -293,6 +293,20 @@ module.exports = async (args, argv) => {
     utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
   }
 
+  // Add custom fields to sort fields
+  if ('customFields' in index.options) {
+    for (let customField of index.options.customFields) {
+      sorterFields.push({
+        name: customField.name,
+        field: customField.name,
+        options: [
+          `--${customField.name}`
+        ],
+        filterable: customField.type === 'string'
+      });
+    }
+  }
+
   // If a column name is defined, make sure it exists in the index
   if (columnName !== null) {
     if (columnNames.indexOf(columnName) === -1) {

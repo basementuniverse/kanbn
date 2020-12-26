@@ -243,6 +243,7 @@ module.exports = (() => {
     // Get a list of tasks in the target column and add computed fields
     const tasks = [...await loadAllTrackedTasks(index, columnName)].map(task => ({
       ...task,
+      ...task.metadata,
       created: 'created' in task.metadata ? task.metadata.created : '',
       updated: 'updated' in task.metadata ? task.metadata.updated : '',
       started: 'started' in task.metadata ? task.metadata.started : '',
@@ -484,27 +485,29 @@ module.exports = (() => {
   }
 
   /**
-   * If a task's column is linked in the index to a date-type metadata property, update the metadata property date
-   * in the task data
+   * If a task's column is linked in the index to a custom field with type date, update the custom field's value
+   * in the task data with the current date
    * @param {object} index
    * @param {object} taskData
    * @param {string} columnName
    * @return {object} The updated task data
    */
-  function updateColumnLinkedMetadataProperties(index, taskData, columnName) {
+  function updateColumnLinkedCustomFields(index, taskData, columnName) {
 
     // Update built-in column-linked metadata properties first (started, completed dates)
-    taskData = updateColumnLinkedMetadataProperty(index, taskData, columnName, 'completed', 'once');
-    taskData = updateColumnLinkedMetadataProperty(index, taskData, columnName, 'started', 'once');
-    if ('metadataProperties' in index.options) {
-      for (let metadataProperty of index.options.metadataProperties) {
-        if (metadataProperty.type === 'date') {
-          taskData = updateColumnLinkedMetadataProperty(
+    taskData = updateColumnLinkedCustomField(index, taskData, columnName, 'completed', 'once');
+    taskData = updateColumnLinkedCustomField(index, taskData, columnName, 'started', 'once');
+
+    // Update column-linked custom fields
+    if ('customFields' in index.options) {
+      for (let customField of index.options.customFields) {
+        if (customField.type === 'date') {
+          taskData = updateColumnLinkedCustomField(
             index,
             taskData,
             columnName,
-            metadataProperty.name,
-            metadataProperty.updateDate || 'none'
+            customField.name,
+            customField.updateDate || 'none'
           );
         }
       }
@@ -513,30 +516,30 @@ module.exports = (() => {
   }
 
   /**
-   * If index options contains a list of columns linked to a metadata property name and a task's column matches one
-   * of the columns in this list, set the task's metadata property value to the current date depending on criteria:
+   * If index options contains a list of columns linked to a custom field name and a task's column matches one
+   * of the columns in this list, set the task's custom field value to the current date depending on criteria:
    * - if 'once', update the value only if it's not currently set
    * - if 'always', update the value regardless
    * - otherwise, don't update the value
    * @param {object} index
    * @param {object} taskData
    * @param {string} columnName
-   * @param {string} propertyName
+   * @param {string} fieldName
    * @param {string} [updateCriteria='none']
    */
-  function updateColumnLinkedMetadataProperty(index, taskData, columnName, propertyName, updateCriteria = 'none') {
-    const columnList = `${propertyName}Columns`;
+  function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria = 'none') {
+    const columnList = `${fieldName}Columns`;
     if (
       columnList in index.options &&
       index.options[columnList].indexOf(columnName) !== -1
     ) {
       switch (updateCriteria) {
         case 'always':
-          taskData = setTaskMetadata(taskData, propertyName, new Date());
+          taskData = setTaskMetadata(taskData, fieldName, new Date());
           break;
         case 'once':
-          if (!(propertyName in taskData.metadata && taskData.metadata[propertyName])) {
-            taskData = setTaskMetadata(taskData, propertyName, new Date());
+          if (!(fieldName in taskData.metadata && taskData.metadata[fieldName])) {
+            taskData = setTaskMetadata(taskData, fieldName, new Date());
           }
           break;
         default:
@@ -737,7 +740,7 @@ module.exports = (() => {
       taskData = setTaskMetadata(taskData, 'created', new Date());
 
       // Update task metadata dates
-      taskData = updateColumnLinkedMetadataProperties(index, taskData, columnName);
+      taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
       await saveTask(taskPath, taskData);
 
       // Add the task to the index
@@ -781,7 +784,7 @@ module.exports = (() => {
       const taskPath = getTaskPath(taskId);
 
       // Update task metadata dates
-      taskData = updateColumnLinkedMetadataProperties(index, taskData, columnName);
+      taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
       await saveTask(taskPath, taskData);
 
       // Add the task to the column and save the index
@@ -981,7 +984,7 @@ module.exports = (() => {
       taskData = setTaskMetadata(taskData, 'updated', new Date());
 
       // Update task metadata dates
-      taskData = updateColumnLinkedMetadataProperties(index, taskData, columnName);
+      taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
       await saveTask(getTaskPath(taskId), taskData);
 
       // If we're moving the task to a new position, calculate the absolute position
@@ -1230,6 +1233,42 @@ module.exports = (() => {
         ) {
           result = false;
         }
+
+        // Custom metadata properties
+        if ('customFields' in index.options) {
+          for (let customField of index.options.customFields) {
+            if (customField.name in filters) {
+              if (!(customField.name in task.metadata)) {
+                result = false;
+              } else {
+                switch (customField.type) {
+                  case 'boolean':
+                    if (task.metadata[customField.name] !== filters[customField.name]) {
+                      result = false;
+                    }
+                    break;
+                  case 'number':
+                    if (!numberFilter(filters[customField.name], task.metadata[customField.name])) {
+                      result = false;
+                    }
+                    break;
+                  case 'string':
+                    if (!stringFilter(filters[customField.name], task.metadata[customField.name])) {
+                      result = false;
+                    }
+                    break;
+                  case 'date':
+                    if (!dateFilter(filters[customField.name], task.metadata[customField.name])) {
+                      result = false;
+                    }
+                    break;
+                  default:
+                    break;
+                }
+              }
+            }
+          }
+        }
         return result;
       });
 
@@ -1447,12 +1486,12 @@ module.exports = (() => {
           result.sprint.due = taskWorkloadInPeriod(tasks, 'due', sprintStartDate, sprintEndDate);
 
           // Add custom date property workload information for the sprint
-          if ('metadataProperties' in index.options) {
-            for (let metadataProperty of index.options.metadataProperties) {
-              if (metadataProperty.type === 'date') {
-                result.sprint[metadataProperty.name] = taskWorkloadInPeriod(
+          if ('customFields' in index.options) {
+            for (let customField of index.options.customFields) {
+              if (customField.type === 'date') {
+                result.sprint[customField.name] = taskWorkloadInPeriod(
                   tasks,
-                  metadataProperty.name,
+                  customField.name,
                   sprintStartDate,
                   sprintEndDate
                 );
@@ -1482,12 +1521,12 @@ module.exports = (() => {
           result.period.due = taskWorkloadInPeriod(tasks, 'due', periodStart, periodEnd);
 
           // Add custom date property workload information for the selected date range
-          if ('metadataProperties' in index.options) {
-            for (let metadataProperty of index.options.metadataProperties) {
-              if (metadataProperty.type === 'date') {
-                result.sprint[metadataProperty.name] = taskWorkloadInPeriod(
+          if ('customFields' in index.options) {
+            for (let customField of index.options.customFields) {
+              if (customField.type === 'date') {
+                result.sprint[customField.name] = taskWorkloadInPeriod(
                   tasks,
-                  metadataProperty.name,
+                  customField.name,
                   periodStart,
                   periodEnd
                 );

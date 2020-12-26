@@ -6,6 +6,99 @@ const yaml = require('yamljs');
 
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
+const searchFields = [
+  {
+    name: 'Id',
+    field: 'id',
+    type: 'string'
+  },
+  {
+    name: 'Name',
+    field: 'name',
+    type: 'string'
+  },
+  {
+    name: 'Description',
+    field: 'description',
+    type: 'string'
+  },
+  {
+    name: 'Column',
+    field: 'column',
+    type: 'string'
+  },
+  {
+    name: 'Created',
+    field: 'created',
+    type: 'date'
+  },
+  {
+    name: 'Updated',
+    field: 'updated',
+    type: 'date'
+  },
+  {
+    name: 'Started',
+    field: 'started',
+    type: 'date'
+  },
+  {
+    name: 'Completed',
+    field: 'completed',
+    type: 'date'
+  },
+  {
+    name: 'Due',
+    field: 'due',
+    type: 'date'
+  },
+  {
+    name: 'Sub-tasks',
+    field: 'sub-task',
+    type: 'string'
+  },
+  {
+    name: 'Count sub-tasks',
+    field: 'count-sub-tasks',
+    type: 'number'
+  },
+  {
+    name: 'Tags',
+    field: 'tag',
+    type: 'string'
+  },
+  {
+    name: 'Count tags',
+    field: 'count-tags',
+    type: 'number'
+  },
+  {
+    name: 'Relations',
+    field: 'relation',
+    type: 'string'
+  },
+  {
+    name: 'Count relations',
+    field: 'count-relations',
+    type: 'number'
+  },
+  {
+    name: 'Comments',
+    field: 'comment',
+    type: 'string'
+  },
+  {
+    name: 'Count comments',
+    field: 'count-comments',
+    type: 'number'
+  },
+  {
+    name: 'Assigned',
+    field: 'assigned',
+    type: 'string'
+  }
+];
+
 /**
  * Build search filters interactively
  * @return {Promise<any>}
@@ -23,26 +116,9 @@ async function interactive() {
           type: 'rawlist',
           name: 'type',
           message: 'Filter type:',
-          default: 'Id',
+          default: searchFields[0].name,
           choices: [
-            'Id',
-            'Name',
-            'Description',
-            'Column',
-            'Created',
-            'Updated',
-            'Started',
-            'Completed',
-            'Due',
-            'Sub-tasks',
-            'Count sub-tasks',
-            'Tags',
-            'Count tags',
-            'Relations',
-            'Count relations',
-            'Comments',
-            'Count comments',
-            'Assigned user',
+            ...searchFields.map(s => s.name),
             new inquirer.Separator(),
             'None'
           ]
@@ -52,16 +128,10 @@ async function interactive() {
           name: 'value',
           message: 'Filter value:',
           default: '',
-          when: answers => [
-            'Id',
-            'Name',
-            'Description',
-            'Sub-tasks',
-            'Tags',
-            'Relations',
-            'Comments',
-            'Assigned user'
-          ].indexOf(answers.type) !== -1,
+          when: answers => searchFields
+            .filter(s => s.type === 'string')
+            .map(s => s.name)
+            .indexOf(answers.type) !== -1,
           validate: async value => {
             if (!value) {
               return 'Filter value cannot be empty';
@@ -74,13 +144,10 @@ async function interactive() {
           name: 'value',
           message: 'Filter value:',
           default: '',
-          when: answers => [
-            'Created',
-            'Updated',
-            'Started',
-            'Completed',
-            'Due'
-          ].indexOf(answers.type) !== -1,
+          when: answers => searchFields
+            .filter(s => s.type === 'date')
+            .map(s => s.name)
+            .indexOf(answers.type) !== -1,
           validate: async value => {
             if (!value) {
               return 'Filter value cannot be empty';
@@ -96,12 +163,10 @@ async function interactive() {
           name: 'value',
           message: 'Filter value:',
           default: '',
-          when: answers => [
-            'Count sub-tasks',
-            'Count tags',
-            'Count relations',
-            'Count comments'
-          ].indexOf(answers.type) !== -1,
+          when: answers => searchFields
+            .filter(s => s.type === 'number')
+            .map(s => s.name)
+            .indexOf(answers.type) !== -1,
           validate: async value => {
             if (!value) {
               return 'Filter value cannot be empty';
@@ -111,6 +176,16 @@ async function interactive() {
             }
             return true;
           }
+        },
+        {
+          type: 'confirm',
+          name: 'value',
+          message: 'Filter value:',
+          default: true,
+          when: answers => searchFields
+            .filter(s => s.type === 'boolean')
+            .map(s => s.name)
+            .indexOf(answers.type) !== -1
         }
       ]
     }
@@ -217,30 +292,6 @@ function convertDateFilters(filters, filterName) {
   return true;
 }
 
-/**
- * Filter names from interactive prompt mapped to property names in the filters object
- */
-const filterPropertyNames = {
-  'Id': 'id',
-  'Name': 'name',
-  'Description': 'description',
-  'Column': 'column',
-  'Created': 'created',
-  'Updated': 'updated',
-  'Started': 'started',
-  'Completed': 'completed',
-  'Due': 'due',
-  'Sub-tasks': 'sub-task',
-  'Count sub-tasks': 'count-sub-tasks',
-  'Tags': 'tag',
-  'Count tags': 'count-tags',
-  'Relations': 'relation',
-  'Count relations': 'count-relations',
-  'Comments': 'comment',
-  'Count comments': 'count-comments',
-  'Assigned user': 'assigned'
-};
-
 module.exports = async args => {
 
   // Make sure kanbn has been initialised
@@ -260,9 +311,20 @@ module.exports = async args => {
     utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
   }
 
+  // Add custom fields to search fields
+  if ('customFields' in index.options) {
+    for (let customField of index.options.customFields) {
+      searchFields.push({
+        name: customField.name,
+        field: customField.name,
+        type: customField.type
+      });
+    }
+  }
+
   // Get filters from args
   const filters = {};
-  for (let filterProperty of Object.values(filterPropertyNames)) {
+  for (let filterProperty of searchFields.map(s => s.field)) {
     if (args[filterProperty]) {
       filters[filterProperty] = args[filterProperty];
     }
@@ -317,6 +379,33 @@ module.exports = async args => {
     }
   }
 
+  // Check and add custom field filters
+  if ('customFields' in index.options) {
+    for (let customField of index.options.customFields) {
+      if (customField.name in args) {
+        filters[customField.name] = args[customField.name];
+        switch (customField.type) {
+          case 'boolean':
+            if (typeof filters[customField.name] !== 'boolean') {
+              utility.error(`Custom field "${customField.name}" value is not a boolean`, true);
+            }
+            break;
+          case 'number':
+            if (!convertNumericFilters(filters, customField.name)) {
+              utility.error(`Custom field "${customField.name}" value is not a number`, true);
+            }
+            break;
+          case 'date':
+            if (!convertDateFilters(filters, customField.name)) {
+              utility.error(`Unable to parse date for custom field "${customField.name}"`, true);
+            }
+            break;
+          default: break;
+        }
+      }
+    }
+  }
+
   // Build search filters interactively
   if (args.interactive) {
     interactive()
@@ -338,7 +427,11 @@ module.exports = async args => {
       ])
       .then(otherAnswers => {
         for (let filter of answers.filters) {
-          addFilterValue(filters, filterPropertyNames[filter.type], filter.value);
+          addFilterValue(
+            filters,
+            searchFields.find(s => s.name === filter.type).field,
+            filter.value
+          );
         }
         findTasks(filters, !otherAnswers.nonquiet, otherAnswers.json);
       })
