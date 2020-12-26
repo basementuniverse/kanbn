@@ -1,6 +1,5 @@
 const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
-const context = require('../context');
 const fixtures = require('../fixtures');
 const mockDate = require('mockdate');
 

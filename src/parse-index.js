@@ -134,9 +134,10 @@ module.exports = {
   /**
    * Convert an index object into markdown
    * @param {object} data
+   * @param {boolean} [ignoreOptions=false]
    * @return {string}
    */
-  json2md(data) {
+  json2md(data, ignoreOptions = false) {
     const result = [];
     try {
 
@@ -159,8 +160,8 @@ module.exports = {
         result.push(data.description);
       }
 
-      // Add options if present
-      if ('options' in data && data.options !== null) {
+      // Add options if present and not ignoring
+      if ('options' in data && data.options !== null && !ignoreOptions) {
         validateOptions(data.options);
         if (Object.keys(data.options).length) {
           result.push(

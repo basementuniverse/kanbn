@@ -299,13 +299,14 @@ module.exports = (() => {
     }
 
     // If there is a separate config file, save options to this file
+    let ignoreOptions = false;
     if (await exists(CONFIG)) {
       await fs.promises.writeFile(CONFIG, yaml.stringify(indexData.options, 4, 2));
-      delete indexData.options;
+      ignoreOptions = true;
     }
 
     // Save index
-    await fs.promises.writeFile(INDEX, parseIndex.json2md(indexData));
+    await fs.promises.writeFile(INDEX, parseIndex.json2md(indexData, ignoreOptions));
   }
 
   /**
