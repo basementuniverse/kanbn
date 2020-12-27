@@ -3,7 +3,7 @@
 
 Search all tasks in the index and show search results. If no filters are specified, this command will list all tracked tasks.
 
-Search terms are treated as case-insensitive regular expressions.
+String search terms are treated as case-insensitive regular expressions.
 
 Only tasks that match all of the filters will be returned.
 

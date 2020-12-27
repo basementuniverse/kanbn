@@ -1052,8 +1052,9 @@ module.exports = (() => {
       const index = await loadIndex();
       const tasks = [...await loadAllTrackedTasks(index)].filter(task => {
 
-        // Get task id
+        // Get task id and column
         const taskId = utility.getTaskId(task.name);
+        const column = findTaskColumn(index, taskId);
 
         // If no filters are defined, return all tasks
         if (Object.keys(filters).length === 0) {
@@ -1079,11 +1080,8 @@ module.exports = (() => {
         }
 
         // Column
-        if ('column' in filters) {
-          const columns = utility.arrayArg(filters.column);
-          if (columns.indexOf(findTaskColumn(index, taskId)) === -1) {
-            result = false;
-          }
+        if ('column' in filters && !stringFilter(filters.column, column)) {
+          result = false;
         }
 
         // Created date
