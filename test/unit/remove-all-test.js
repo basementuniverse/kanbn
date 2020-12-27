@@ -2,7 +2,7 @@ const mockFileSystem = require('mock-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
-QUnit.module('nuclear tests', {
+QUnit.module('removeAll tests', {
   beforeEach() {
     require('../fixtures')({
       countTasks: 1
@@ -13,14 +13,14 @@ QUnit.module('nuclear tests', {
   }
 });
 
-QUnit.test('Nuke kanbn', async assert => {
+QUnit.test('Remove all should remove all kanbn files and folders', async assert => {
   const BASE_PATH = kanbn.getMainFolder();
 
   // Kanbn should be initialised
   assert.equal(await kanbn.initialised(), true);
 
-  // Nuke kanbn
-  await kanbn.nuclear();
+  // Remove everything
+  await kanbn.removeAll();
 
   // Kanbn should not be initialised
   assert.equal(await kanbn.initialised(), false);

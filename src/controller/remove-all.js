@@ -5,8 +5,8 @@ const inquirer = require('inquirer');
 /**
  * Nuke kanbn
  */
-function nuclear() {
-  kanbn.nuclear()
+function removeAll() {
+  kanbn.removeAll()
   .then(() => {
     console.log('kanbn has been removed');
   })
@@ -24,7 +24,7 @@ module.exports = async args => {
 
   // If the force flag is specified, remove kanbn without asking
   if (args.force) {
-    nuclear();
+    removeAll();
 
   // Otherwise, prompt for confirmation first
   } else {
@@ -37,7 +37,7 @@ module.exports = async args => {
       }
     ]).then(async answers => {
       if (answers.sure) {
-        nuclear();
+        removeAll();
       }
     }).catch(error => {
       utility.error(error, true);

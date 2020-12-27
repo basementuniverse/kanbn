@@ -1,0 +1,10 @@
+{b}kanbn remove-all{b}
+
+Completely remove the '.kanbn' directory and all of the contents.
+
+Make sure you have anything that you want to keep backed-up before running this.
+
+Options:
+  {b}kanbn remove-all --force{b}
+  {b}kanbn remove-all -f{b}
+    Force delete without asking for confirmation.

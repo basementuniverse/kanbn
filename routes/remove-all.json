@@ -1,7 +1,7 @@
 {
   "name": "Remove Everything",
   "commands": [
-    "nuclear"
+    "remove-all"
   ],
   "args": {
     "boolean": [
@@ -11,6 +11,6 @@
       "force": ["f"]
     }
   },
-  "controller": "./src/controller/nuclear",
-  "help": "./docs/commands/nuclear.txt"
+  "controller": "./src/controller/remove-all",
+  "help": "./docs/commands/remove-all.txt"
 }

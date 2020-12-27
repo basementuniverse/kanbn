@@ -1862,7 +1862,7 @@ module.exports = (() => {
     /**
      * Nuke it from orbit, it's the only way to be sure
      */
-    async nuclear() {
+    async removeAll() {
 
       // Check if this folder has been initialised
       if (!await this.initialised()) {

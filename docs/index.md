@@ -72,4 +72,4 @@ This will show a kanbn board, something like this:
 * [sprint](sprint.md) Start a new sprint
 * [burndown](burndown.md) View a burndown chart
 * [validate](validate.md) Validate index and task files
-* [nuclear](nuclear.md) Remove the kanbn board and all tasks
+* [remove-all](remove-all.md) Remove the kanbn board and all tasks

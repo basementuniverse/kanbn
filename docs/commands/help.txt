@@ -20,7 +20,7 @@ Where {b}<command>{b} is one of:
   {b}sprint{b} {d}........{d} Start a new sprint
   {b}burndown{b} {d}......{d} View a burndown chart
   {b}validate{b} {d}......{d} Validate index and task files
-  {b}nuclear{b} {d}.......{d} Remove the kanbn board and all tasks
+  {b}remove-all{b} {d}....{d} Remove the kanbn board and all tasks
 
 For more help with commands, try:
 
