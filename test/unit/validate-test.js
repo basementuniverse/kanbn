@@ -17,12 +17,8 @@ QUnit.module('validate tests', {
   }
 });
 
-QUnit.test('Validate un-initialised folder', async assert => {
-
-  // Refresh the filesystem to un-initialise kanbn
+QUnit.test('Validate uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-
-  // Try to validate an un-initialised folder
   assert.throwsAsync(
     async () => {
       await kanbn.validate();
@@ -31,31 +27,34 @@ QUnit.test('Validate un-initialised folder', async assert => {
   );
 });
 
-QUnit.test('Validate valid index and tasks', async assert => {
+QUnit.test('Validate valid index and tasks should return true', async assert => {
 
   // Validate with re-save, then validate again
   assert.equal(await kanbn.validate(true), true);
   assert.equal(await kanbn.validate(), true);
 });
 
-QUnit.test('Validate with problems in index', async assert => {
+QUnit.test(
+  'Validate with problems in index should return single-element array containing index error',
+  async assert => {
 
-  // Re-write an invalid index file
-  await fs.promises.writeFile(
-    path.join(process.cwd(), '.kanbn/index.md'),
-    '#'
-  );
+    // Re-write an invalid index file
+    await fs.promises.writeFile(
+      path.join(process.cwd(), '.kanbn/index.md'),
+      '#'
+    );
 
-  // Validate
-  assert.deepEqual(await kanbn.validate(), [
-    {
-      task: null,
-      errors: 'Unable to parse index: invalid markdown'
-    }
-  ]);
-});
+    // Validate
+    assert.deepEqual(await kanbn.validate(), [
+      {
+        task: null,
+        errors: 'Unable to parse index: invalid markdown'
+      }
+    ]);
+  }
+);
 
-QUnit.test('Validate with problems in task files', async assert => {
+QUnit.test('Validate with problems in task files should return array of task errors', async assert => {
 
   // Re-write invalid task files
   await fs.promises.writeFile(

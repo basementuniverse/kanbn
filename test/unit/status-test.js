@@ -17,9 +17,7 @@ QUnit.module('status tests', {
   }
 });
 
-QUnit.test('Status in un-initialised folder', async assert => {
-
-  // Get status without initialising kanbn
+QUnit.test('Status in uninitialised folder should throw "not initialised" error', async assert => {
   assert.throwsAsync(
     async () => {
       await kanbn.status();
@@ -29,15 +27,13 @@ QUnit.test('Status in un-initialised folder', async assert => {
 });
 
 QUnit.test('Status untracked and quiet, no untracked tasks', async assert => {
-
-  // Initialise kanbn
   await kanbn.initialise();
 
   // Get status with untracked and quiet options
   assert.equal(await kanbn.status(true, true), 'No untracked tasks found');
 });
 
-QUnit.test('Status untracked and quiet', async assert => {
+QUnit.test('Status untracked and quiet should return list of untracked tasks', async assert => {
 
   // Add some untracked files
   fixtures({
@@ -63,9 +59,7 @@ QUnit.test('Status untracked and quiet', async assert => {
   ]);
 });
 
-QUnit.test('Status quiet', async assert => {
-
-  // Initialise and add some tasks
+QUnit.test('Status quiet should show basic status information', async assert => {
   fixtures({
     tasks: [
       {
@@ -104,9 +98,7 @@ QUnit.test('Status quiet', async assert => {
   });
 });
 
-QUnit.test('Status non-quiet', async assert => {
-
-  // Initialise and add some tasks
+QUnit.test('Status non-quiet should show more status information', async assert => {
   fixtures({
     tasks: [
       {
@@ -183,9 +175,7 @@ QUnit.test('Status non-quiet', async assert => {
   });
 });
 
-QUnit.test('Status non-quiet with due data', async assert => {
-
-  // Initialise and add some tasks
+QUnit.test('Status non-quiet with due data should show due tasks information', async assert => {
   fixtures({
     tasks: [
       {
@@ -338,9 +328,7 @@ QUnit.test('Status non-quiet with due data', async assert => {
   });
 });
 
-QUnit.test('Status non-quiet with sprints defined', async assert => {
-
-  // Initialise and add some tasks
+QUnit.test('Status non-quiet with sprints defined should show sprint information', async assert => {
   fixtures({
     tasks: [
       {
@@ -490,8 +478,6 @@ QUnit.test('Status non-quiet with sprints defined', async assert => {
 });
 
 QUnit.test('Status non-quiet with specific sprint by number', async assert => {
-
-  // Initialise and add some tasks
   fixtures({
     tasks: [
       {
@@ -608,8 +594,6 @@ QUnit.test('Status non-quiet with specific sprint by number', async assert => {
 });
 
 QUnit.test('Status non-quiet with specific sprint by name', async assert => {
-
-  // Initialise and add some tasks
   fixtures({
     tasks: [
       {
@@ -726,8 +710,6 @@ QUnit.test('Status non-quiet with specific sprint by name', async assert => {
 });
 
 QUnit.test('Status non-quiet with single date', async assert => {
-
-  // Initialise and add some tasks
   fixtures({
     tasks: [
       {
@@ -814,8 +796,6 @@ QUnit.test('Status non-quiet with single date', async assert => {
 });
 
 QUnit.test('Status non-quiet with date range', async assert => {
-
-  // Initialise and add some tasks
   fixtures({
     tasks: [
       {

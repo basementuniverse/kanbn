@@ -23,12 +23,8 @@ QUnit.module('findUntrackedTasks tests', {
   }
 });
 
-QUnit.test('Find untracked tasks in un-initialised folder', async assert => {
-
-  // Refresh the filesystem to un-initialise kanbn
+QUnit.test('Find untracked tasks in uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-
-  // Try to find untracked tasks without re-initialising kanbn
   assert.throwsAsync(
     async () => {
       await kanbn.findUntrackedTasks();
@@ -37,9 +33,7 @@ QUnit.test('Find untracked tasks in un-initialised folder', async assert => {
   );
 });
 
-QUnit.test('Find untracked tasks', async assert => {
-
-  // Find untracked tasks
+QUnit.test('Find untracked tasks should return array of untracked tasks', async assert => {
   assert.deepEqual(
     [...await kanbn.findUntrackedTasks()],
     [

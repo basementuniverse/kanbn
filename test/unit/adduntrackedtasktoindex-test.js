@@ -23,12 +23,8 @@ QUnit.module('addUntrackedTaskToIndex tests', {
   }
 });
 
-QUnit.test('Add untracked task in un-initialised folder', async assert => {
-
-  // Refresh the filesystem to un-initialise kanbn
+QUnit.test('Add untracked task in un-initialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-
-  // Try to add an untracked task without re-initialising kanbn
   assert.throwsAsync(
     async () => {
       await kanbn.addUntrackedTaskToIndex('test-task-2', 'Test Column');
@@ -37,9 +33,7 @@ QUnit.test('Add untracked task in un-initialised folder', async assert => {
   );
 });
 
-QUnit.test('Add non-existent untracked task', async assert => {
-
-  // Try to add an untracked task that doesn't exist
+QUnit.test('Add non-existent untracked task should throw "no task file" error', async assert => {
   assert.throwsAsync(
     async () => {
       await kanbn.addUntrackedTaskToIndex('test-task-4', 'Test Column');
@@ -48,10 +42,8 @@ QUnit.test('Add non-existent untracked task', async assert => {
   );
 });
 
-QUnit.test('Add untracked task in non-existent column', async assert => {
+QUnit.test('Add untracked task in non-existent column should throw "no column" error', async assert => {
   const NON_EXISTENT_COLUMN = 'Wibble';
-
-  // Add an untracked task in a non-existent column
   assert.throwsAsync(
     async () => {
       await kanbn.addUntrackedTaskToIndex('test-task-2', NON_EXISTENT_COLUMN);
@@ -60,9 +52,7 @@ QUnit.test('Add untracked task in non-existent column', async assert => {
   );
 });
 
-QUnit.test('Add untracked task that is already indexed', async assert => {
-
-  // Add an untracked task in a non-existent column
+QUnit.test('Add untracked task that is already indexed should throw "already indexed" error', async assert => {
   assert.throwsAsync(
     async () => {
       await kanbn.addUntrackedTaskToIndex('test-task-1', 'Test Column');
@@ -71,11 +61,9 @@ QUnit.test('Add untracked task that is already indexed', async assert => {
   );
 });
 
-QUnit.test('Add untracked task', async assert => {
-
-  // Add an untracked task
+QUnit.test('Add untracked task to the index', async assert => {
   const TASK_ID = await kanbn.addUntrackedTaskToIndex('test-task-2', 'Test Column');
 
-  // Verify that the task is indexed
+  // Verify that the task is in the index
   context.indexHasTask(assert, kanbn.getMainFolder(), TASK_ID, 'Test Column');
 });

@@ -54,12 +54,31 @@ function addRelations(taskIds) {
   }));
 }
 
+/**
+ * @typedef {object} fixtureOptions
+ * @property {object[]} tasks A list of tasks to use
+ * @property {object} columns A columns object to use
+ * @property {object} options Options to put in the index
+ * @property {object} countColumns The number of columns to generate (will be called 'Column 1', 'Column 2' etc.)
+ * @property {number} countTasks The number of tasks to generate (will be called 'Task 1', 'Task 2' etc.)
+ * @property {number} columnNames An array of column names to use (use with countColumns)
+ * @property {number} tasksPerColumn The number of tasks to put in each column, -1 to put all tasks in the first
+ * column
+ */
+
+/**
+ * Generate an index and tasks
+ * @param {fixtureOptions} [options={}]
+ */
 module.exports = (options = {}) => {
   let tasks, taskIds, columns;
 
   // Generate tasks
   if ('tasks' in options) {
-    tasks = new Array(options.tasks.length).fill(null).map((v, i) => Object.assign(generateTask(i), options.tasks[i]));
+    tasks = new Array(options.tasks.length).fill(null).map((v, i) => Object.assign(
+      options.noRandom ? {} : generateTask(i),
+      options.tasks[i]
+    ));
     taskIds = tasks.filter(i => !i.untracked).map(i => utility.getTaskId(i.name));
   } else {
     const COUNT_TASKS = options.countTasks || faker.random.number(9) + 1;

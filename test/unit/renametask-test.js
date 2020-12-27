@@ -17,12 +17,8 @@ QUnit.module('renameTask tests', {
   }
 });
 
-QUnit.test('Rename task in un-initialised folder', async assert => {
-
-  // Refresh the filesystem to un-initialise kanbn
+QUnit.test('Rename task in uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-
-  // Try to rename a task without initialising kanbn
   assert.throwsAsync(
     async () => {
       await kanbn.renameTask('task-1', 'task-3');
@@ -31,9 +27,7 @@ QUnit.test('Rename task in un-initialised folder', async assert => {
   );
 });
 
-QUnit.test('Rename non-existent task', async assert => {
-
-  // Try to rename a non-existent task
+QUnit.test('Rename non-existent task should throw "task file not found" error', async assert => {
   assert.throwsAsync(
     async () => {
       await kanbn.renameTask('task-3', 'task-4');
@@ -42,7 +36,7 @@ QUnit.test('Rename non-existent task', async assert => {
   );
 });
 
-QUnit.test('Rename an untracked task', async assert => {
+QUnit.test('Rename an untracked task should throw "task not indexed" error', async assert => {
 
   // Create a mock index and untracked task
   mockFileSystem({
@@ -63,9 +57,7 @@ QUnit.test('Rename an untracked task', async assert => {
   );
 });
 
-QUnit.test('Rename a task to a name that already exists', async assert => {
-
-  // Try to rename a task to a name that already exists
+QUnit.test('Rename a task to a name that already exists should throw "task already exists" error', async assert => {
   assert.throwsAsync(
     async () => {
       await kanbn.renameTask('task-1', 'task-2');
@@ -76,8 +68,6 @@ QUnit.test('Rename a task to a name that already exists', async assert => {
 
 QUnit.test('Rename a task', async assert => {
   const BASE_PATH = kanbn.getMainFolder();
-
-  // Rename task
   const currentDate = (new Date()).toISOString();
   await kanbn.renameTask('task-1', 'task-3');
 

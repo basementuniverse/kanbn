@@ -36,3 +36,5 @@ QUnit.test('Initialise kanbn with no options', async assert => {
   assert.contains(output.getCapturedText(), "{ name: 'test123' }");
   assert.contains(output.getCapturedText(), 'Initialised empty kanbn board in test');
 });
+
+// TODO finish integration tests

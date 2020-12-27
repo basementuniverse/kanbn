@@ -16,9 +16,7 @@ QUnit.module('createTask tests', {
   }
 });
 
-QUnit.test('Create task in un-initialised folder', async assert => {
-
-  // Try to create a task without initialising kanbn
+QUnit.test('Create task in uninitialised folder should throw "not initialised" error', async assert => {
   assert.throwsAsync(
     async () => {
       await kanbn.createTask({ name: 'Test name' }, 'Backlog');
@@ -27,9 +25,7 @@ QUnit.test('Create task in un-initialised folder', async assert => {
   );
 });
 
-QUnit.test('Create task with no options', async assert => {
-
-  // Initialise kanbn
+QUnit.test('Create task with no options or blank name should throw "blank name" error', async assert => {
   await kanbn.initialise();
 
   // Create a task with no options
@@ -49,13 +45,9 @@ QUnit.test('Create task with no options', async assert => {
   );
 });
 
-QUnit.test('Create task in non-existent column', async assert => {
+QUnit.test('Create task in non-existent column should throw "column not found" error', async assert => {
   const NON_EXISTENT_COLUMN = 'Wibble';
-
-  // Initialise kanbn
   await kanbn.initialise();
-
-  // Create a task in a non-existent column
   assert.throwsAsync(
     async () => {
       await kanbn.createTask({ name: 'Test name' }, NON_EXISTENT_COLUMN);
@@ -64,87 +56,74 @@ QUnit.test('Create task in non-existent column', async assert => {
   );
 });
 
-QUnit.test('Create task with duplicate id in file', async assert => {
-  const TASK_ID = 'test-name';
-  const TASK_NAME = 'Test name';
+QUnit.test(
+  'Create task with id that already exists as an untracked task should throw "task already exists" error',
+  async assert => {
+    const TASK_ID = 'test-name';
+    const TASK_NAME = 'Test name';
+    await kanbn.initialise();
 
-  // Initialise kanbn
-  await kanbn.initialise();
+    // Create a task file without adding it to the index
+    await fs.promises.writeFile(
+      path.join(process.cwd(), `.kanbn/tasks/${TASK_ID}.md`),
+      'Hello, world!'
+    );
 
-  // Create a task file without adding it to the index
-  await fs.promises.writeFile(
-    path.join(process.cwd(), `.kanbn/tasks/${TASK_ID}.md`),
-    'Hello, world!'
-  );
+    // Try to create a task with a duplicate filename
+    assert.throwsAsync(
+      async () => {
+        await kanbn.createTask({ name: TASK_NAME }, 'Backlog');
+      },
+      new RegExp(`A task with id "${TASK_ID}" already exists`)
+    );
+  }
+);
 
-  // Try to create a task with a duplicate filename
-  assert.throwsAsync(
-    async () => {
-      await kanbn.createTask({ name: TASK_NAME }, 'Backlog');
-    },
-    new RegExp(`A task with id "${TASK_ID}" already exists`)
-  );
-});
+QUnit.test(
+  'Create task with id that already exists in the index should throw "task already indexed" error',
+  async assert => {
+    const TASK_ID = 'test-name';
+    const TASK_NAME = 'Test name';
+    await kanbn.initialise();
 
-QUnit.test('Create task with duplicate id in index', async assert => {
-  const TASK_ID = 'test-name';
-  const TASK_NAME = 'Test name';
+    // Re-write the index file to contain the task without creating a file
+    await fs.promises.writeFile(
+      path.join(process.cwd(), '.kanbn/index.md'),
+      `# Project title\n\n## Backlog\n\n- [${TASK_ID}](tasks\\${TASK_ID}.md)`
+    );
 
-  // Initialise kanbn
-  await kanbn.initialise();
-
-  // Re-write the index file to contain the task without creating a file
-  await fs.promises.writeFile(
-    path.join(process.cwd(), '.kanbn/index.md'),
-    `# Project title\n\n## Backlog\n\n- [${TASK_ID}](tasks\\${TASK_ID}.md)`
-  );
-
-  // Try to create a task with a duplicate index entry
-  assert.throwsAsync(
-    async () => {
-      await kanbn.createTask({ name: TASK_NAME }, 'Backlog');
-    },
-    new RegExp(`A task with id "${TASK_ID}" is already in the index`)
-  );
-});
+    // Try to create a task with a duplicate index entry
+    assert.throwsAsync(
+      async () => {
+        await kanbn.createTask({ name: TASK_NAME }, 'Backlog');
+      },
+      new RegExp(`A task with id "${TASK_ID}" is already in the index`)
+    );
+  }
+);
 
 QUnit.test('Create task', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
-  const TASK_NAME = 'Test name';
-
-  // Initialise kanbn
   await kanbn.initialise();
-
-  // Create a task
-  const TASK_ID = await kanbn.createTask({ name: TASK_NAME }, 'Backlog');
+  const TASK_ID = await kanbn.createTask({ name: 'Test name' }, 'Backlog');
 
   // Verify that the file exists and is indexed
+  const BASE_PATH = kanbn.getMainFolder();
   context.taskFileExists(assert, BASE_PATH, TASK_ID);
   context.indexHasTask(assert, BASE_PATH, TASK_ID, 'Backlog');
 });
 
-QUnit.test('Create task in a completed column', async assert => {
-  const TASK_NAME = 'Test name';
-
-  // Initialise kanbn
+QUnit.test('Create task in a completed column should update the completed date', async assert => {
   await kanbn.initialise();
-
-  // Create a task
-  const TASK_ID = await kanbn.createTask({ name: TASK_NAME }, 'Done');
+  const TASK_ID = await kanbn.createTask({ name: 'Test name' }, 'Done');
 
   // Verify that the task has a completed date that matches the created date
   const task = await kanbn.getTask(TASK_ID);
   assert.equal(task.metadata.completed.toISOString(), task.metadata.created.toISOString());
 });
 
-QUnit.test('Create task in a started column', async assert => {
-  const TASK_NAME = 'Test name';
-
-  // Initialise kanbn
+QUnit.test('Create task in a started column should update the started date', async assert => {
   await kanbn.initialise();
-
-  // Create a task
-  const TASK_ID = await kanbn.createTask({ name: TASK_NAME }, 'In Progress');
+  const TASK_ID = await kanbn.createTask({ name: 'Test name' }, 'In Progress');
 
   // Verify that the task has a started date that matches the created date
   const task = await kanbn.getTask(TASK_ID);

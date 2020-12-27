@@ -17,12 +17,8 @@ QUnit.module('deleteTask tests', {
   }
 });
 
-QUnit.test('Delete task in un-initialised folder', async assert => {
-
-  // Refresh the filesystem to un-initialise kanbn
+QUnit.test('Delete task in uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-
-  // Try to delete a task without initialising kanbn
   assert.throwsAsync(
     async () => {
       await kanbn.deleteTask('task-1', {});
@@ -31,9 +27,7 @@ QUnit.test('Delete task in un-initialised folder', async assert => {
   );
 });
 
-QUnit.test('Delete non-existent task', async assert => {
-
-  // Try to delete a non-existent task
+QUnit.test('Delete non-existent task should throw "task not indexed" error', async assert => {
   assert.throwsAsync(
     async () => {
       await kanbn.deleteTask('task-11', {});
@@ -42,9 +36,9 @@ QUnit.test('Delete non-existent task', async assert => {
   );
 });
 
-QUnit.test('Delete an untracked task', async assert => {
+QUnit.test('Delete an untracked task should throw "task not indexed" error', async assert => {
 
-  // Create a mock index and untracked task
+  // Create untracked task file
   mockFileSystem({
     '.kanbn': {
       'index.md': '# Test Project\n\n## Test Column 1',
@@ -53,8 +47,6 @@ QUnit.test('Delete an untracked task', async assert => {
       }
     }
   });
-
-  // Try to delete an untracked task
   assert.throwsAsync(
     async () => {
       await kanbn.deleteTask('test-task', {});
@@ -64,12 +56,10 @@ QUnit.test('Delete an untracked task', async assert => {
 });
 
 QUnit.test('Delete a task from the index but leave the file', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
-
-  // Delete a task and leave the file
   await kanbn.deleteTask('task-1', false);
 
   // Verify that the task was removed from the index
+  const BASE_PATH = kanbn.getMainFolder();
   context.indexHasTask(assert, BASE_PATH, 'task-1', null, false);
 
   // Verify that the task file still exists
@@ -77,12 +67,10 @@ QUnit.test('Delete a task from the index but leave the file', async assert => {
 });
 
 QUnit.test('Delete a task from the index and remove the file', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
-
-  // Delete a task
   await kanbn.deleteTask('task-1', true);
 
   // Verify that the task was removed from the index
+  const BASE_PATH = kanbn.getMainFolder();
   context.indexHasTask(assert, BASE_PATH, 'task-1', null, false);
 
   // Verify that the task file no longer exists

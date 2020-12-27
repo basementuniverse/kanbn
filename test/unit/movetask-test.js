@@ -23,12 +23,8 @@ QUnit.module('moveTask tests', {
   }
 });
 
-QUnit.test('Move task in un-initialised folder', async assert => {
-
-  // Refresh the filesystem to un-initialise kanbn
+QUnit.test('Move task in uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-
-  // Try to move a task without initialising kanbn
   assert.throwsAsync(
     async () => {
       await kanbn.moveTask('task-1', 'Column 2');
@@ -37,9 +33,7 @@ QUnit.test('Move task in un-initialised folder', async assert => {
   );
 });
 
-QUnit.test('Move non-existent task', async assert => {
-
-  // Try to move a non-existent task
+QUnit.test('Move non-existent task should throw "task file not found" error', async assert => {
   assert.throwsAsync(
     async () => {
       await kanbn.moveTask('task-18', 'Column 2');
@@ -48,9 +42,9 @@ QUnit.test('Move non-existent task', async assert => {
   );
 });
 
-QUnit.test('Move an untracked task', async assert => {
+QUnit.test('Move an untracked task should throw "task not indexed" error', async assert => {
 
-  // Create a mock index and untracked task
+  // Create a mock index with an untracked task
   mockFileSystem({
     '.kanbn': {
       'index.md': '# Test Project\n\n## Test Column 1',
@@ -69,9 +63,7 @@ QUnit.test('Move an untracked task', async assert => {
   );
 });
 
-QUnit.test('Move a task to a non-existent column', async assert => {
-
-  // Try to move a task with to a non-existent column
+QUnit.test('Move a task to a non-existent column should throw "column not found" error', async assert => {
   assert.throwsAsync(
     async () => {
       await kanbn.moveTask('task-1', 'Column 5');
@@ -82,8 +74,6 @@ QUnit.test('Move a task to a non-existent column', async assert => {
 
 QUnit.test('Move a task', async assert => {
   const BASE_PATH = kanbn.getMainFolder();
-
-  // Move task
   const currentDate = (new Date()).toISOString();
   await kanbn.moveTask('task-1', 'Column 2');
 
@@ -96,10 +86,8 @@ QUnit.test('Move a task', async assert => {
   assert.equal(task.metadata.updated.toISOString().substr(0, 9), currentDate.substr(0, 9));
 });
 
-QUnit.test('Move a task into a started column', async assert => {
+QUnit.test('Move a task into a started column should update the started date', async assert => {
   const BASE_PATH = kanbn.getMainFolder();
-
-  // Move task
   const currentDate = (new Date()).toISOString();
   await kanbn.moveTask('task-1', 'Column 2');
 
@@ -112,10 +100,8 @@ QUnit.test('Move a task into a started column', async assert => {
   assert.equal(task.metadata.started.toISOString().substr(0, 9), currentDate.substr(0, 9));
 });
 
-QUnit.test('Move a task into a completed column', async assert => {
+QUnit.test('Move a task into a completed column should update the completed date', async assert => {
   const BASE_PATH = kanbn.getMainFolder();
-
-  // Move task
   const currentDate = (new Date()).toISOString();
   await kanbn.moveTask('task-1', 'Column 3');
 

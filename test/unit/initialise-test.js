@@ -11,7 +11,7 @@ QUnit.module('initialise tests', {
   }
 });
 
-QUnit.test('Initialise with default settings', async assert => {
+QUnit.test('Initialise with default settings should create folders and index', async assert => {
   const BASE_PATH = kanbn.getMainFolder();
 
   // Kanbn shouldn't be currently initialised in our mock filesystem
@@ -31,7 +31,7 @@ QUnit.test('Initialise with default settings', async assert => {
   context.indexHasColumns(assert, BASE_PATH, ['Backlog', 'Todo', 'In Progress', 'Done']);
 });
 
-QUnit.test('Initialise with custom settings', async assert => {
+QUnit.test('Initialise with custom settings should create folders and index with custom settings', async assert => {
   const BASE_PATH = kanbn.getMainFolder();
 
   // Kanbn shouldn't be currently initialised in our mock filesystem
@@ -63,7 +63,7 @@ QUnit.test('Initialise with custom settings', async assert => {
   context.indexHasColumns(assert, BASE_PATH, CUSTOM_COLUMNS);
 });
 
-QUnit.test('Reinitialise with additional settings', async assert => {
+QUnit.test('Reinitialise with additional settings should add settings to index', async assert => {
   const BASE_PATH = kanbn.getMainFolder();
 
   // Kanbn shouldn't be currently initialised in our mock filesystem
