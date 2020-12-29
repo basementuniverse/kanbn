@@ -1149,7 +1149,7 @@ module.exports = (() => {
           'sub-task' in filters &&
           !stringFilter(
             filters['sub-task'],
-            task.subTasks.map(subTask => `[${subTask.completed ? 'x' : ''}] ${subTask.text}`).join('\n')
+            task.subTasks.map(subTask => `[${subTask.completed ? 'x' : ' '}] ${subTask.text}`).join('\n')
           )
         ) {
           result = false;

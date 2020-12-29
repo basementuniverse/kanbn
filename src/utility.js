@@ -73,7 +73,7 @@ module.exports = (() => {
       const aDate = new Date(a), bDate = new Date(b);
       aDate.setHours(0, 0, 0, 0);
       bDate.setHours(0, 0, 0, 0);
-      return aDate == bDate;
+      return aDate.getTime() == bDate.getTime();
     },
 
     /**

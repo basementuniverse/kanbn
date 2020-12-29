@@ -115,7 +115,7 @@ QUnit.test('Search without filters and quiet option should return all task ids',
   ]);
 });
 
-QUnit.test('Search with id filter', async assert => {
+QUnit.test('Search with string filter', async assert => {
   fixtures({
     noRandom: true,
     tasks: [
@@ -159,160 +159,431 @@ QUnit.test('Search with id filter', async assert => {
   assert.deepEqual(result.map(r => r.id), ['task-two', 'task-three']);
 });
 
-QUnit.test('Search with name filter', async assert => {
+QUnit.test('Search with date filter', async assert => {
   fixtures({
     noRandom: true,
     tasks: [
       {
-        name: 'Test Task'
+        name: 'Task 1',
+        metadata: {
+          completed: new Date('01 January 2020 00:00:00 GMT')
+        }
       },
       {
-        name: 'Task Two'
+        name: 'Task 2',
+        metadata: {
+          completed: new Date('03 January 2020 12:30:00 GMT')
+        }
       },
       {
-        name: 'Task Three'
+        name: 'Task 3',
+        metadata: {
+          completed: new Date('05 January 2020 00:00:00 GMT')
+        }
+      },
+      {
+        name: 'Task 4',
+        metadata: {
+          completed: new Date('07 January 2020 00:00:00 GMT')
+        }
+      },
+      {
+        name: 'Task 5'
       }
     ],
     columns: {
       'Column 1': [
-        'test-task',
-        'task-two',
-        'task-three'
+        'task-1',
+        'task-2',
+        'task-3',
+        'task-4',
+        'task-5'
       ]
     }
   });
 
-  // Search using exact match
-  let result = await kanbn.search({ name: 'Test Task' });
+  // Search using single date
+  let result = await kanbn.search({ completed: new Date('03 January 2020 12:30:00 GMT') });
   assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'test-task');
+  assert.equal(result[0].id, 'task-2');
 
-  // Search using partial match
-  result = await kanbn.search({ name: 'task'});
-  assert.equal(result.length, 3);
-  assert.deepEqual(result.map(r => r.id), ['test-task', 'task-two', 'task-three']);
-
-  // Search using array match
-  result = await kanbn.search({ name: ['two', 'three']});
+  // Search using array of dates
+  result = await kanbn.search({ completed: [
+    new Date('02 January 2020 00:00:00 GMT'),
+    new Date('06 January 2020 00:00:00 GMT')
+  ]});
   assert.equal(result.length, 2);
-  assert.deepEqual(result.map(r => r.id), ['task-two', 'task-three']);
-
-  // Search using regex
-  result = await kanbn.search({ name: '^task (two|three)?'});
-  assert.equal(result.length, 2);
-  assert.deepEqual(result.map(r => r.id), ['task-two', 'task-three']);
+  assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
 });
 
-QUnit.test('Search with description filter', async assert => {
+QUnit.test('Search with string filter on optional metadata property', async assert => {
   fixtures({
     noRandom: true,
     tasks: [
       {
-        name: 'Test Task',
-        description: 'Lorem ipsum dolor sit amet'
+        name: 'Task 1',
+        metadata: {
+          assigned: 'User 1'
+        }
       },
       {
-        name: 'Task Two',
-        description: 'Consectetur adipiscing elit'
-      },
-      {
-        name: 'Task Three',
-        description: 'Sed do eiusmod tempor incididunt'
-      }
-    ],
-    columns: {
-      'Column 1': [
-        'test-task',
-        'task-two',
-        'task-three'
-      ]
-    }
-  });
-
-  // Search using exact match
-  let result = await kanbn.search({ description: 'Lorem ipsum dolor sit amet' });
-  assert.equal(result.length, 1);
-  assert.equal(result[0].id, 'test-task');
-
-  // Search using partial match
-  result = await kanbn.search({ description: 'it'});
-  assert.equal(result.length, 2);
-  assert.deepEqual(result.map(r => r.id), ['test-task', 'task-two']);
-
-  // Search using array match
-  result = await kanbn.search({ description: ['amet', 'elit']});
-  assert.equal(result.length, 2);
-  assert.deepEqual(result.map(r => r.id), ['test-task', 'task-two']);
-
-  // Search using regex
-  result = await kanbn.search({ description: '(ipsum|adipiscing)'});
-  assert.equal(result.length, 2);
-  assert.deepEqual(result.map(r => r.id), ['test-task', 'task-two']);
-});
-
-QUnit.test('Search with column filter', async assert => {
-  fixtures({
-    noRandom: true,
-    tasks: [
-      {
-        name: 'Task 1'
-      },
-      {
-        name: 'Task 2'
+        name: 'Task 2',
+        metadata: {
+          assigned: 'User 2'
+        }
       },
       {
         name: 'Task 3'
       }
     ],
     columns: {
-      'Test Column': [
-        'task-1'
-      ],
-      'Column One': [
-        'task-2'
-      ],
-      'Column Two': [
+      'Column 1': [
+        'task-1',
+        'task-2',
         'task-3'
       ]
     }
   });
 
   // Search using exact match
-  let result = await kanbn.search({ column: 'Test Column' });
+  let result = await kanbn.search({ assigned: 'User 1' });
   assert.equal(result.length, 1);
   assert.equal(result[0].id, 'task-1');
 
   // Search using partial match
-  result = await kanbn.search({ column: 'Column'});
-  assert.equal(result.length, 3);
-  assert.deepEqual(result.map(r => r.id), ['task-1', 'task-2', 'task-3']);
+  result = await kanbn.search({ assigned: 'User'});
+  assert.equal(result.length, 2);
+  assert.deepEqual(result.map(r => r.id), ['task-1', 'task-2']);
 
   // Search using array match
-  result = await kanbn.search({ column: ['One', 'Two']});
+  result = await kanbn.search({ assigned: ['User 1', 'User 2']});
   assert.equal(result.length, 2);
-  assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
+  assert.deepEqual(result.map(r => r.id), ['task-1', 'task-2']);
 
   // Search using regex
-  result = await kanbn.search({ column: '^Column (One|Two)'});
+  result = await kanbn.search({ assigned: '^User [12]'});
+  assert.equal(result.length, 2);
+  assert.deepEqual(result.map(r => r.id), ['task-1', 'task-2']);
+});
+
+QUnit.test('Search with string filter on concatenated property', async assert => {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1',
+        subTasks: [
+          {
+            completed: true,
+            text: 'Sub-task 1'
+          }
+        ]
+      },
+      {
+        name: 'Task 2',
+        subTasks: [
+          {
+            completed: false,
+            text: 'Sub-task 2'
+          }
+        ]
+      },
+      {
+        name: 'Task 3'
+      }
+    ],
+    columns: {
+      'Column 1': [
+        'task-1',
+        'task-2',
+        'task-3'
+      ]
+    }
+  });
+
+  // Search using partial match for sub-task name
+  let result = await kanbn.search({ 'sub-task': 'Sub-task 1' });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'task-1');
+
+  // Search using partial match for completed sub-task
+  result = await kanbn.search({ 'sub-task': '\\[x\\]'});
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'task-1');
+
+  // Search using partial match for uncompleted sub-task
+  result = await kanbn.search({ 'sub-task': '\\[ \\]'});
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'task-2');
+
+  // Search using partial match
+  result = await kanbn.search({ 'sub-task': 'Sub-task'});
+  assert.equal(result.length, 2);
+  assert.deepEqual(result.map(r => r.id), ['task-1', 'task-2']);
+});
+
+QUnit.test('Search with number filter', async assert => {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1',
+        subTasks: [
+          {
+            completed: false,
+            text: 'Sub-task 1'
+          }
+        ]
+      },
+      {
+        name: 'Task 2',
+        subTasks: [
+          {
+            completed: false,
+            text: 'Sub-task 1'
+          },
+          {
+            completed: false,
+            text: 'Sub-task 2'
+          }
+        ]
+      },
+      {
+        name: 'Task 3',
+        subTasks: [
+          {
+            completed: false,
+            text: 'Sub-task 1'
+          },
+          {
+            completed: false,
+            text: 'Sub-task 2'
+          },
+          {
+            completed: false,
+            text: 'Sub-task 3'
+          }
+        ]
+      }
+    ],
+    columns: {
+      'Column 1': [
+        'task-1',
+        'task-2',
+        'task-3'
+      ]
+    }
+  });
+
+  // Search using single number
+  let result = await kanbn.search({ 'count-sub-tasks': 3 });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'task-3');
+
+  // Search using array of numbers
+  result = await kanbn.search({ 'count-sub-tasks': [2, 4] });
   assert.equal(result.length, 2);
   assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
 });
 
-// TODO search test with created
-// TODO search test with updated
-// TODO search test with started
-// TODO search test with completed
-// TODO search test with due
-// TODO search test with assigned
-// TODO search test with sub-tasks
-// TODO search test with count sub-tasks
-// TODO search test with tags
-// TODO search test with count tags
-// TODO search test with relations
-// TODO search test with count relations
-// TODO search test with comments
-// TODO search test with count comments
-// TODO search test with custom boolean field
-// TODO search test with custom number field
-// TODO search test with custom string field
-// TODO search test with custom date field
+QUnit.test('Search with string filter on custom field', async assert => {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1',
+        metadata: {
+          test: 'abc'
+        }
+      },
+      {
+        name: 'Task 2',
+        metadata: {
+          test: 'bcd'
+        }
+      },
+      {
+        name: 'Task 3',
+        metadata: {
+          test: 'cde'
+        }
+      },
+      {
+        name: 'Task 4'
+      }
+    ],
+    columns: {
+      'Column 1': [
+        'task-1',
+        'task-2',
+        'task-3',
+        'task-4'
+      ]
+    },
+    options: {
+      customFields: [
+        {
+          name: 'test',
+          type: 'string'
+        }
+      ]
+    }
+  });
+  const result = await kanbn.search({ test: 'cd' });
+  assert.equal(result.length, 2);
+  assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
+});
+
+QUnit.test('Search with number filter on custom field', async assert => {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1',
+        metadata: {
+          test: 1
+        }
+      },
+      {
+        name: 'Task 2',
+        metadata: {
+          test: 2
+        }
+      },
+      {
+        name: 'Task 3',
+        metadata: {
+          test: 3
+        }
+      },
+      {
+        name: 'Task 4'
+      }
+    ],
+    columns: {
+      'Column 1': [
+        'task-1',
+        'task-2',
+        'task-3',
+        'task-4'
+      ]
+    },
+    options: {
+      customFields: [
+        {
+          name: 'test',
+          type: 'number'
+        }
+      ]
+    }
+  });
+
+  // Search using single number
+  let result = await kanbn.search({ test: 1 });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'task-1');
+
+  // Search using array of numbers
+  result = await kanbn.search({ test: [2, 4] });
+  assert.equal(result.length, 2);
+  assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
+});
+
+QUnit.test('Search with boolean filter on custom field', async assert => {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1',
+        metadata: {
+          test: true
+        }
+      },
+      {
+        name: 'Task 2',
+        metadata: {
+          test: false
+        }
+      },
+      {
+        name: 'Task 3'
+      }
+    ],
+    columns: {
+      'Column 1': [
+        'task-1',
+        'task-2',
+        'task-3'
+      ]
+    },
+    options: {
+      customFields: [
+        {
+          name: 'test',
+          type: 'boolean'
+        }
+      ]
+    }
+  });
+  const result = await kanbn.search({ test: true });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'task-1');
+});
+
+QUnit.test('Search with boolean filter on custom field', async assert => {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1',
+        metadata: {
+          test: new Date('01 January 2020 00:00:00 GMT')
+        }
+      },
+      {
+        name: 'Task 2',
+        metadata: {
+          test: new Date('03 January 2020 00:00:00 GMT')
+        }
+      },
+      {
+        name: 'Task 3',
+        metadata: {
+          test: new Date('05 January 2020 00:00:00 GMT')
+        }
+      },
+      {
+        name: 'Task 4'
+      }
+    ],
+    columns: {
+      'Column 1': [
+        'task-1',
+        'task-2',
+        'task-3',
+        'task-4'
+      ]
+    },
+    options: {
+      customFields: [
+        {
+          name: 'test',
+          type: 'date'
+        }
+      ]
+    }
+  });
+
+  // Search using single date
+  let result = await kanbn.search({ test: new Date('01 January 2020 00:00:00 GMT') });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'task-1');
+
+  // Search using array of dates
+  result = await kanbn.search({ test: [
+    new Date('02 January 2020 00:00:00 GMT'),
+    new Date('06 January 2020 00:00:00 GMT')
+  ]});
+  assert.equal(result.length, 2);
+  assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
+});
