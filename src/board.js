@@ -68,39 +68,77 @@ module.exports = (() => {
      * @param {?string} [view=null] The view to show, or null to show the default view
      */
     async show(index, tasks = null, view = null) {
-      if (tasks !== null) {
 
-        // Transform each task using a template string
+      // If we have an array of pre-loaded tasks, transform each task using a template string
+      if (tasks !== null) {
         tasks = Object.fromEntries(tasks.map(task => [
           task.id,
           getTaskString(index, task)
         ]));
-      } else {
 
-        // Only show task ids
+      // Otherwise we're only showing task ids, so get all task ids from the index
+      } else {
         tasks = Object.fromEntries(Object.values(index.columns).flat().map(taskId => [taskId, taskId]));
+
+        // Views are unavailable when only showing task ids
+        view = null;
       }
 
       // Prepare table headings and content
-      const headings = [];
-      const cells = [];
-      for (let [columnName, columnTasks] of Object.entries(index.columns)) {
+      const table = [];
+
+      // Check if we're showing a filtered view
+      if (view !== null) {
+
+        // Make sure the view exists
+        let viewSettings;
         if (
-          'hiddenColumns' in index.options &&
-          index.options.hiddenColumns.indexOf(columnName) !== -1
+          'views' in index.options &&
+          (viewSettings = index.options.views.find(v => v.name === view)) !== undefined
         ) {
-          continue;
+          const headings = [];
+          headings.push(...viewSettings.columns.map(column => getColumnHeading(column.name)));
+
+          const cells = [];
+          for (let lane of viewSettings.lanes) {
+            const columns = [];
+            for (let column of viewSettings.columns) {
+              const cellTasks = kanbn.filterAndSortTasks(
+                index,
+                tasks,
+                { ...column.filters, ...lane.filters },
+                column.sorters
+              );
+              columns.push(cellTasks.map(task => tasks[task.id]).join(TASK_SEPARATOR));
+            }
+            cells.push([lane.name]);
+            cells.push(columns);
+          }
+          table.push(headings, cells);
+        } else {
+          throw new Error(`No view found with name "${view}"`);
         }
-        headings.push(getColumnHeading(index, columnName));
-        cells.push(columnTasks.map(taskId => tasks[taskId]).join(TASK_SEPARATOR));
+
+      // Otherwise show the basic columns and all tasks defined in the index
+      } else {
+        const headings = [];
+        const columns = [];
+        for (let [columnName, columnTasks] of Object.entries(index.columns)) {
+          if (
+            'hiddenColumns' in index.options &&
+            index.options.hiddenColumns.indexOf(columnName) !== -1
+          ) {
+            continue;
+          }
+          headings.push(getColumnHeading(index, columnName));
+          columns.push(columnTasks.map(taskId => tasks[taskId]).join(TASK_SEPARATOR));
+        }
+        table.push(headings, columns);
       }
 
       // Display as a table
       term.table(
-        [
-          headings,
-          cells
-        ],
+        table,
         {
           hasBorder: true,
           contentHasMarkup: true,

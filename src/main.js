@@ -749,13 +749,21 @@ module.exports = (() => {
      * @return {object} The hydrated task
      */
     hydrateTask(index, task) {
-
-      // Add task column
       task.column = findTaskColumn(index, task.id);
-
-      // Calculate task workload
       task.workload = taskWorkload(index, task);
       return task;
+    },
+
+    /**
+     * Return a filtered and sorted list of tasks
+     * @param {object} index
+     * @param {object[]} tasks
+     * @param {object} filters
+     * @param {object[]} sorters
+     * @return {object[]}
+     */
+    filterAndSortTasks(index, tasks, filters, sorters) {
+      return sortTasks(filterTasks(index, tasks, filters), sorters);
     },
 
     /**

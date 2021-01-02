@@ -26,12 +26,15 @@ module.exports = async args => {
   if (!args.quiet) {
 
     // Load and hydrate all tracked tasks
-    const trackedTaskPromises = [...await kanbn.findTrackedTasks()].map(
-      async taskId => kanbn.hydrateTask(index, await kanbn.getTask(taskId))
+    tasks = (await kanbn.loadAllTrackedTasks(index)).map(
+      task => kanbn.hydrateTask(index, task)
     );
-    tasks = await Promise.all(trackedTaskPromises);
   }
 
   // Show the board
-  await board.show(index, tasks, args.view);
+  board
+  .show(index, tasks, args.view)
+  .catch(error => {
+    utility.error(error, true);
+  });
 };

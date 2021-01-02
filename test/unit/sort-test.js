@@ -185,8 +185,3 @@ QUnit.test('Sort on string field and save sorter settings', async assert => {
   index = await kanbn.getIndex();
   assert.deepEqual(index.columns['Column 1'], ['b-task-1', 'c-task-2', 'a-task-3', 'b-task-4', 'a-task-5']);
 });
-
-// TODO sort test by number
-// TODO sort test by date
-// TODO sort test by multiple
-// TODO sort test by multiple and save, then clear sort settings
