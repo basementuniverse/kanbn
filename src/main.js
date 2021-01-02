@@ -101,7 +101,7 @@ module.exports = (() => {
    * @param {?string} [columnName=null] The optional column name to filter tasks by
    * @return {Set} A set of task ids appearing in the index
    */
-  function getTrackedTasks(index, columnName = null) {
+  function getTrackedTaskIds(index, columnName = null) {
     return new Set(
       columnName
         ? index.columns[columnName]
@@ -199,49 +199,17 @@ module.exports = (() => {
   }
 
   /**
-   * Transform a value using a sort filter regular expression
-   * @param {string} value
-   * @param {string} filter
-   * @return {string} The transformed value
-   */
-  function sortFilter(value, filter) {
-    const matches = [...value.matchAll(new RegExp(filter), 'gi')];
-    const result = matches.map(match => {
-      if (match.groups) {
-        return Object.values(match.groups).join('');
-      }
-      if (match[1]) {
-        return match[1];
-      }
-      return match[0];
-    });
-    return result.join('');
-  }
-
-  /**
-   * Compare two values
-   * @param {any} a
-   * @param {any} b
-   * @return {number} A positive value if a > b, negative if a < b, otherwise 0
-   */
-  function compareValues(a, b) {
-    if (typeof a === 'string' && typeof b === 'string') {
-      return a.localeCompare(b, undefined, { sensitivity: 'accent' });
-    }
-    return a - b;
-  }
-
-  /**
    * Sort a column in the index
    * @param {object} index The index object
+   * @param {object[]} tasks The tasks in the index
    * @param {string} columnName The column to sort
    * @param {object[]} sorters A list of sorter objects
    * @return {object} The modified index object
    */
-  async function sortColumnInIndex(index, columnName, sorters) {
+  function sortColumnInIndex(index, tasks, columnName, sorters) {
 
     // Get a list of tasks in the target column and add computed fields
-    const tasks = [...await loadAllTrackedTasks(index, columnName)].map(task => ({
+    tasks = tasks.map(task => ({
       ...task,
       ...task.metadata,
       created: 'created' in task.metadata ? task.metadata.created : '',
@@ -262,6 +230,20 @@ module.exports = (() => {
     }));
 
     // Sort the list of tasks
+    tasks = sortTasks(tasks, sorters);
+
+    // Save the list of tasks back to the index
+    index.columns[columnName] = tasks.map(task => task.id);
+    return index;
+  }
+
+  /**
+   * Sort a list of tasks
+   * @param {object[]} tasks
+   * @param {object[]} sorters
+   * @return {object[]} The sorted tasks
+   */
+  function sortTasks(tasks, sorters) {
     tasks.sort((a, b) => {
       let compareA, compareB;
       for (let sorter of sorters) {
@@ -274,105 +256,282 @@ module.exports = (() => {
         if (compareA === compareB) {
           continue;
         }
-        return sorter.order === 'ascending'
-          ? compareValues(compareA, compareB)
-          : compareValues(compareB, compareA);
+        return sorter.order === 'descending'
+          ? compareValues(compareB, compareA)
+          : compareValues(compareA, compareB);
       }
       return 0;
     });
-
-    // Save the list of tasks back to the index
-    index.columns[columnName] = tasks.map(task => task.id);
-    return index;
+    return tasks;
   }
 
   /**
-   * Overwrite the index file with the specified data
-   * @param {object} indexData
+   * Transform a value using a sort filter regular expression
+   * @param {string} value
+   * @param {string} filter
+   * @return {string} The transformed value
    */
-  async function saveIndex(indexData) {
+  function sortFilter(value, filter) {
 
-    // Apply column sorting if any sorters are defined in options
-    if ('columnSorting' in indexData.options && Object.keys(indexData.options.columnSorting).length) {
-      for (let columnName in indexData.options.columnSorting) {
-        indexData = await sortColumnInIndex(indexData, columnName, indexData.options.columnSorting[columnName]);
+    // Filter regex is global and case-insensitive
+    const matches = [...value.matchAll(new RegExp(filter, 'gi'))];
+    const result = matches.map(match => {
+
+      // If the matched string has named capturing groups, concatenate their contents
+      if (match.groups) {
+        return Object.values(match.groups).join('');
       }
-    }
 
-    // If there is a separate config file, save options to this file
-    let ignoreOptions = false;
-    if (await exists(CONFIG)) {
-      await fs.promises.writeFile(CONFIG, yaml.stringify(indexData.options, 4, 2));
-      ignoreOptions = true;
-    }
-
-    // Save index
-    await fs.promises.writeFile(INDEX, parseIndex.json2md(indexData, ignoreOptions));
-  }
-
-  /**
-   * Load the index file and parse it to an object
-   * @return {object}
-   */
-  async function loadIndex() {
-    let indexData = '';
-    try {
-      indexData = await fs.promises.readFile(INDEX, { encoding: 'utf-8' });
-    } catch (error) {
-      throw new Error(`Couldn't access index file: ${error.message}`);
-    }
-    const index = parseIndex.md2json(indexData);
-
-    // Check for separate config file
-    if (await exists(CONFIG)) {
-      let config;
-      try {
-        config = yaml.load(CONFIG);
-      } catch (error) {
-        throw new Error(`Couldn't load config file: ${error.message}`);
+      // If the matched string has non-named capturing groups, use the contents of the first group
+      if (match[1]) {
+        return match[1];
       }
-      index.options = { ...index.options, ...config };
-    }
-    return index;
+
+      // Otherwise use the matched string
+      return match[0];
+    });
+    return result.join('');
   }
 
   /**
-   * Overwrite a task file with the specified data
-   * @param {string} path
-   * @param {object} taskData
+   * Compare two values (supports string, date and number values)
+   * @param {any} a
+   * @param {any} b
+   * @return {number} A positive value if a > b, negative if a < b, otherwise 0
    */
-  async function saveTask(path, taskData) {
-    await fs.promises.writeFile(path, parseTask.json2md(taskData));
+  function compareValues(a, b) {
+    if (typeof a === 'string' && typeof b === 'string') {
+      return a.localeCompare(b, undefined, { sensitivity: 'accent' });
+    }
+    return a - b;
   }
 
   /**
-   * Load a task file and parse it to an object
-   * @param {string} taskId
+   * Filter a list of tasks using a filters object containing field names and filter values
+   * @param {object} index
+   * @param {object[]}} tasks
+   * @param {object} filters
    */
-  async function loadTask(taskId) {
-    const TASK = path.join(TASK_FOLDER, addFileExtension(taskId));
-    let taskData = '';
-    try {
-      taskData = await fs.promises.readFile(TASK, { encoding: 'utf-8' });
-    } catch (error) {
-      throw new Error(`Couldn't access task file: ${error.message}`);
-    }
-    return parseTask.md2json(taskData);
-  }
+  function filterTasks(index, tasks, filters) {
+    return tasks.filter(task => {
 
-  /**
-   * Load all tracked tasks and return an array of task objects
-   * @param {object} index The index object
-   * @param {?string} [columnName=null] The optional column name to filter tasks by
-   * @return {object[]} All tracked tasks
-   */
-  async function loadAllTrackedTasks(index, columnName = null) {
-    const result = [];
-    const trackedTasks = getTrackedTasks(index, columnName);
-    for (let taskId of trackedTasks) {
-      result.push(await loadTask(taskId));
-    }
-    return result;
+      // Get task id and column
+      const taskId = utility.getTaskId(task.name);
+      const column = findTaskColumn(index, taskId);
+
+      // If no filters are defined, return all tasks
+      if (Object.keys(filters).length === 0) {
+        return true;
+      }
+
+      // Apply filters
+      let result = true;
+
+      // Id
+      if ('id' in filters && !stringFilter(filters.id, task.id)) {
+        result = false;
+      }
+
+      // Name
+      if ('name' in filters && !stringFilter(filters.name, task.name)) {
+        result = false;
+      }
+
+      // Description
+      if ('description' in filters && !stringFilter(filters.description, task.description)) {
+        result = false;
+      }
+
+      // Column
+      if ('column' in filters && !stringFilter(filters.column, column)) {
+        result = false;
+      }
+
+      // Created date
+      if (
+        'created' in filters && (
+          !('created' in task.metadata) ||
+          !dateFilter(filters.created, task.metadata.created)
+        )
+      ) {
+        result = false;
+      }
+
+      // Updated date
+      if (
+        'updated' in filters && (
+          !('updated' in task.metadata) ||
+          !dateFilter(filters.updated, task.metadata.updated)
+        )
+      ) {
+        result = false;
+      }
+
+      // Started
+      if (
+        'started' in filters && (
+          !('started' in task.metadata) ||
+          !dateFilter(filters.started, task.metadata.started)
+        )
+      ) {
+        result = false;
+      }
+
+      // Completed
+      if (
+        'completed' in filters && (
+          !('completed' in task.metadata) ||
+          !dateFilter(filters.completed, task.metadata.completed)
+        )
+      ) {
+        result = false;
+      }
+
+      // Due
+      if (
+        'due' in filters && (
+          !('due' in task.metadata) ||
+          !dateFilter(filters.due, task.metadata.due)
+        )
+      ) {
+        result = false;
+      }
+
+      // Assigned
+      if (
+        'assigned' in filters && (
+          !('assigned' in task.metadata) ||
+          !stringFilter(filters.assigned, task.metadata.assigned)
+        )
+      ) {
+        result = false;
+      }
+
+      // Sub-tasks
+      if (
+        'sub-task' in filters &&
+        !stringFilter(
+          filters['sub-task'],
+          task.subTasks.map(subTask => `[${subTask.completed ? 'x' : ' '}] ${subTask.text}`).join('\n')
+        )
+      ) {
+        result = false;
+      }
+
+      // Count sub-tasks
+      if (
+        'count-sub-tasks' in filters &&
+        !numberFilter(
+          filters['count-sub-tasks'],
+          task.subTasks.length
+        )
+      ) {
+        result = false;
+      }
+
+      // Tag
+      if (
+        'tag' in filters &&
+        !stringFilter(
+          filters.tag,
+          task.metadata.tags.join('\n')
+        )
+      ) {
+        result = false;
+      }
+
+      // Count tags
+      if (
+        'count-tags' in filters &&
+        !numberFilter(
+          filters['count-tags'],
+          task.tags.length
+        )
+      ) {
+        result = false;
+      }
+
+      // Relation
+      if (
+        'relation' in filters &&
+        !stringFilter(
+          filters.relation,
+          task.relations.map(relation => `${relation.type} ${relation.task}`).join('\n')
+        )
+      ) {
+        result = false;
+      }
+
+      // Count relations
+      if (
+        'count-relations' in filters &&
+        !numberFilter(
+          filters['count-relations'],
+          task.relations.length
+        )
+      ) {
+        result = false;
+      }
+
+      // Comments
+      if (
+        'comment' in filters &&
+        !stringFilter(
+          filters.comment,
+          task.comments.map(comment => `${comment.author} ${comment.text}`).join('\n')
+        )
+      ) {
+        result = false;
+      }
+
+      // Count comments
+      if (
+        'count-comments' in filters &&
+        !numberFilter(
+          filters['count-comments'],
+          task.comments.length
+        )
+      ) {
+        result = false;
+      }
+
+      // Custom metadata properties
+      if ('customFields' in index.options) {
+        for (let customField of index.options.customFields) {
+          if (customField.name in filters) {
+            if (!(customField.name in task.metadata)) {
+              result = false;
+            } else {
+              switch (customField.type) {
+                case 'boolean':
+                  if (task.metadata[customField.name] !== filters[customField.name]) {
+                    result = false;
+                  }
+                  break;
+                case 'number':
+                  if (!numberFilter(filters[customField.name], task.metadata[customField.name])) {
+                    result = false;
+                  }
+                  break;
+                case 'string':
+                  if (!stringFilter(filters[customField.name], task.metadata[customField.name])) {
+                    result = false;
+                  }
+                  break;
+                case 'date':
+                  if (!dateFilter(filters[customField.name], task.metadata[customField.name])) {
+                    result = false;
+                  }
+                  break;
+                default:
+                  break;
+              }
+            }
+          }
+        }
+      }
+      return result;
+    });
   }
 
   /**
@@ -570,7 +729,7 @@ module.exports = (() => {
         throw new Error('Not initialised in this folder');
       }
 
-      return loadIndex();
+      return this.loadIndex();
     },
 
     /**
@@ -580,7 +739,7 @@ module.exports = (() => {
      */
     async getTask(taskId) {
       this.taskExists(taskId);
-      return loadTask(taskId);
+      return this.loadTask(taskId);
     },
 
     /**
@@ -597,6 +756,100 @@ module.exports = (() => {
       // Calculate task workload
       task.workload = taskWorkload(index, task);
       return task;
+    },
+
+    /**
+     * Overwrite the index file with the specified data
+     * @param {object} indexData
+     */
+    async saveIndex(indexData) {
+
+      // Apply column sorting if any sorters are defined in options
+      if ('columnSorting' in indexData.options && Object.keys(indexData.options.columnSorting).length) {
+        for (let columnName in indexData.options.columnSorting) {
+          indexData = sortColumnInIndex(
+            indexData,
+            await this.loadAllTrackedTasks(indexData, columnName),
+            columnName,
+            indexData.options.columnSorting[columnName]
+          );
+        }
+      }
+
+      // If there is a separate config file, save options to this file
+      let ignoreOptions = false;
+      if (await exists(CONFIG)) {
+        await fs.promises.writeFile(CONFIG, yaml.stringify(indexData.options, 4, 2));
+        ignoreOptions = true;
+      }
+
+      // Save index
+      await fs.promises.writeFile(INDEX, parseIndex.json2md(indexData, ignoreOptions));
+    },
+
+    /**
+     * Load the index file and parse it to an object
+     * @return {object}
+     */
+    async loadIndex() {
+      let indexData = '';
+      try {
+        indexData = await fs.promises.readFile(INDEX, { encoding: 'utf-8' });
+      } catch (error) {
+        throw new Error(`Couldn't access index file: ${error.message}`);
+      }
+      const index = parseIndex.md2json(indexData);
+
+      // Check for separate config file
+      if (await exists(CONFIG)) {
+        let config;
+        try {
+          config = yaml.load(CONFIG);
+        } catch (error) {
+          throw new Error(`Couldn't load config file: ${error.message}`);
+        }
+        index.options = { ...index.options, ...config };
+      }
+      return index;
+    },
+
+    /**
+     * Overwrite a task file with the specified data
+     * @param {string} path
+     * @param {object} taskData
+     */
+    async saveTask(path, taskData) {
+      await fs.promises.writeFile(path, parseTask.json2md(taskData));
+    },
+
+    /**
+     * Load a task file and parse it to an object
+     * @param {string} taskId
+     */
+    async loadTask(taskId) {
+      const TASK = path.join(TASK_FOLDER, addFileExtension(taskId));
+      let taskData = '';
+      try {
+        taskData = await fs.promises.readFile(TASK, { encoding: 'utf-8' });
+      } catch (error) {
+        throw new Error(`Couldn't access task file: ${error.message}`);
+      }
+      return parseTask.md2json(taskData);
+    },
+
+    /**
+     * Load all tracked tasks and return an array of task objects
+     * @param {object} index The index object
+     * @param {?string} [columnName=null] The optional column name to filter tasks by
+     * @return {object[]} All tracked tasks
+     */
+    async loadAllTrackedTasks(index, columnName = null) {
+      const result = [];
+      const trackedTasks = getTrackedTaskIds(index, columnName);
+      for (let taskId of trackedTasks) {
+        result.push(await this.loadTask(taskId));
+      }
+      return result;
     },
 
     /**
@@ -636,7 +889,7 @@ module.exports = (() => {
 
       // Otherwise, if index already exists and we have specified new settings, re-write the index file
       } else if (Object.keys(options).length > 0) {
-        index = await loadIndex();
+        index = await this.loadIndex();
         'name' in options && (index.name = options.name);
         'description' in options && (index.description = options.description);
         'options' in options && (index.options = Object.assign(index.options, options.options));
@@ -647,7 +900,7 @@ module.exports = (() => {
           ))
         ));
       }
-      await saveIndex(index);
+      await this.saveIndex(index);
     },
 
     /**
@@ -667,7 +920,7 @@ module.exports = (() => {
       }
 
       // Check that the task is indexed
-      let index = await loadIndex();
+      let index = await this.loadIndex();
       if (!taskInIndex(index, taskId)) {
         throw new Error(`No task with id "${taskId}" found in the index`);
       }
@@ -691,7 +944,7 @@ module.exports = (() => {
       }
 
       // Check that the task is indexed
-      let index = await loadIndex();
+      let index = await this.loadIndex();
       if (!taskInIndex(index, taskId)) {
         throw new Error(`No task with id "${taskId}" found in the index`);
       }
@@ -726,7 +979,7 @@ module.exports = (() => {
       }
 
       // Get index and make sure the column exists
-      let index = await loadIndex();
+      let index = await this.loadIndex();
       if (!(columnName in index.columns)) {
         throw new Error(`Column "${columnName}" doesn't exist`);
       }
@@ -741,11 +994,11 @@ module.exports = (() => {
 
       // Update task metadata dates
       taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
-      await saveTask(taskPath, taskData);
+      await this.saveTask(taskPath, taskData);
 
       // Add the task to the index
       index = addTaskToIndex(index, taskId, columnName);
-      await saveIndex(index);
+      await this.saveIndex(index);
       return taskId;
     },
 
@@ -769,7 +1022,7 @@ module.exports = (() => {
       }
 
       // Get index and make sure the column exists
-      let index = await loadIndex();
+      let index = await this.loadIndex();
       if (!(columnName in index.columns)) {
         throw new Error(`Column "${columnName}" doesn't exist`);
       }
@@ -780,16 +1033,16 @@ module.exports = (() => {
       }
 
       // Load task data
-      let taskData = await loadTask(taskId);
+      let taskData = await this.loadTask(taskId);
       const taskPath = getTaskPath(taskId);
 
       // Update task metadata dates
       taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
-      await saveTask(taskPath, taskData);
+      await this.saveTask(taskPath, taskData);
 
       // Add the task to the column and save the index
       index = addTaskToIndex(index, taskId, columnName);
-      await saveIndex(index);
+      await this.saveIndex(index);
       return taskId;
     },
 
@@ -806,8 +1059,8 @@ module.exports = (() => {
       }
 
       // Get all tasks currently in index
-      const index = await loadIndex();
-      return getTrackedTasks(index, columnName);
+      const index = await this.loadIndex();
+      return getTrackedTaskIds(index, columnName);
     },
 
     /**
@@ -822,8 +1075,8 @@ module.exports = (() => {
       }
 
       // Get all tasks currently in index
-      const index = await loadIndex();
-      const trackedTasks = getTrackedTasks(index);
+      const index = await this.loadIndex();
+      const trackedTasks = getTrackedTaskIds(index);
 
       // Get all tasks in the tasks folder
       const files = await glob(`${TASK_FOLDER}/*.md`);
@@ -854,7 +1107,7 @@ module.exports = (() => {
       }
 
       // Get index and make sure the task is indexed
-      let index = await loadIndex();
+      let index = await this.loadIndex();
       if (!taskInIndex(index, taskId)) {
         throw new Error(`Task "${taskId}" is not in the index`);
       }
@@ -865,12 +1118,12 @@ module.exports = (() => {
       }
 
       // Rename the task if we're updating the name
-      const originalTaskData = await loadTask(taskId);
+      const originalTaskData = await this.loadTask(taskId);
       if (originalTaskData.name !== taskData.name) {
         taskId = await this.renameTask(taskId, taskData.name);
 
         // Re-load the index
-        index = await loadIndex();
+        index = await this.loadIndex();
       }
 
       // Get index and make sure the column exists
@@ -882,7 +1135,7 @@ module.exports = (() => {
       taskData = setTaskMetadata(taskData, 'updated', new Date());
 
       // Save task
-      await saveTask(getTaskPath(taskId), taskData);
+      await this.saveTask(getTaskPath(taskId), taskData);
 
       // Move the task if we're updating the column
       if (columnName) {
@@ -890,7 +1143,7 @@ module.exports = (() => {
 
       // Otherwise save the index
       } else {
-        await saveIndex(index);
+        await this.saveIndex(index);
       }
       return taskId;
     },
@@ -915,7 +1168,7 @@ module.exports = (() => {
       }
 
       // Get index and make sure the task is indexed
-      let index = await loadIndex();
+      let index = await this.loadIndex();
       if (!taskInIndex(index, taskId)) {
         throw new Error(`Task "${taskId}" is not in the index`);
       }
@@ -933,17 +1186,17 @@ module.exports = (() => {
       }
 
       // Update the task name and updated date
-      let taskData = await loadTask(taskId);
+      let taskData = await this.loadTask(taskId);
       taskData.name = newTaskName;
       taskData = setTaskMetadata(taskData, 'updated', new Date());
-      await saveTask(getTaskPath(taskId), taskData);
+      await this.saveTask(getTaskPath(taskId), taskData);
 
       // Rename the task file
       await fs.promises.rename(getTaskPath(taskId), newTaskPath);
 
       // Update the task id in the index
       index = renameTaskInIndex(index, taskId, newTaskId);
-      await saveIndex(index);
+      await this.saveIndex(index);
       return newTaskId;
     },
 
@@ -969,7 +1222,7 @@ module.exports = (() => {
       }
 
       // Get index and make sure the task is indexed
-      let index = await loadIndex();
+      let index = await this.loadIndex();
       if (!taskInIndex(index, taskId)) {
         throw new Error(`Task "${taskId}" is not in the index`);
       }
@@ -980,12 +1233,12 @@ module.exports = (() => {
       }
 
       // Update the task's updated date
-      let taskData = await loadTask(taskId);
+      let taskData = await this.loadTask(taskId);
       taskData = setTaskMetadata(taskData, 'updated', new Date());
 
       // Update task metadata dates
       taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
-      await saveTask(getTaskPath(taskId), taskData);
+      await this.saveTask(getTaskPath(taskId), taskData);
 
       // If we're moving the task to a new position, calculate the absolute position
       const currentColumnName = findTaskColumn(index, taskId);
@@ -1000,7 +1253,7 @@ module.exports = (() => {
       // Remove the task from its current column and add it to the new column
       index = removeTaskFromIndex(index, taskId);
       index = addTaskToIndex(index, taskId, columnName, position);
-      await saveIndex(index);
+      await this.saveIndex(index);
       return taskId;
     },
 
@@ -1019,7 +1272,7 @@ module.exports = (() => {
       taskId = removeFileExtension(taskId);
 
       // Get index and make sure the task is indexed
-      let index = await loadIndex();
+      let index = await this.loadIndex();
       if (!taskInIndex(index, taskId)) {
         throw new Error(`Task "${taskId}" is not in the index`);
       }
@@ -1031,7 +1284,7 @@ module.exports = (() => {
       if (removeFile && await exists(getTaskPath(taskId))) {
         await fs.promises.unlink(getTaskPath(taskId));
       }
-      await saveIndex(index);
+      await this.saveIndex(index);
       return taskId;
     },
 
@@ -1049,226 +1302,12 @@ module.exports = (() => {
       }
 
       // Load all tracked tasks and filter the results
-      const index = await loadIndex();
-      const tasks = [...await loadAllTrackedTasks(index)].filter(task => {
-
-        // Get task id and column
-        const taskId = utility.getTaskId(task.name);
-        const column = findTaskColumn(index, taskId);
-
-        // If no filters are defined, return all tasks
-        if (Object.keys(filters).length === 0) {
-          return true;
-        }
-
-        // Apply filters
-        let result = true;
-
-        // Id
-        if ('id' in filters && !stringFilter(filters.id, task.id)) {
-          result = false;
-        }
-
-        // Name
-        if ('name' in filters && !stringFilter(filters.name, task.name)) {
-          result = false;
-        }
-
-        // Description
-        if ('description' in filters && !stringFilter(filters.description, task.description)) {
-          result = false;
-        }
-
-        // Column
-        if ('column' in filters && !stringFilter(filters.column, column)) {
-          result = false;
-        }
-
-        // Created date
-        if (
-          'created' in filters && (
-            !('created' in task.metadata) ||
-            !dateFilter(filters.created, task.metadata.created)
-          )
-        ) {
-          result = false;
-        }
-
-        // Updated date
-        if (
-          'updated' in filters && (
-            !('updated' in task.metadata) ||
-            !dateFilter(filters.updated, task.metadata.updated)
-          )
-        ) {
-          result = false;
-        }
-
-        // Started
-        if (
-          'started' in filters && (
-            !('started' in task.metadata) ||
-            !dateFilter(filters.started, task.metadata.started)
-          )
-        ) {
-          result = false;
-        }
-
-        // Completed
-        if (
-          'completed' in filters && (
-            !('completed' in task.metadata) ||
-            !dateFilter(filters.completed, task.metadata.completed)
-          )
-        ) {
-          result = false;
-        }
-
-        // Due
-        if (
-          'due' in filters && (
-            !('due' in task.metadata) ||
-            !dateFilter(filters.due, task.metadata.due)
-          )
-        ) {
-          result = false;
-        }
-
-        // Assigned
-        if (
-          'assigned' in filters && (
-            !('assigned' in task.metadata) ||
-            !stringFilter(filters.assigned, task.metadata.assigned)
-          )
-        ) {
-          result = false;
-        }
-
-        // Sub-tasks
-        if (
-          'sub-task' in filters &&
-          !stringFilter(
-            filters['sub-task'],
-            task.subTasks.map(subTask => `[${subTask.completed ? 'x' : ' '}] ${subTask.text}`).join('\n')
-          )
-        ) {
-          result = false;
-        }
-
-        // Count sub-tasks
-        if (
-          'count-sub-tasks' in filters &&
-          !numberFilter(
-            filters['count-sub-tasks'],
-            task.subTasks.length
-          )
-        ) {
-          result = false;
-        }
-
-        // Tag
-        if (
-          'tag' in filters &&
-          !stringFilter(
-            filters.tag,
-            task.metadata.tags.join('\n')
-          )
-        ) {
-          result = false;
-        }
-
-        // Count tags
-        if (
-          'count-tags' in filters &&
-          !numberFilter(
-            filters['count-tags'],
-            task.tags.length
-          )
-        ) {
-          result = false;
-        }
-
-        // Relation
-        if (
-          'relation' in filters &&
-          !stringFilter(
-            filters.relation,
-            task.relations.map(relation => `${relation.type} ${relation.task}`).join('\n')
-          )
-        ) {
-          result = false;
-        }
-
-        // Count relations
-        if (
-          'count-relations' in filters &&
-          !numberFilter(
-            filters['count-relations'],
-            task.relations.length
-          )
-        ) {
-          result = false;
-        }
-
-        // Comments
-        if (
-          'comment' in filters &&
-          !stringFilter(
-            filters.comment,
-            task.comments.map(comment => `${comment.author} ${comment.text}`).join('\n')
-          )
-        ) {
-          result = false;
-        }
-
-        // Count comments
-        if (
-          'count-comments' in filters &&
-          !numberFilter(
-            filters['count-comments'],
-            task.comments.length
-          )
-        ) {
-          result = false;
-        }
-
-        // Custom metadata properties
-        if ('customFields' in index.options) {
-          for (let customField of index.options.customFields) {
-            if (customField.name in filters) {
-              if (!(customField.name in task.metadata)) {
-                result = false;
-              } else {
-                switch (customField.type) {
-                  case 'boolean':
-                    if (task.metadata[customField.name] !== filters[customField.name]) {
-                      result = false;
-                    }
-                    break;
-                  case 'number':
-                    if (!numberFilter(filters[customField.name], task.metadata[customField.name])) {
-                      result = false;
-                    }
-                    break;
-                  case 'string':
-                    if (!stringFilter(filters[customField.name], task.metadata[customField.name])) {
-                      result = false;
-                    }
-                    break;
-                  case 'date':
-                    if (!dateFilter(filters[customField.name], task.metadata[customField.name])) {
-                      result = false;
-                    }
-                    break;
-                  default:
-                    break;
-                }
-              }
-            }
-          }
-        }
-        return result;
-      });
+      const index = await this.loadIndex();
+      let tasks = filterTasks(
+        index,
+        await this.loadAllTrackedTasks(index),
+        filters
+      );
 
       // Return resulting task ids or the full tasks
       return tasks.map(task => {
@@ -1296,7 +1335,7 @@ module.exports = (() => {
       const result = {};
 
       // Get index and column names
-      const index = await loadIndex();
+      const index = await this.loadIndex();
       const columnNames = Object.keys(index.columns);
 
       // Get un-tracked tasks if required
@@ -1324,7 +1363,7 @@ module.exports = (() => {
       if (!quiet) {
 
         // Load all tracked tasks and populate each one with workload, column and due data
-        const tasks = [...await loadAllTrackedTasks(index)].map(task => {
+        const tasks = [...await this.loadAllTrackedTasks(index)].map(task => {
 
           task = this.hydrateTask(index, task);
 
@@ -1552,11 +1591,11 @@ module.exports = (() => {
       // Load & parse index
       let index = null;
       try {
-        index = await loadIndex();
+        index = await this.loadIndex();
 
         // Re-save index if required
         if (save) {
-          await saveIndex(index);
+          await this.saveIndex(index);
         }
       } catch (error) {
         errors.push({
@@ -1571,14 +1610,14 @@ module.exports = (() => {
       }
 
       // Load & parse tasks
-      const trackedTasks = getTrackedTasks(index);
+      const trackedTasks = getTrackedTaskIds(index);
       for (let taskId of trackedTasks) {
         try {
-          const task = await loadTask(taskId);
+          const task = await this.loadTask(taskId);
 
           // Re-save tasks if required
           if (save) {
-            await saveTask(getTaskPath(taskId), task);
+            await this.saveTask(getTaskPath(taskId), task);
           }
         } catch (error) {
           errors.push({
@@ -1609,7 +1648,7 @@ module.exports = (() => {
       }
 
       // Get index and make sure the column exists
-      let index = await loadIndex();
+      let index = await this.loadIndex();
       if (!(columnName in index.columns)) {
         throw new Error(`Column "${columnName}" doesn't exist`);
       }
@@ -1626,9 +1665,10 @@ module.exports = (() => {
         if ('columnSorting' in index.options && columnName in index.options.columnSorting) {
           delete index.options.columnSorting[columnName];
         }
-        index = await sortColumnInIndex(index, columnName, sorters);
+        const tasks = await this.loadAllTrackedTasks(index, columnName);
+        index = sortColumnInIndex(index, tasks, columnName, sorters);
       }
-      await saveIndex(index);
+      await this.saveIndex(index);
     },
 
     /**
@@ -1646,7 +1686,7 @@ module.exports = (() => {
       }
 
       // Get index and make sure it has a list of sprints in the options
-      const index = await loadIndex();
+      const index = await this.loadIndex();
       if (!('sprints' in index.options)) {
         index.options.sprints = [];
       }
@@ -1669,7 +1709,7 @@ module.exports = (() => {
 
       // Add sprint and save the index
       index.options.sprints.push(sprint);
-      await saveIndex(index);
+      await this.saveIndex(index);
       return sprint;
     },
 
@@ -1690,8 +1730,8 @@ module.exports = (() => {
       }
 
       // Get index and tasks
-      const index = await loadIndex();
-      const tasks = [...await loadAllTrackedTasks(index)]
+      const index = await this.loadIndex();
+      const tasks = [...await this.loadAllTrackedTasks(index)]
       .map(task => ({
         ...task,
         created: 'created' in task.metadata ? task.metadata.created : new Date(0),
@@ -1833,7 +1873,7 @@ module.exports = (() => {
       }
 
       // Get index and make sure the task is indexed
-      let index = await loadIndex();
+      let index = await this.loadIndex();
       if (!taskInIndex(index, taskId)) {
         throw new Error(`Task "${taskId}" is not in the index`);
       }
@@ -1844,7 +1884,7 @@ module.exports = (() => {
       }
 
       // Add the comment
-      const taskData = await loadTask(taskId);
+      const taskData = await this.loadTask(taskId);
       const taskPath = getTaskPath(taskId);
       taskData.comments.push({
         text,
@@ -1853,7 +1893,7 @@ module.exports = (() => {
       });
 
       // Save the task
-      await saveTask(taskPath, taskData);
+      await this.saveTask(taskPath, taskData);
       return taskId;
     },
 

@@ -35,6 +35,38 @@ function validateOptions(options) {
           required: ['start', 'name']
         }
       },
+      'defaultTaskWorkload': { type: 'number' },
+      'taskWorkloadTags': {
+        type: 'object',
+        patternProperties: {
+          '^[\w ]+$': { type: 'number' }
+        }
+      },
+      'columnSorting': {
+        type: 'object',
+        patternProperties: {
+          '^[\w ]+$': {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                'field': { type: 'string' },
+                'filter': { type: 'string' },
+                'order': {
+                  type: 'string',
+                  enum: [
+                    'ascending',
+                    'descending'
+                  ]
+                }
+              },
+              required: ['field']
+            }
+          }
+        }
+      },
+      'taskTemplate': { type: 'string' },
+      'dateFormat': { type: 'string' },
       'customFields': {
         type: 'array',
         items: {
@@ -61,6 +93,53 @@ function validateOptions(options) {
           },
           required: ['name', 'type']
         }
+      },
+      'views': {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            'name': { type: 'string' },
+            'columns': {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  'name': { type: 'string' },
+                  'filters': { type: 'object' },
+                  'sorters': {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        'field': { type: 'string' },
+                        'filter': { type: 'string' },
+                        'order': {
+                          type: 'string',
+                          enum: [
+                            'ascending',
+                            'descending'
+                          ]
+                        }
+                      },
+                      required: ['field']
+                    }
+                  }
+                }
+              }
+            },
+            'lanes': {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  'name': { type: 'string' },
+                  'filters': { type: 'object' }
+                }
+              }
+            }
+          }
+        }
       }
     }
   });
@@ -77,7 +156,7 @@ function validateColumns(columns) {
   const result = validate(columns, {
     type: 'object',
     patternProperties: {
-      '^.*$': {
+      '^[\w ]+$': {
         type: 'array',
         items: { type: 'string' }
       }
