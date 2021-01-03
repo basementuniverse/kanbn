@@ -185,3 +185,161 @@ QUnit.test('Sort on string field and save sorter settings', async assert => {
   index = await kanbn.getIndex();
   assert.deepEqual(index.columns['Column 1'], ['b-task-1', 'c-task-2', 'a-task-3', 'b-task-4', 'a-task-5']);
 });
+
+QUnit.test('Sort on numeric field', async assert => {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1',
+        metadata: {
+          tags: ['a', 'b', 'c']
+        }
+      },
+      {
+        name: 'Task 2'
+      },
+      {
+        name: 'Task 3',
+        metadata: {
+          tags: ['a', 'b']
+        }
+      }
+    ],
+    columns: {
+      'Column 1': [
+        'task-1',
+        'task-2',
+        'task-3'
+      ]
+    }
+  });
+  let index;
+
+  // Sort using default order (should be ascending)
+  await kanbn.sort('Column 1', [
+    {
+      field: 'countTags'
+    }
+  ]);
+  index = await kanbn.getIndex();
+  assert.deepEqual(index.columns['Column 1'], ['task-2', 'task-3', 'task-1']);
+
+  // Sort using descending order
+  await kanbn.sort('Column 1', [
+    {
+      field: 'countTags',
+      order: 'descending'
+    }
+  ]);
+  index = await kanbn.getIndex();
+  assert.deepEqual(index.columns['Column 1'], ['task-1', 'task-3', 'task-2']);
+});
+
+QUnit.test('Sort on date field', async assert => {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1',
+        metadata: {
+          due: new Date('01 January 2020 00:00:00 GMT')
+        }
+      },
+      {
+        name: 'Task 2'
+      },
+      {
+        name: 'Task 3',
+        metadata: {
+          due: new Date('02 January 2020 00:00:00 GMT')
+        }
+      }
+    ],
+    columns: {
+      'Column 1': [
+        'task-1',
+        'task-2',
+        'task-3'
+      ]
+    }
+  });
+  let index;
+
+  // Sort using default order (should be ascending)
+  await kanbn.sort('Column 1', [
+    {
+      field: 'due'
+    }
+  ]);
+  index = await kanbn.getIndex();
+  assert.deepEqual(index.columns['Column 1'], ['task-2', 'task-1', 'task-3']);
+
+  // Sort using descending order
+  await kanbn.sort('Column 1', [
+    {
+      field: 'due',
+      order: 'descending'
+    }
+  ]);
+  index = await kanbn.getIndex();
+  assert.deepEqual(index.columns['Column 1'], ['task-3', 'task-1', 'task-2']);
+});
+
+QUnit.test('Sort on custom field', async assert => {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1',
+        metadata: {
+          testField: 2
+        }
+      },
+      {
+        name: 'Task 2'
+      },
+      {
+        name: 'Task 3',
+        metadata: {
+          testField: 1
+        }
+      }
+    ],
+    columns: {
+      'Column 1': [
+        'task-1',
+        'task-2',
+        'task-3'
+      ]
+    },
+    options: {
+      customFields: [
+        {
+          name: 'testField',
+          type: 'number'
+        }
+      ]
+    }
+  });
+  let index;
+
+  // Sort using default order (should be ascending)
+  await kanbn.sort('Column 1', [
+    {
+      field: 'testField'
+    }
+  ]);
+  index = await kanbn.getIndex();
+  assert.deepEqual(index.columns['Column 1'], ['task-2', 'task-3', 'task-1']);
+
+  // Sort using descending order
+  await kanbn.sort('Column 1', [
+    {
+      field: 'testField',
+      order: 'descending'
+    }
+  ]);
+  index = await kanbn.getIndex();
+  assert.deepEqual(index.columns['Column 1'], ['task-1', 'task-3', 'task-2']);
+});

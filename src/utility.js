@@ -77,6 +77,24 @@ module.exports = (() => {
     },
 
     /**
+     * If a is undefined, convert it to a number or string depending on the specified type
+     * @param {*} a
+     * @param {string} type
+     * @return {string|number}
+     */
+    coerceUndefined(a, type) {
+      if (a === undefined) {
+        switch (type) {
+          case 'string':
+            return '';
+          default:
+            return 0;
+        }
+      }
+      return a;
+    },
+
+    /**
      * Make a string bold
      * @param {string} s The string to wrap
      * @return {string} The updated string

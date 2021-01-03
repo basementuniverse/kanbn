@@ -300,6 +300,11 @@ module.exports = (() => {
    * @return {number} A positive value if a > b, negative if a < b, otherwise 0
    */
   function compareValues(a, b) {
+    if (a === undefined && b === undefined) {
+      return 0;
+    }
+    a = utility.coerceUndefined(a, typeof b);
+    b = utility.coerceUndefined(b, typeof a);
     if (typeof a === 'string' && typeof b === 'string') {
       return a.localeCompare(b, undefined, { sensitivity: 'accent' });
     }
