@@ -164,5 +164,23 @@ module.exports = {
   taskHasPositionInColumn(assert, basePath, taskId, columnName, position, expected = true) {
     const index = loadIndex(basePath);
     assert[expected ? 'equal' : 'notEqual'](index.columns[columnName].indexOf(taskId), position);
-  }
+  },
+
+  taskHasComments(assert, basePath, taskId, comments = null) {
+    const task = loadTask(basePath, taskId);
+    assert.equal((
+      'comments' in task &&
+      task.comments !== null &&
+      Array.isArray(task.comments)
+    ), true);
+    if (comments !== null) {
+      for (let assertComment of comments) {
+        assert.notEqual(task.comments.findIndex(existingComment => (
+          existingComment.text === assertComment.text &&
+          existingComment.author === assertComment.author &&
+          existingComment.date.toISOString().substr(0, 9) === assertComment.date.toISOString().substr(0, 9)
+        )), -1);
+      }
+    }
+  },
 };
