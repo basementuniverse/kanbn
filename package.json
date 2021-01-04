@@ -1,5 +1,5 @@
 {
-  "name": "kanbn",
+  "name": "@basementuniverse/kanbn",
   "version": "0.1.0",
   "description": "A cli Kanban application",
   "main": "index.js",
@@ -20,11 +20,13 @@
     "node": ">=8"
   },
   "keywords": [
+    "kanbn",
     "kanban",
     "task manager",
     "project manager",
     "agile",
-    "scrum"
+    "scrum",
+    "sprint"
   ],
   "license": "MIT",
   "dependencies": {
