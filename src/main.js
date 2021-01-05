@@ -743,6 +743,49 @@ module.exports = (() => {
     hydrateTask(index, task) {
       task.column = findTaskColumn(index, task.id);
       task.workload = taskWorkload(index, task);
+
+      // Add due information
+      if ('due' in task.metadata) {
+        const dueData = {};
+
+        // A task is overdue if it's due date is in the past and the task is not in a completed column
+        // or doesn't have a completed date
+        const completedDate = 'completed' in task.metadata ? task.metadata.completed : null;
+        const completed = (
+          'completed' in task.metadata || (
+            'completedColumns' in index.options &&
+            index.options.completedColumns.indexOf(task.column) !== -1
+          )
+        );
+
+        // Get task due delta - this is the difference between now and the due date, or if the task is completed
+        // this is the difference between the completed and due dates
+        let delta;
+        if (completedDate !== null) {
+          delta = completedDate - task.metadata.due;
+        } else {
+          delta = (new Date()) - task.metadata.due;
+        }
+
+        // Populate due information
+        dueData.completed = completed;
+        dueData.completedDate = completedDate;
+        dueData.dueDate = task.metadata.due;
+        dueData.overdue = !completed && delta > 0;
+        dueData.dueDelta = delta;
+
+        // Prepare a due message for the task
+        let dueMessage = '';
+        if (completed) {
+          dueMessage += 'Completed ';
+        }
+        dueMessage += `${humanizeDuration(delta, {
+          largest: 3,
+          round: true
+        })} ${delta > 0 ? 'overdue' : 'remaining'}`;
+        dueData.dueMessage = dueMessage;
+        task.dueData = dueData;
+      }
       return task;
     },
 
@@ -1383,54 +1426,7 @@ module.exports = (() => {
       if (!quiet) {
 
         // Load all tracked tasks and populate each one with workload, column and due data
-        const tasks = [...await this.loadAllTrackedTasks(index)].map(task => {
-
-          task = this.hydrateTask(index, task);
-
-          // Add due information
-          if ('due' in task.metadata) {
-            const dueData = {};
-
-            // A task is overdue if it's due date is in the past and the task is not in a completed column
-            // or doesn't have a completed date
-            const completedDate = 'completed' in task.metadata ? task.metadata.completed : null;
-            const completed = (
-              'completed' in task.metadata || (
-                'completedColumns' in index.options &&
-                index.options.completedColumns.indexOf(task.column) !== -1
-              )
-            );
-
-            // Get task due delta - this is the difference between now and the due date, or if the task is completed
-            // this is the difference between the completed and due dates
-            let delta;
-            if (completedDate !== null) {
-              delta = completedDate - task.metadata.due;
-            } else {
-              delta = (new Date()) - task.metadata.due;
-            }
-
-            // Populate due information
-            dueData.completed = completed;
-            dueData.completedDate = completedDate;
-            dueData.dueDate = task.metadata.due;
-            dueData.overdue = !completed && delta > 0;
-            dueData.dueDelta = delta;
-
-            // Prepare a due message for the task
-            let dueMessage = '';
-            if (completed) {
-              dueMessage += 'Completed ';
-            }
-            dueMessage += `${humanizeDuration(delta, {
-              largest: 3,
-              round: true
-            })} ${delta > 0 ? 'overdue' : 'remaining'}`;
-            dueData.dueMessage = dueMessage;
-            task.dueData = dueData;
-          }
-          return task;
-        });
+        const tasks = [...await this.loadAllTrackedTasks(index)].map(task => this.hydrateTask(index, task));
 
         // If showing due information, calculate time remaining or overdue time for each task
         if (due) {

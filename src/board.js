@@ -24,9 +24,9 @@ module.exports = (() => {
       tags: 'tags' in task.metadata ? task.metadata.tags : [],
       subTasks: task.subTasks,
       relations: task.relations,
-      overdue: 'overdue' in task ? task.overdue : null,
-      dueDelta: 'dueDelta' in task ? task.dueDelta : 0,
-      dueMessage: 'dueMessage' in task ? task.dueMessage : '',
+      overdue: 'dueData' in task && 'overdue' in task.dueData ? task.dueData.overdue : null,
+      dueDelta: 'dueData' in task && 'dueDelta' in task.dueData ? task.dueData.dueDelta : 0,
+      dueMessage: 'dueData' in task && 'dueMessage' in task.dueData ? task.dueData.dueMessage : '',
       column: task.column,
       workload: task.workload
     };
