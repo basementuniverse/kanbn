@@ -38,11 +38,6 @@ const searchFields = [
     type: 'date'
   },
   {
-    name: 'Started',
-    field: 'started',
-    type: 'date'
-  },
-  {
     name: 'Completed',
     field: 'completed',
     type: 'date'
@@ -361,11 +356,6 @@ module.exports = async args => {
   if ('updated' in filters) {
     if (!convertDateFilters(filters, 'updated')) {
       utility.error('Unable to parse updated date', true);
-    }
-  }
-  if ('started' in filters) {
-    if (!convertDateFilters(filters, 'started')) {
-      utility.error('Unable to parse started date', true);
     }
   }
   if ('completed' in filters) {

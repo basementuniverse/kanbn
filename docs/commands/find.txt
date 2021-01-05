@@ -38,11 +38,6 @@ Options:
     This option can be repeated - if multiple dates are specified, find tasks that were updated between the earliest and latest dates.
     The date can be in (almost) any format.
 
-  {b}kanbn find --started "date"{b}
-    Find tasks that have a started date that matches the specified date. The time part of the date will be ignored, unless searching between multiple dates.
-    This option can be repeated - if multiple dates are specified, find tasks that were started between the earliest and latest dates.
-    The date can be in (almost) any format.
-
   {b}kanbn find --completed "date"{b}
     Find tasks that have a completed date that matches the specified date. The time part of the date will be ignored, unless searching between multiple dates.
     This option can be repeated - if multiple dates are specified, find tasks that were completed between the earliest and latest dates.
@@ -87,3 +82,9 @@ Options:
   {b}kanbn find --count-comments N{b}
     Find tasks that have a specific number of comments.
     If multiple counts are specified, find tasks with a number of comments between the lowest and highest inputs.
+
+  {b}kanbn find --<custom field name> "search term"|N|date{b}
+    Find tasks with a custom metadata field that matches the search filter.
+    If the custom field is a string and multiple filters are specified, find tasks with a value that matches one of the inputs.
+    If the custom field is numeric and multiple filters are specified, find tasks with a value between the lowest and highest inputs.
+    If the custom field is a date and multiple filters are specified, find tasks with a value between the earliest and latest dates.

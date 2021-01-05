@@ -43,9 +43,6 @@ Options:
   {b}kanbn sort --updated{b}
     Sort tasks by updated date.
 
-  {b}kanbn sort --started{b}
-    Sort tasks by started date.
-
   {b}kanbn sort --completed{b}
     Sort tasks by completed date.
 
@@ -86,6 +83,9 @@ Options:
   {b}kanbn sort --workload{b}
   {b}kanbn sort -w{b}
     Sort tasks by workload.
+
+  {b}kanbn sort --<custom field name>{b}
+    Sort tasks by a custom field value.
 
 Examples:
   {b}kanbn sort "Todo" --created -z -n "Task (\\d+)" -w{b}

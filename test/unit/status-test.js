@@ -61,6 +61,7 @@ QUnit.test('Status untracked and quiet should return list of untracked tasks', a
 
 QUnit.test('Status quiet should show basic status information', async assert => {
   fixtures({
+    name: 'test',
     tasks: [
       {
         name: 'Task 1'
@@ -89,6 +90,7 @@ QUnit.test('Status quiet should show basic status information', async assert => 
     }
   });
   assert.deepEqual(await kanbn.status(true), {
+    name: 'test',
     tasks: 4,
     columnTasks: {
       'Column 1': 1,
@@ -144,6 +146,7 @@ QUnit.test('Status non-quiet should show more status information', async assert 
     }
   });
   assert.deepEqual(await kanbn.status(), {
+    name: 'test',
     tasks: 4,
     columnTasks: {
       'Column 1': 1,
@@ -248,6 +251,7 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
     }
   });
   assert.deepEqual(await kanbn.status(false, false, true), {
+    name: 'test',
     tasks: 6,
     columnTasks: {
       'Column 1': 1,
@@ -354,7 +358,6 @@ QUnit.test('Status non-quiet with sprints defined should show sprint information
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
-          started: new Date('16 December 1999 01:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT'),
           test: new Date('17 December 1999 00:00:00 GMT')
         }
@@ -424,16 +427,6 @@ QUnit.test('Status non-quiet with sprints defined should show sprint information
       ],
       workload: 13
     },
-    started: {
-      tasks: [
-        {
-          id: 'task-3',
-          column: 'Column 3',
-          workload: 5
-        }
-      ],
-      workload: 5
-    },
     completed: {
       tasks: [
         {
@@ -501,7 +494,6 @@ QUnit.test('Status non-quiet with specific sprint by number', async assert => {
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
-          started: new Date('16 December 1999 01:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT')
         }
       },
@@ -566,10 +558,6 @@ QUnit.test('Status non-quiet with specific sprint by number', async assert => {
       ],
       workload: 5
     },
-    started: {
-      tasks: [],
-      workload: 0
-    },
     completed: {
       tasks: [
         {
@@ -617,7 +605,6 @@ QUnit.test('Status non-quiet with specific sprint by name', async assert => {
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
-          started: new Date('16 December 1999 01:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT')
         }
       },
@@ -682,10 +669,6 @@ QUnit.test('Status non-quiet with specific sprint by name', async assert => {
       ],
       workload: 5
     },
-    started: {
-      tasks: [],
-      workload: 0
-    },
     completed: {
       tasks: [
         {
@@ -733,7 +716,6 @@ QUnit.test('Status non-quiet with single date', async assert => {
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
-          started: new Date('16 December 1999 01:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT')
         }
       },
@@ -765,16 +747,6 @@ QUnit.test('Status non-quiet with single date', async assert => {
     start: new Date('16 December 1999 00:00:00 GMT'),
     end: new Date('16 December 1999 23:59:59:999 GMT'),
     created: {
-      tasks: [
-        {
-          id: 'task-3',
-          column: 'Column 3',
-          workload: 5
-        }
-      ],
-      workload: 5
-    },
-    started: {
       tasks: [
         {
           id: 'task-3',
@@ -819,7 +791,6 @@ QUnit.test('Status non-quiet with date range', async assert => {
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
-          started: new Date('16 December 1999 01:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT')
         }
       },
@@ -867,16 +838,6 @@ QUnit.test('Status non-quiet with date range', async assert => {
         }
       ],
       workload: 13
-    },
-    started: {
-      tasks: [
-        {
-          id: 'task-3',
-          column: 'Column 3',
-          workload: 5
-        }
-      ],
-      workload: 5
     },
     completed: {
       tasks: [

@@ -1,11 +1,9 @@
+const kanbn = require('./main');
 const term = require('terminal-kit').terminal;
 const formatDate = require('dateformat');
 
 module.exports = (() => {
   const TASK_SEPARATOR = '\n\n';
-
-  const defaultDateFormat = 'd mmm yy, H:MM';
-  const defaultTaskTemplate = "^+^_${overdue ? '^R' : ''}${name}^: ${created ? ('\\n^-^/' + created) : ''}";
 
   /**
    * Show only the selected fields for a task, as specified in the index options
@@ -14,14 +12,13 @@ module.exports = (() => {
    * @return {string} The selected task fields
    */
   function getTaskString(index, task) {
-    const taskTemplate = 'taskTemplate' in index.options ? index.options.taskTemplate : defaultTaskTemplate;
-    const dateFormat = 'dateFormat' in index.options ? index.options.dateFormat : defaultDateFormat;
+    const taskTemplate = kanbn.getTaskTemplate(index);
+    const dateFormat = kanbn.getDateFormat(index);
     const taskData = {
       name: task.name,
       description: task.name,
       created: 'created' in task.metadata ? formatDate(task.metadata.created, dateFormat) : '',
       updated: 'updated' in task.metadata ? formatDate(task.metadata.updated, dateFormat) : '',
-      started: 'started' in task.metadata ? formatDate(task.metadata.started, dateFormat) : '',
       completed: 'completed' in task.metadata ? formatDate(task.metadata.completed, dateFormat) : '',
       due: 'due' in task.metadata ? formatDate(task.metadata.due, dateFormat) : '',
       tags: 'tags' in task.metadata ? task.metadata.tags : [],
@@ -49,12 +46,6 @@ module.exports = (() => {
       index.options.completedColumns.indexOf(columnName) !== -1
     ) {
       heading += '^g\u2713^: ';
-    }
-    if (
-      'startedColumns' in index.options &&
-      index.options.startedColumns.indexOf(columnName) !== -1
-    ) {
-      heading += '^c\u00bb^: ';
     }
     return heading + `^+${columnName}^:`;
   }

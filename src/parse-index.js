@@ -15,10 +15,6 @@ function validateOptions(options) {
         type: 'array',
         items: { type: 'string' }
       },
-      'startedColumns': {
-        type: 'array',
-        items: { type: 'string' }
-      },
       'completedColumns': {
         type: 'array',
         items: { type: 'string' }

@@ -25,7 +25,6 @@
       "count-comments",
       "created",
       "updated",
-      "started",
       "completed",
       "due",
       "assigned"

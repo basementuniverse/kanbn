@@ -45,12 +45,6 @@ function validateMetadataFromMarkdown(metadata) {
           { type: 'date'}
         ]
       },
-      'started': {
-        oneOf: [
-          { type: 'string' },
-          { type: 'date'}
-        ]
-      },
       'completed': {
         oneOf: [
           { type: 'string' },
@@ -84,7 +78,6 @@ function validateMetadataFromJSON(metadata) {
     properties: {
       'created': { type: 'date'},
       'updated': { type: 'date'},
-      'started': { type: 'date'},
       'completed': { type: 'date'},
       'due': { type: 'date'},
       'tags': {
@@ -219,13 +212,6 @@ module.exports = {
             throw new Error('unable to parse updated date');
           }
           metadata.updated = dateValue;
-        }
-        if ('started' in metadata && !(metadata.started instanceof Date)) {
-          const dateValue = chrono.parseDate(metadata.started);
-          if (dateValue === null) {
-            throw new Error('unable to parse started date');
-          }
-          metadata.started = dateValue;
         }
         if ('completed' in metadata && !(metadata.completed instanceof Date)) {
           const dateValue = chrono.parseDate(metadata.completed);

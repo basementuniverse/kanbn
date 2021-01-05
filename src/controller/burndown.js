@@ -3,6 +3,7 @@ const utility = require('../utility');
 const asciichart = require('asciichart');
 const term = require('terminal-kit').terminal;
 const chrono = require('chrono-node');
+const formatDate = require('dateformat');
 
 module.exports = async args => {
 
@@ -10,6 +11,7 @@ module.exports = async args => {
   if (!await kanbn.initialised()) {
     utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
   }
+  const index = await kanbn.getIndex();
 
   // Get sprint numbers or names
   let sprints = null;
@@ -60,12 +62,14 @@ module.exports = async args => {
 
       const plots = [];
       for (s of data.series) {
-        const plot = [], delta = Math.floor((s.to - s.from) / width);
+        const plot = [], delta = Math.floor((s.to.getTime() - s.from.getTime()) / width);
         for (let i = 0; i < width; i++) {
           plot.push((s.dataPoints.find(d => d.x >= new Date(s.from.getTime() + i * delta)) || s.dataPoints[0]).y);
         }
         plots.push(plot);
       }
+      const dateFormat = kanbn.getDateFormat(index);
+      console.log(`${formatDate(s.from, dateFormat)} to ${formatDate(s.to, dateFormat)}:`);
       console.log(asciichart.plot(
         plots,
         {

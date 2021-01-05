@@ -110,7 +110,7 @@ module.exports = (options = {}) => {
 
   // Generate index
   const index = {
-    name: faker.lorem.sentence(),
+    name: 'test',
     description: faker.lorem.paragraph(),
     columns
   };

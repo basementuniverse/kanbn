@@ -115,14 +115,6 @@ const sorterFields = [
     filterable: false
   },
   {
-    name: 'Started date',
-    field: 'started',
-    options: [
-      '--started'
-    ],
-    filterable: false
-  },
-  {
     name: 'Completed date',
     field: 'completed',
     options: [

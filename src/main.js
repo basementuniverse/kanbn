@@ -25,6 +25,8 @@ module.exports = (() => {
     'Large': 5,
     'Huge': 8
   };
+  const DEFAULT_DATE_FORMAT = 'd mmm yy, H:MM';
+  const DEFAULT_TASK_TEMPLATE = "^+^_${overdue ? '^R' : ''}${name}^: ${created ? ('\\n^-^/' + created) : ''}";
 
   /**
    * Default options for the initialise command
@@ -33,9 +35,6 @@ module.exports = (() => {
     name: 'Project Name',
     description: '',
     options: {
-      startedColumns: [
-        'In Progress'
-      ],
       completedColumns: [
         'Done'
       ]
@@ -214,7 +213,6 @@ module.exports = (() => {
       ...task.metadata,
       created: 'created' in task.metadata ? task.metadata.created : '',
       updated: 'updated' in task.metadata ? task.metadata.updated : '',
-      started: 'started' in task.metadata ? task.metadata.started : '',
       completed: 'completed' in task.metadata ? task.metadata.completed : '',
       due: 'due' in task.metadata ? task.metadata.due : '',
       assigned: 'assigned' in task.metadata ? task.metadata.assigned : '',
@@ -367,16 +365,6 @@ module.exports = (() => {
         'updated' in filters && (
           !('updated' in task.metadata) ||
           !dateFilter(filters.updated, task.metadata.updated)
-        )
-      ) {
-        result = false;
-      }
-
-      // Started
-      if (
-        'started' in filters && (
-          !('started' in task.metadata) ||
-          !dateFilter(filters.started, task.metadata.started)
         )
       ) {
         result = false;
@@ -658,9 +646,8 @@ module.exports = (() => {
    */
   function updateColumnLinkedCustomFields(index, taskData, columnName) {
 
-    // Update built-in column-linked metadata properties first (started, completed dates)
+    // Update built-in column-linked metadata properties first (completed date)
     taskData = updateColumnLinkedCustomField(index, taskData, columnName, 'completed', 'once');
-    taskData = updateColumnLinkedCustomField(index, taskData, columnName, 'started', 'once');
 
     // Update column-linked custom fields
     if ('customFields' in index.options) {
@@ -863,6 +850,24 @@ module.exports = (() => {
         result.push(await this.loadTask(taskId));
       }
       return result;
+    },
+
+    /**
+     * Get the date format defined in the index, or the default date format
+     * @param {object} index
+     * @return {string}
+     */
+    getDateFormat(index) {
+      return 'dateFormat' in index.options ? index.options.dateFormat : DEFAULT_DATE_FORMAT;
+    },
+
+    /**
+     * Get the task template for displaying tasks on the kanbn board from the index, or the default task template
+     * @param {object} index
+     * @return {string}
+     */
+    getTaskTemplate(index) {
+      return 'taskTemplate' in index.options ? index.options.taskTemplate : DEFAULT_TASK_TEMPLATE;
     },
 
     /**
@@ -1344,12 +1349,14 @@ module.exports = (() => {
         throw new Error('Not initialised in this folder');
       }
 
-      // Prepare output
-      const result = {};
-
       // Get index and column names
       const index = await this.loadIndex();
       const columnNames = Object.keys(index.columns);
+
+      // Prepare output
+      const result = {
+        name: index.name
+      };
 
       // Get un-tracked tasks if required
       if (untracked) {
@@ -1531,7 +1538,6 @@ module.exports = (() => {
 
           // Add task workload information for the sprint
           result.sprint.created = taskWorkloadInPeriod(tasks, 'created', sprintStartDate, sprintEndDate);
-          result.sprint.started = taskWorkloadInPeriod(tasks, 'started', sprintStartDate, sprintEndDate);
           result.sprint.completed = taskWorkloadInPeriod(tasks, 'completed', sprintStartDate, sprintEndDate);
           result.sprint.due = taskWorkloadInPeriod(tasks, 'due', sprintStartDate, sprintEndDate);
 
@@ -1566,7 +1572,6 @@ module.exports = (() => {
             result.period.end = periodEnd = new Date(Math.max(...dates));
           }
           result.period.created = taskWorkloadInPeriod(tasks, 'created', periodStart, periodEnd);
-          result.period.started = taskWorkloadInPeriod(tasks, 'started', periodStart, periodEnd);
           result.period.completed = taskWorkloadInPeriod(tasks, 'completed', periodStart, periodEnd);
           result.period.due = taskWorkloadInPeriod(tasks, 'due', periodStart, periodEnd);
 
@@ -1773,26 +1778,27 @@ module.exports = (() => {
           const currentSprint = indexSprints.length - 1;
           series.push({
             sprint: indexSprints[currentSprint],
-            from: indexSprints[currentSprint].start,
+            from: new Date(indexSprints[currentSprint].start),
             to: new Date()
           });
         } else {
 
           // Show all time
           series.push({
-            from: Math.min(...tasks.map(
+            from: new Date(Math.min(...tasks.map(
               t => [
                 'created' in t.metadata && t.metadata.created,
                 'updated' in t.metadata && t.metadata.updated,
-                'started' in t.metadata && t.metadata.started,
                 'completed' in t.metadata && t.metadata.completed,
                 'due' in t.metadata && t.metadata.due
               ].filter(d => d)
-            ).flat()),
+            ).flat())),
             to: new Date()
           });
         }
       } else {
+
+        // Show specified sprint
         if (sprints !== null) {
           if (indexSprints === null) {
             throw new Error(`No sprints defined`);
@@ -1810,7 +1816,7 @@ module.exports = (() => {
 
               // Or select sprint by name
               } else if (typeof sprint === 'string') {
-                sprintIndex = sprints.findIndex(s => s.name === sprint);
+                sprintIndex = indexSprints.findIndex(s => s.name === sprint);
                 if (sprintIndex === -1) {
                   throw new Error(`No sprint found with name "${sprint}"`);
                 }
@@ -1822,18 +1828,20 @@ module.exports = (() => {
               // Get sprint start and end
               series.push({
                 sprint: indexSprints[sprintIndex],
-                from: indexSprints[sprintIndex].start,
-                to: sprintIndex < sprints.length - 1
-                  ? sprints[sprintIndex + 1].start
+                from: new Date(indexSprints[sprintIndex].start),
+                to: sprintIndex < indexSprints.length - 1
+                  ? new Date(indexSprints[sprintIndex + 1].start)
                   : new Date()
               });
             }
           }
         }
+
+        // Show specified date range
         if (dates !== null) {
           series.push({
-            from: Math.min(...dates),
-            to: dates.length === 1 ? new Date() : Math.max(...dates)
+            from: new Date(Math.min(...dates)),
+            to: dates.length === 1 ? new Date() : new Date(Math.max(...dates))
           });
         }
       }
@@ -1860,7 +1868,7 @@ module.exports = (() => {
             x: s.to,
             y: getWorkloadAtDate(tasks, s.to)
           }
-        ].sort((a, b) => a.x - b.x);
+        ].sort((a, b) => a.x.getTime() - b.x.getTime());
       });
       return { series };
     },

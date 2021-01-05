@@ -20,7 +20,7 @@
       "quiet": ["q"],
       "json": ["j"],
       "due": ["e"],
-      "sprint": ["s"],
+      "sprint": ["p"],
       "date": ["d"]
     }
   },
