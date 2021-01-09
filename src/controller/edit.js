@@ -422,6 +422,18 @@ module.exports = async args => {
     }
   }
 
+  // Progress
+  if (args.progress) {
+    if (!('metadata' in taskData)) {
+      taskData.metadata = {};
+    }
+    const progressValue = parseFloat(utility.strArg(args.progress));
+    if (isNaN(progressValue)) {
+      utility.error('Progress value is not a number');
+    }
+    taskData.metadata.progress = progressValue;
+  }
+
   // Assigned
   if (args.assigned) {
     if (!('metadata' in taskData)) {
@@ -554,6 +566,16 @@ module.exports = async args => {
       taskData.metadata = {};
     }
     for (let arg of Object.keys(args)) {
+
+      // Check if we're removing a custom field
+      const removeCustomField = index.options.customFields.find(p => `remove-${p.name}` === arg);
+      if (removeCustomField !== undefined) {
+        if (removeCustomField.name in taskData.metadata) {
+          delete taskData.metadata[removeCustomField.name];
+        }
+      }
+
+      // Check if we're adding or modifying a custom field
       const customField = index.options.customFields.find(p => p.name === arg);
       if (customField !== undefined) {
 

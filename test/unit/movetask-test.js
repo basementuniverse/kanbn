@@ -13,6 +13,7 @@ QUnit.module('moveTask tests', {
       countTasks: 17,
       tasksPerColumn: 5,
       options: {
+        startedColumns: ['Column 2'],
         completedColumns: ['Column 3']
       }
     });
@@ -83,6 +84,20 @@ QUnit.test('Move a task', async assert => {
   // Verify that the task updated date was updated
   const task = await kanbn.getTask('task-1');
   assert.equal(task.metadata.updated.toISOString().substr(0, 9), currentDate.substr(0, 9));
+});
+
+QUnit.test('Move a task into a started column should update the started date', async assert => {
+  const BASE_PATH = kanbn.getMainFolder();
+  const currentDate = (new Date()).toISOString();
+  await kanbn.moveTask('task-1', 'Column 2');
+
+  // Verify that the task was moved
+  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 2');
+  context.indexHasTask(assert, BASE_PATH, 'task-1', 'Column 1', false);
+
+  // Verify that the task started date was updated
+  const task = await kanbn.getTask('task-1');
+  assert.equal(task.metadata.started.toISOString().substr(0, 9), currentDate.substr(0, 9));
 });
 
 QUnit.test('Move a task into a completed column should update the completed date', async assert => {

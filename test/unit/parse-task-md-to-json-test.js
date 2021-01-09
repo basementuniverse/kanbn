@@ -170,6 +170,15 @@ updated: test
 
 ## Metadata
 
+started: test
+`,
+    error: /unable to parse started date/
+  },
+  {
+    md: `
+# ${TEST_NAME}
+## Metadata
+
 completed: test
 `,
     error: /unable to parse completed date/

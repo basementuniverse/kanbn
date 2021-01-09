@@ -45,6 +45,12 @@ function validateMetadataFromMarkdown(metadata) {
           { type: 'date'}
         ]
       },
+      'started': {
+        oneOf: [
+          { type: 'string' },
+          { type: 'date'}
+        ]
+      },
       'completed': {
         oneOf: [
           { type: 'string' },
@@ -56,6 +62,9 @@ function validateMetadataFromMarkdown(metadata) {
           { type: 'string' },
           { type: 'date'}
         ]
+      },
+      'progress': {
+        type: 'number'
       },
       'tags': {
         type: 'array',
@@ -78,8 +87,10 @@ function validateMetadataFromJSON(metadata) {
     properties: {
       'created': { type: 'date'},
       'updated': { type: 'date'},
+      'started': { type: 'date'},
       'completed': { type: 'date'},
       'due': { type: 'date'},
+      'progress': { type: 'number' },
       'tags': {
         type: 'array',
         items: { type: 'string' }
@@ -213,6 +224,13 @@ module.exports = {
           }
           metadata.updated = dateValue;
         }
+        if ('started' in metadata && !(metadata.started instanceof Date)) {
+          const dateValue = chrono.parseDate(metadata.started);
+          if (dateValue === null) {
+            throw new Error('unable to parse started date');
+          }
+          metadata.started = dateValue;
+        }
         if ('completed' in metadata && !(metadata.completed instanceof Date)) {
           const dateValue = chrono.parseDate(metadata.completed);
           if (dateValue === null) {
@@ -226,6 +244,15 @@ module.exports = {
             throw new Error('unable to parse due date');
           }
           metadata.due = dateValue;
+        }
+
+        // Check progress value
+        if ('progress' in metadata) {
+          const numberValue = parseFloat(metadata.progress);
+          if (isNaN(numberValue)) {
+            throw new Error('progress value is not numeric');
+          }
+          metadata.progress = numberValue;
         }
       }
 

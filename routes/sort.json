@@ -24,9 +24,11 @@
       "count-comments",
       "created",
       "updated",
+      "started",
       "completed",
       "due",
       "workload",
+      "progress",
       "assigned"
     ],
     "alias": {

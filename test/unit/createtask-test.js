@@ -112,6 +112,15 @@ QUnit.test('Create task', async assert => {
   context.indexHasTask(assert, BASE_PATH, TASK_ID, 'Backlog');
 });
 
+QUnit.test('Create task in a started column should update the started date', async assert => {
+  await kanbn.initialise();
+  const TASK_ID = await kanbn.createTask({ name: 'Test name' }, 'In Progress');
+
+  // Verify that the task has a started date that matches the created date
+  const task = await kanbn.getTask(TASK_ID);
+  assert.equal(task.metadata.started.toISOString(), task.metadata.created.toISOString());
+});
+
 QUnit.test('Create task in a completed column should update the completed date', async assert => {
   await kanbn.initialise();
   const TASK_ID = await kanbn.createTask({ name: 'Test name' }, 'Done');

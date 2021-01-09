@@ -19,6 +19,7 @@ module.exports = (() => {
       description: task.name,
       created: 'created' in task.metadata ? formatDate(task.metadata.created, dateFormat) : '',
       updated: 'updated' in task.metadata ? formatDate(task.metadata.updated, dateFormat) : '',
+      started: 'started' in task.metadata ? formatDate(task.metadata.started, dateFormat) : '',
       completed: 'completed' in task.metadata ? formatDate(task.metadata.completed, dateFormat) : '',
       due: 'due' in task.metadata ? formatDate(task.metadata.due, dateFormat) : '',
       tags: 'tags' in task.metadata ? task.metadata.tags : [],
@@ -28,7 +29,8 @@ module.exports = (() => {
       dueDelta: 'dueData' in task && 'dueDelta' in task.dueData ? task.dueData.dueDelta : 0,
       dueMessage: 'dueData' in task && 'dueMessage' in task.dueData ? task.dueData.dueMessage : '',
       column: task.column,
-      workload: task.workload
+      workload: task.workload,
+      progress: task.progress
     };
     return new Function(...Object.keys(taskData), 'return `' + taskTemplate + '`;')(...Object.values(taskData));
   }
@@ -46,6 +48,12 @@ module.exports = (() => {
       index.options.completedColumns.indexOf(columnName) !== -1
     ) {
       heading += '^g\u2713^: ';
+    }
+    if (
+      'startedColumns' in index.options &&
+      index.options.startedColumns.indexOf(columnName) !== -1
+    ) {
+      heading += '^c\u00bb^: ';
     }
     return heading + `^+${columnName}^:`;
   }

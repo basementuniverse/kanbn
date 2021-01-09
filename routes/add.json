@@ -15,7 +15,8 @@
       "sub-task",
       "tag",
       "relation",
-      "due"
+      "due",
+      "progress"
     ],
     "alias": {
       "interactive": ["i"],

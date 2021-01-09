@@ -115,6 +115,14 @@ const sorterFields = [
     filterable: false
   },
   {
+    name: 'Started date',
+    field: 'started',
+    options: [
+      '--started'
+    ],
+    filterable: false
+  },
+  {
     name: 'Completed date',
     field: 'completed',
     options: [
@@ -136,6 +144,14 @@ const sorterFields = [
     options: [
       '--workload',
       '-w'
+    ],
+    filterable: false
+  },
+  {
+    name: 'Progress',
+    field: 'progress',
+    options: [
+      '--progress'
     ],
     filterable: false
   },

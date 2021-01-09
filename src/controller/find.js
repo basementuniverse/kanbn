@@ -38,6 +38,11 @@ const searchFields = [
     type: 'date'
   },
   {
+    name: 'Started',
+    field: 'started',
+    type: 'date'
+  },
+  {
     name: 'Completed',
     field: 'completed',
     type: 'date'
@@ -46,6 +51,11 @@ const searchFields = [
     name: 'Due',
     field: 'due',
     type: 'date'
+  },
+  {
+    name: 'Progress',
+    field: 'progress',
+    type: 'number'
   },
   {
     name: 'Sub-tasks',
@@ -346,6 +356,16 @@ module.exports = async args => {
       utility.error('Count comments filter value must be numeric', true);
     }
   }
+  if ('workload' in filters){
+    if (!convertNumericFilters(filters, 'workoad')) {
+      utility.error('Workload filter value must be numeric', true);
+    }
+  }
+  if ('progress' in filters){
+    if (!convertNumericFilters(filters, 'progress')) {
+      utility.error('Progress filter value must be numeric', true);
+    }
+  }
 
   // Check date filters
   if ('created' in filters) {
@@ -356,6 +376,11 @@ module.exports = async args => {
   if ('updated' in filters) {
     if (!convertDateFilters(filters, 'updated')) {
       utility.error('Unable to parse updated date', true);
+    }
+  }
+  if ('started' in filters) {
+    if (!convertDateFilters(filters, 'started')) {
+      utility.error('Unable to parse started date', true);
     }
   }
   if ('completed' in filters) {

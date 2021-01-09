@@ -57,7 +57,9 @@ QUnit.test('Search without filters should return all tasks', async assert => {
       relations: [],
       comments: [],
       column: 'Column 1',
-      workload: 2
+      workload: 2,
+      progress: 0,
+      remainingWorkload: 2
     },
     {
       id: 'task-2',
@@ -68,7 +70,9 @@ QUnit.test('Search without filters should return all tasks', async assert => {
       relations: [],
       comments: [],
       column: 'Column 2',
-      workload: 2
+      workload: 2,
+      progress: 0,
+      remainingWorkload: 2
     },
     {
       id: 'task-3',
@@ -79,7 +83,9 @@ QUnit.test('Search without filters should return all tasks', async assert => {
       relations: [],
       comments: [],
       column: 'Column 2',
-      workload: 2
+      workload: 2,
+      progress: 0,
+      remainingWorkload: 2
     }
   ]);
 });

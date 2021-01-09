@@ -35,6 +35,9 @@ module.exports = (() => {
     name: 'Project Name',
     description: '',
     options: {
+      startedColumns: [
+        'In Progress'
+      ],
       completedColumns: [
         'Done'
       ]
@@ -198,6 +201,21 @@ module.exports = (() => {
   }
 
   /**
+   * Check if a task is completed
+   * @param {object} index
+   * @param {object} task
+   * @return {boolean} True if the task is in a completed column or has a completed date
+   */
+  function taskCompleted(index, task) {
+    return (
+      'completed' in task.metadata || (
+        'completedColumns' in index.options &&
+        index.options.completedColumns.indexOf(findTaskColumn(index, task.id)) !== -1
+      )
+    );
+  }
+
+  /**
    * Sort a column in the index
    * @param {object} index The index object
    * @param {object[]} tasks The tasks in the index
@@ -213,6 +231,7 @@ module.exports = (() => {
       ...task.metadata,
       created: 'created' in task.metadata ? task.metadata.created : '',
       updated: 'updated' in task.metadata ? task.metadata.updated : '',
+      started: 'started' in task.metadata ? task.metadata.started : '',
       completed: 'completed' in task.metadata ? task.metadata.completed : '',
       due: 'due' in task.metadata ? task.metadata.due : '',
       assigned: 'assigned' in task.metadata ? task.metadata.assigned : '',
@@ -224,7 +243,8 @@ module.exports = (() => {
       relations: task.relations.map(relation => `${relation.type} ${relation.task}`).join('\n'),
       countComments: task.comments.length,
       comments: task.comments.map(comment => `${comment.author} ${comment.text}`).join('\n'),
-      workload: taskWorkload(index, task)
+      workload: taskWorkload(index, task),
+      progress: taskProgress(index, task)
     }));
 
     // Sort the list of tasks
@@ -370,7 +390,17 @@ module.exports = (() => {
         result = false;
       }
 
-      // Completed
+      // Started date
+      if (
+        'started' in filters && (
+          !('started' in task.metadata) ||
+          !dateFilter(filters.started, task.metadata.started)
+        )
+      ) {
+        result = false;
+      }
+
+      // Completed date
       if (
         'completed' in filters && (
           !('completed' in task.metadata) ||
@@ -386,6 +416,22 @@ module.exports = (() => {
           !('due' in task.metadata) ||
           !dateFilter(filters.due, task.metadata.due)
         )
+      ) {
+        result = false;
+      }
+
+      // Workload
+      if (
+        'workload' in filters &&
+        !numberFilter(filters.workload, taskWorkload(index, task))
+      ) {
+        result = false;
+      }
+
+      // Progress
+      if (
+        'progress' in filters &&
+        !numberFilter(filters.progress, taskProgress(index, task))
       ) {
         result = false;
       }
@@ -576,8 +622,6 @@ module.exports = (() => {
    * @return {number} The task workload
    */
   function taskWorkload(index, task) {
-
-    // Get default workload and workload tags
     const defaultTaskWorkload = 'defaultTaskWorkload' in index.options
       ? index.options.defaultTaskWorkload
       : DEFAULT_TASK_WORKLOAD;
@@ -598,6 +642,19 @@ module.exports = (() => {
       workload = defaultTaskWorkload;
     }
     return workload;
+  }
+
+  /**
+   * Get task progress amount
+   * @param {object} index
+   * @param {object} task
+   * @return {number} Task progress
+   */
+  function taskProgress(index, task) {
+    if (taskCompleted(index, task)) {
+      return 1;
+    }
+    return 'progress' in task.metadata ? task.metadata.progress : 0;
   }
 
   /**
@@ -632,7 +689,7 @@ module.exports = (() => {
    */
   function getWorkloadAtDate(tasks, date) {
     return tasks
-    .filter(task => task.created <= date && task.completed > date)
+    .filter(task => task.started <= date && task.completed > date)
     .reduce((a, task) => a += task.workload, 0);
   }
 
@@ -646,8 +703,9 @@ module.exports = (() => {
    */
   function updateColumnLinkedCustomFields(index, taskData, columnName) {
 
-    // Update built-in column-linked metadata properties first (completed date)
+    // Update built-in column-linked metadata properties first (started and completed dates)
     taskData = updateColumnLinkedCustomField(index, taskData, columnName, 'completed', 'once');
+    taskData = updateColumnLinkedCustomField(index, taskData, columnName, 'started', 'once');
 
     // Update column-linked custom fields
     if ('customFields' in index.options) {
@@ -741,22 +799,21 @@ module.exports = (() => {
      * @return {object} The hydrated task
      */
     hydrateTask(index, task) {
+      const completed = taskCompleted(index, task);
       task.column = findTaskColumn(index, task.id);
       task.workload = taskWorkload(index, task);
+
+      // Add progress information
+      task.progress = taskProgress(index, task);
+      task.remainingWorkload = Math.ceil(task.workload * (1 - task.progress));
 
       // Add due information
       if ('due' in task.metadata) {
         const dueData = {};
 
         // A task is overdue if it's due date is in the past and the task is not in a completed column
-        // or doesn't have a completed date
+        // or doesn't have a completed dates
         const completedDate = 'completed' in task.metadata ? task.metadata.completed : null;
-        const completed = (
-          'completed' in task.metadata || (
-            'completedColumns' in index.options &&
-            index.options.completedColumns.indexOf(task.column) !== -1
-          )
-        );
 
         // Get task due delta - this is the difference between now and the due date, or if the task is completed
         // this is the difference between the completed and due dates
@@ -1425,7 +1482,7 @@ module.exports = (() => {
       // If required, load more detailed task information
       if (!quiet) {
 
-        // Load all tracked tasks and populate each one with workload, column and due data
+        // Load all tracked tasks and hydrate them
         const tasks = [...await this.loadAllTrackedTasks(index)].map(task => this.hydrateTask(index, task));
 
         // If showing due information, calculate time remaining or overdue time for each task
@@ -1435,6 +1492,9 @@ module.exports = (() => {
             if ('dueData' in task) {
               result.dueTasks.push({
                 task: task.id,
+                workload: task.workload,
+                progress: task.progress,
+                remainingWorkload: task.remainingWorkload,
                 ...task.dueData
               });
             }
@@ -1442,18 +1502,29 @@ module.exports = (() => {
         }
 
         // Calculate total and per-column workload
-        let totalWorkload = 0;
+        let totalWorkload = 0, totalRemainingWorkload = 0;
         const columnWorkloads = tasks.reduce(
           (a, task) => {
             totalWorkload += task.workload;
-            a[task.column] += task.workload;
+            totalRemainingWorkload += task.remainingWorkload;
+            a[task.column].workload += task.workload;
+            a[task.column].remainingWorkload += task.remainingWorkload;
             return a;
           },
-          Object.fromEntries(columnNames.map(columnName => [columnName, 0]))
+          Object.fromEntries(columnNames.map(columnName => [columnName, {
+            workload: 0,
+            remainingWorkload: 0
+          }]))
         );
         result.totalWorkload = totalWorkload;
+        result.totalRemainingWorkload = totalRemainingWorkload;
         result.columnWorkloads = columnWorkloads;
-        result.taskWorkloads = Object.fromEntries(tasks.map(task => [task.id, task.workload]));
+        result.taskWorkloads = Object.fromEntries(tasks.map(task => [task.id, {
+          workload: task.workload,
+          progress: task.progress,
+          remainingWorkload: task.remainingWorkload,
+          completed: taskCompleted(index, task)
+        }]));
 
         // Calculate assigned task totals and workloads
         const assignedTasks = tasks.reduce(
@@ -1462,11 +1533,13 @@ module.exports = (() => {
               if (!(task.metadata.assigned in a)) {
                 a[task.metadata.assigned] = {
                   total: 0,
-                  workload: 0
+                  workload: 0,
+                  remainingWorkload: 0
                 };
               }
               a[task.metadata.assigned].total++;
               a[task.metadata.assigned].workload += task.workload;
+              a[task.metadata.assigned].remainingWorkload += task.remainingWorkload;
             }
             return a;
           },
@@ -1534,6 +1607,7 @@ module.exports = (() => {
 
           // Add task workload information for the sprint
           result.sprint.created = taskWorkloadInPeriod(tasks, 'created', sprintStartDate, sprintEndDate);
+          result.sprint.started = taskWorkloadInPeriod(tasks, 'started', sprintStartDate, sprintEndDate);
           result.sprint.completed = taskWorkloadInPeriod(tasks, 'completed', sprintStartDate, sprintEndDate);
           result.sprint.due = taskWorkloadInPeriod(tasks, 'due', sprintStartDate, sprintEndDate);
 
@@ -1568,6 +1642,7 @@ module.exports = (() => {
             result.period.end = periodEnd = new Date(Math.max(...dates));
           }
           result.period.created = taskWorkloadInPeriod(tasks, 'created', periodStart, periodEnd);
+          result.period.started = taskWorkloadInPeriod(tasks, 'started', periodStart, periodEnd);
           result.period.completed = taskWorkloadInPeriod(tasks, 'completed', periodStart, periodEnd);
           result.period.due = taskWorkloadInPeriod(tasks, 'due', periodStart, periodEnd);
 
@@ -1746,19 +1821,24 @@ module.exports = (() => {
       // Get index and tasks
       const index = await this.loadIndex();
       const tasks = [...await this.loadAllTrackedTasks(index)]
-      .map(task => ({
-        ...task,
-        created: 'created' in task.metadata ? task.metadata.created : new Date(0),
-        completed: 'completed' in task.metadata
-          ? task.metadata.completed
-          : (
-            'completedColumns' in index.options &&
-            index.options.completedColumns.indexOf(task.column) !== -1
-          ) ? new Date(0) : new Date(8640000000000000),
-        assigned: 'assigned' in task.metadata ? task.metadata.assigned : null,
-        workload: taskWorkload(index, task),
-        column: findTaskColumn(index, task.id)
-      }))
+      .map(task => {
+        const created = 'created' in task.metadata ? task.metadata.created : new Date(0);
+        return {
+          ...task,
+          created,
+          started: 'started' in task.metadata ? task.metadata.started : created,
+          completed: 'completed' in task.metadata
+            ? task.metadata.completed
+            : (
+              'completedColumns' in index.options &&
+              index.options.completedColumns.indexOf(task.column) !== -1
+            ) ? created : false,
+          progress: taskProgress(index, task),
+          assigned: 'assigned' in task.metadata ? task.metadata.assigned : null,
+          workload: taskWorkload(index, task),
+          column: findTaskColumn(index, task.id)
+        };
+      })
       .filter(task => (
         (assigned === null || task.assigned === assigned) &&
         (columns === null || columns.indexOf(task.column) !== -1)
@@ -1785,7 +1865,8 @@ module.exports = (() => {
               t => [
                 'created' in t.metadata && t.metadata.created,
                 'updated' in t.metadata && t.metadata.updated,
-                'completed' in t.metadata && t.metadata.completed,
+                'started' in t.metadata && t.metadata.started,
+                'completed' in t.metadata && (t.metadata.completed || new Date(8640000000000000)),
                 'due' in t.metadata && t.metadata.due
               ].filter(d => d)
             ).flat())),
@@ -1851,8 +1932,8 @@ module.exports = (() => {
           },
           ...tasks
           .map(task => [
-            task.created > s.from && task.created < s.to && task.created,
-            task.completed > s.from && task.completed < s.to && task.completed
+            task.started >= s.from && task.started <= s.to && task.started,
+            task.completed >= s.from && task.completed <= s.to && task.completed
           ])
           .flat()
           .filter(d => d)

@@ -18,7 +18,8 @@
       "remove-tag",
       "relation",
       "remove-relation",
-      "due"
+      "due",
+      "progress"
     ],
     "alias": {
       "interactive": ["i"],

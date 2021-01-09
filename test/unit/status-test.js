@@ -154,25 +154,57 @@ QUnit.test('Status non-quiet should show more status information', async assert 
       'Column 3': 2
     },
     totalWorkload: 19,
+    totalRemainingWorkload: 19,
     columnWorkloads: {
-      'Column 1': 2,
-      'Column 2': 4,
-      'Column 3': 13
+      'Column 1': {
+        workload: 2,
+        remainingWorkload: 2
+      },
+      'Column 2': {
+        workload: 4,
+        remainingWorkload: 4
+      },
+      'Column 3': {
+        workload: 13,
+        remainingWorkload: 13
+      }
     },
     taskWorkloads: {
-      'task-1': 2,
-      'task-2': 4,
-      'task-3': 5,
-      'task-4': 8
+      'task-1': {
+        workload: 2,
+        progress: 0,
+        remainingWorkload: 2,
+        completed: false
+      },
+      'task-2': {
+        workload: 4,
+        progress: 0,
+        remainingWorkload: 4,
+        completed: false
+      },
+      'task-3': {
+        workload: 5,
+        progress: 0,
+        remainingWorkload: 5,
+        completed: false
+      },
+      'task-4': {
+        workload: 8,
+        progress: 0,
+        remainingWorkload: 8,
+        completed: false
+      }
     },
     assigned: {
       'User 1': {
         total: 2,
-        workload: 6
+        workload: 6,
+        remainingWorkload: 6
       },
       'User 2': {
         total: 2,
-        workload: 13
+        workload: 13,
+        remainingWorkload: 13
       }
     }
   });
@@ -259,32 +291,77 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       'Column 3': 3
     },
     totalWorkload: 22,
+    totalRemainingWorkload: 6,
     columnWorkloads: {
-      'Column 1': 2,
-      'Column 2': 5,
-      'Column 3': 15
+      'Column 1': {
+        workload: 2,
+        remainingWorkload: 2
+      },
+      'Column 2': {
+        workload: 5,
+        remainingWorkload: 4
+      },
+      'Column 3': {
+        workload: 15,
+        remainingWorkload: 0
+      }
     },
     taskWorkloads: {
-      'task-1': 2,
-      'task-2': 4,
-      'task-3': 5,
-      'task-4': 8,
-      'task-5': 1,
-      'task-6': 2
+      'task-1': {
+        workload: 2,
+        progress: 0,
+        remainingWorkload: 2,
+        completed: false
+      },
+      'task-2': {
+        workload: 4,
+        progress: 0,
+        remainingWorkload: 4,
+        completed: false
+      },
+      'task-3': {
+        workload: 5,
+        progress: 1,
+        remainingWorkload: 0,
+        completed: true
+      },
+      'task-4': {
+        workload: 8,
+        progress: 1,
+        remainingWorkload: 0,
+        completed: true
+      },
+      'task-5': {
+        workload: 1,
+        progress: 1,
+        remainingWorkload: 0,
+        completed: true
+      },
+      'task-6': {
+        workload: 2,
+        progress: 1,
+        remainingWorkload: 0,
+        completed: true
+      }
     },
     assigned: {
       'User 1': {
         total: 4,
-        workload: 9
+        workload: 9,
+        remainingWorkload: 6
       },
       'User 2': {
         total: 2,
-        workload: 13
+        workload: 13,
+        remainingWorkload: 0
       }
     },
     dueTasks: [
       {
         task: 'task-1',
+        workload: 2,
+        progress: 0,
+        remainingWorkload: 2,
         completed: false,
         completedDate: null,
         dueDate: new Date('2000-01-01T00:00:00.000Z'),
@@ -294,6 +371,9 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       },
       {
         task: 'task-2',
+        workload: 4,
+        progress: 0,
+        remainingWorkload: 4,
         completed: false,
         completedDate: null,
         dueDate: new Date('2000-01-03T00:00:00.000Z'),
@@ -303,6 +383,9 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       },
       {
         task: 'task-5',
+        workload: 1,
+        progress: 1,
+        remainingWorkload: 0,
         completed: true,
         completedDate: new Date('2000-01-01T22:00:00.000Z'),
         dueDate: new Date('2000-01-01T22:30:00.000Z'),
@@ -312,6 +395,9 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       },
       {
         task: 'task-3',
+        workload: 5,
+        progress: 1,
+        remainingWorkload: 0,
         completed: true,
         completedDate: null,
         dueDate: new Date('2000-01-01T22:30:00.000Z'),
@@ -321,6 +407,9 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       },
       {
         task: 'task-6',
+        workload: 2,
+        progress: 1,
+        remainingWorkload: 0,
         completed: true,
         completedDate: null,
         dueDate: new Date('2000-01-02T02:00:00.000Z'),
@@ -358,6 +447,7 @@ QUnit.test('Status non-quiet with sprints defined should show sprint information
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
+          started: new Date('16 December 1999 01:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT'),
           test: new Date('17 December 1999 00:00:00 GMT')
         }
@@ -427,6 +517,16 @@ QUnit.test('Status non-quiet with sprints defined should show sprint information
       ],
       workload: 13
     },
+    started: {
+      tasks: [
+        {
+          id: 'task-3',
+          column: 'Column 3',
+          workload: 5
+        }
+      ],
+      workload: 5
+    },
     completed: {
       tasks: [
         {
@@ -494,6 +594,7 @@ QUnit.test('Status non-quiet with specific sprint by number', async assert => {
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
+          started: new Date('16 December 1999 01:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT')
         }
       },
@@ -558,6 +659,10 @@ QUnit.test('Status non-quiet with specific sprint by number', async assert => {
       ],
       workload: 5
     },
+    started: {
+      tasks: [],
+      workload: 0
+    },
     completed: {
       tasks: [
         {
@@ -605,6 +710,7 @@ QUnit.test('Status non-quiet with specific sprint by name', async assert => {
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
+          started: new Date('16 December 1999 01:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT')
         }
       },
@@ -669,6 +775,10 @@ QUnit.test('Status non-quiet with specific sprint by name', async assert => {
       ],
       workload: 5
     },
+    started: {
+      tasks: [],
+      workload: 0
+    },
     completed: {
       tasks: [
         {
@@ -716,6 +826,7 @@ QUnit.test('Status non-quiet with single date', async assert => {
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
+          started: new Date('16 December 1999 01:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT')
         }
       },
@@ -747,6 +858,16 @@ QUnit.test('Status non-quiet with single date', async assert => {
     start: new Date('16 December 1999 00:00:00 GMT'),
     end: new Date('16 December 1999 23:59:59:999 GMT'),
     created: {
+      tasks: [
+        {
+          id: 'task-3',
+          column: 'Column 3',
+          workload: 5
+        }
+      ],
+      workload: 5
+    },
+    started: {
       tasks: [
         {
           id: 'task-3',
@@ -791,6 +912,7 @@ QUnit.test('Status non-quiet with date range', async assert => {
         metadata: {
           tags: ['Large'],
           created: new Date('16 December 1999 00:00:00 GMT'),
+          started: new Date('16 December 1999 01:00:00 GMT'),
           completed: new Date('17 December 1999 00:00:00 GMT')
         }
       },
@@ -838,6 +960,16 @@ QUnit.test('Status non-quiet with date range', async assert => {
         }
       ],
       workload: 13
+    },
+    started: {
+      tasks: [
+        {
+          id: 'task-3',
+          column: 'Column 3',
+          workload: 5
+        }
+      ],
+      workload: 5
     },
     completed: {
       tasks: [

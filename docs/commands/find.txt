@@ -38,6 +38,11 @@ Options:
     This option can be repeated - if multiple dates are specified, find tasks that were updated between the earliest and latest dates.
     The date can be in (almost) any format.
 
+  {b}kanbn find --started "date"{b}
+    Find tasks that have a started date that matches the specified date. The time part of the date will be ignored, unless searching between multiple dates.
+    This option can be repeated - if multiple dates are specified, find tasks that were started between the earliest and latest dates.
+    The date can be in (almost) any format.
+
   {b}kanbn find --completed "date"{b}
     Find tasks that have a completed date that matches the specified date. The time part of the date will be ignored, unless searching between multiple dates.
     This option can be repeated - if multiple dates are specified, find tasks that were completed between the earliest and latest dates.

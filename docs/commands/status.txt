@@ -29,7 +29,7 @@ Options:
 
   {b}kanbn status --date "date"{b}
   {b}kanbn status -d "date"{b}
-    Show created/completed workload for a specific date. The time part of the date will be ignored, unless searching between multiple dates.
-    This option can be repeated - if multiple dates are specified, show created/completed workload for tasks created/completed between the earliest and latest dates.
+    Show task workloads for a specific date. The time part of the date will be ignored, unless searching between multiple dates.
+    This option can be repeated - if multiple dates are specified, show task workloads for tasks between the earliest and latest dates.
     The date can be in (almost) any format.
     This option will be ignored if the --quiet or --sprint options are set.

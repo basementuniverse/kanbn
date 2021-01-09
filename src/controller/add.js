@@ -316,6 +316,15 @@ module.exports = async args => {
     }
   }
 
+  // Progress
+  if (args.progress) {
+    const progressValue = parseFloat(utility.strArg(args.progress));
+    if (isNaN(progressValue)) {
+      utility.error('Progress value is not a number');
+    }
+    taskData.metadata.progress = progressValue;
+  }
+
   // Assigned
   if (args.assigned) {
     const gitUsername = getGitUsername();

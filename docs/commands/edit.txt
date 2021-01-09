@@ -50,3 +50,9 @@ Options:
     Examples:
       "blocks my-task-1"
       "duplicates my-task-2"
+
+  {b}kanbn edit --<custom field name> <value>{b}
+    Add or modify a custom metadata field.
+
+  {b}kanbn edit --remove-<custom field name>{b}
+    Remove a custom metadata field.

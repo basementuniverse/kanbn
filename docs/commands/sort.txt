@@ -43,6 +43,9 @@ Options:
   {b}kanbn sort --updated{b}
     Sort tasks by updated date.
 
+  {b}kanbn sort --started{b}
+    Sort tasks by started date.
+
   {b}kanbn sort --completed{b}
     Sort tasks by completed date.
 

@@ -43,6 +43,9 @@ Options:
       "blocks my-task-1"
       "duplicates my-task-2"
 
+  {b}kanbn add --<custom field name> <value>{b}
+    Create a new task with a custom metadata field.
+
   {b}kanbn add --untracked{b}
   {b}kanbn add -u{b}
     Find all untracked tasks and add them to the index. If a column name is not specified, the tasks will be added to the first column.
