@@ -4,7 +4,6 @@ const marked = require('marked');
 const utility = require('./utility');
 const chrono = require('chrono-node');
 const validate = require('jsonschema').validate;
-const { date } = require('faker');
 
 /**
  * Recursively construct a description string from different levels of headings in the data object
