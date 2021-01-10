@@ -438,10 +438,8 @@ module.exports = (() => {
 
       // Assigned
       if (
-        'assigned' in filters && (
-          !('assigned' in task.metadata) ||
-          !stringFilter(filters.assigned, task.metadata.assigned)
-        )
+        'assigned' in filters &&
+        !stringFilter(filters.assigned, 'assigned' in task.metadata ? task.metadata.assigned : '')
       ) {
         result = false;
       }
