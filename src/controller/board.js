@@ -21,15 +21,10 @@ module.exports = async args => {
     utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
   }
 
-  // If not showing the board quietly, load all tracked tasks
-  let tasks = null;
-  if (!args.quiet) {
-
-    // Load and hydrate all tracked tasks
-    tasks = (await kanbn.loadAllTrackedTasks(index)).map(
-      task => kanbn.hydrateTask(index, task)
-    );
-  }
+  // Load and hydrate all tracked tasks
+  const tasks = (await kanbn.loadAllTrackedTasks(index)).map(
+    task => kanbn.hydrateTask(index, task)
+  );
 
   // Show the board
   board

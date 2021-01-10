@@ -100,6 +100,7 @@ function validateOptions(options) {
           type: 'object',
           properties: {
             'name': { type: 'string' },
+            'filters': { type: 'object' },
             'columns': {
               type: 'array',
               items: {
@@ -125,8 +126,10 @@ function validateOptions(options) {
                       required: ['field']
                     }
                   }
-                }
-              }
+                },
+                required: ['name']
+              },
+              minItems: 1
             },
             'lanes': {
               type: 'array',
@@ -135,10 +138,12 @@ function validateOptions(options) {
                 properties: {
                   'name': { type: 'string' },
                   'filters': { type: 'object' }
-                }
+                },
+                required: ['name']
               }
             }
-          }
+          },
+          required: ['name']
         }
       }
     }

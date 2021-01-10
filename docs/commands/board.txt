@@ -4,10 +4,6 @@
 Show the kanbn board.
 
 Options:
-  {b}kanbn board --quiet{b}
-  {b}kanbn board -q{b}
-    Show only the task ids in each column.
-
   {b}kanbn board --view "view"{b}
   {b}kanbn board -v "view"{b}
     Show the specified board view.

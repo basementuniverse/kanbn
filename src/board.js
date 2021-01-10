@@ -63,76 +63,72 @@ module.exports = (() => {
     /**
      * Show the kanbn board
      * @param {object} index The index object
-     * @param {?object[]} [tasks=null] An array of task objects, if this is null then only show task ids
+     * @param {object[]} tasks An array of task objects
      * @param {?string} [view=null] The view to show, or null to show the default view
      */
-    async show(index, tasks = null, view = null) {
-
-      // If we have an array of pre-loaded tasks, transform each task using a template string
-      if (tasks !== null) {
-        tasks = Object.fromEntries(tasks.map(task => [
-          task.id,
-          getTaskString(index, task)
-        ]));
-
-      // Otherwise we're only showing task ids, so get all task ids from the index
-      } else {
-        tasks = Object.fromEntries(Object.values(index.columns).flat().map(taskId => [taskId, taskId]));
-
-        // Views are unavailable when only showing task ids
-        view = null;
-      }
-
-      // Prepare table headings and content
+    async show(index, tasks, view = null) {
       const table = [];
 
-      // Check if we're showing a filtered view
+      // Get view settings
+      let viewSettings = {};
       if (view !== null) {
 
         // Make sure the view exists
-        let viewSettings;
         if (
-          'views' in index.options &&
-          (viewSettings = index.options.views.find(v => v.name === view)) !== undefined
+          !('views' in index.options) ||
+          (viewSettings = index.options.views.find(v => v.name === view)) === undefined
         ) {
-          const headings = [];
-          headings.push(...viewSettings.columns.map(column => getColumnHeading(column.name)));
-
-          const cells = [];
-          for (let lane of viewSettings.lanes) {
-            const columns = [];
-            for (let column of viewSettings.columns) {
-              const cellTasks = kanbn.filterAndSortTasks(
-                index,
-                tasks,
-                { ...column.filters, ...lane.filters },
-                column.sorters
-              );
-              columns.push(cellTasks.map(task => tasks[task.id]).join(TASK_SEPARATOR));
-            }
-            cells.push([lane.name]);
-            cells.push(columns);
-          }
-          table.push(headings, cells);
-        } else {
           throw new Error(`No view found with name "${view}"`);
         }
+      }
 
-      // Otherwise show the basic columns and all tasks defined in the index
-      } else {
-        const headings = [];
+      // Make sure there is a list of columns in the view settings
+      if (!('columns' in viewSettings)) {
+        viewSettings.columns = Object.keys(index.columns)
+          .filter(columnName => (
+            !('hiddenColumns' in index.options) ||
+            index.options.hiddenColumns.indexOf(columnName) === -1
+          ))
+          .map(columnName => ({
+            name: columnName,
+            filters: {
+              column: columnName
+            }
+          }));
+      }
+
+      // Make sure there is a list of lanes in the view settings
+      if (!('lanes' in viewSettings) || viewSettings.lanes.length === 0) {
+        viewSettings.lanes = [{
+          name: 'All tasks'
+        }];
+      }
+
+      // If a root-level filter is defined, apply it to the tasks
+      if ('filters' in viewSettings) {
+        tasks = kanbn.filterAndSortTasks(index, tasks, viewSettings.filters, []);
+      }
+
+      // Add column headings
+      table.push(viewSettings.columns.map(column => getColumnHeading(index, column.name)));
+
+      // Add lanes and column contents
+      for (let lane of viewSettings.lanes) {
         const columns = [];
-        for (let [columnName, columnTasks] of Object.entries(index.columns)) {
-          if (
-            'hiddenColumns' in index.options &&
-            index.options.hiddenColumns.indexOf(columnName) !== -1
-          ) {
-            continue;
-          }
-          headings.push(getColumnHeading(index, columnName));
-          columns.push(columnTasks.map(taskId => tasks[taskId]).join(TASK_SEPARATOR));
+        for (let column of viewSettings.columns) {
+          const cellTasks = kanbn.filterAndSortTasks(
+            index,
+            tasks,
+            {
+              ...('filters' in column ? column.filters : {}),
+              ...('filters' in lane ? lane.filters : {})
+            },
+            'sorters' in column ? column.sorters : []
+          );
+          columns.push(cellTasks.map(task => getTaskString(index, task)).join(TASK_SEPARATOR));
         }
-        table.push(headings, columns);
+        table.push([lane.name]);
+        table.push(columns);
       }
 
       // Display as a table

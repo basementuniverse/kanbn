@@ -5,15 +5,11 @@
     "b"
   ],
   "args": {
-    "boolean": [
-      "quiet"
-    ],
     "string": [
       "view"
     ],
     "alias": {
-      "view": ["v"],
-      "quiet": ["q"]
+      "view": ["v"]
     }
   },
   "controller": "./src/controller/board",

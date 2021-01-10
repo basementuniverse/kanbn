@@ -54,8 +54,11 @@ module.exports = async args => {
   .burndown(sprints, dates, assigned, columns)
   .then(data => {
     if (args.json) {
+
+      // Output raw data
       console.log(JSON.stringify(data, null, 2));
     } else {
+
       // Render chart
       const PADDING = '     ';
       const width = term.width - (PADDING.length + 1);
