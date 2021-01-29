@@ -7,3 +7,7 @@ Options:
   {b}kanbn board --view "view"{b}
   {b}kanbn board -v "view"{b}
     Show the specified board view.
+
+  {b}kanbn board --json{b}
+  {b}kanbn board -j{b}
+    Output raw data instead of rendering the board. The data will be returned in JSON format.

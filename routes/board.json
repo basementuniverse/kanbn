@@ -5,11 +5,15 @@
     "b"
   ],
   "args": {
+    "boolean": [
+      "json"
+    ],
     "string": [
       "view"
     ],
     "alias": {
-      "view": ["v"]
+      "view": ["v"],
+      "json": ["j"]
     }
   },
   "controller": "./src/controller/board",

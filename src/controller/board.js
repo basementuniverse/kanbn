@@ -28,7 +28,7 @@ module.exports = async args => {
 
   // Show the board
   board
-  .show(index, tasks, args.view)
+  .show(index, tasks, args.view, args.json)
   .catch(error => {
     utility.error(error, true);
   });

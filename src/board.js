@@ -65,11 +65,10 @@ module.exports = (() => {
      * @param {object} index The index object
      * @param {object[]} tasks An array of task objects
      * @param {?string} [view=null] The view to show, or null to show the default view
+     * @param {boolean} [json=false] Show JSON output
      */
-    async show(index, tasks, view = null) {
-      const table = [];
-
-      // Get view settings
+    async show(index, tasks, view = null, json = false) {
+      const board = {};
       let viewSettings = {};
       if (view !== null) {
 
@@ -82,7 +81,7 @@ module.exports = (() => {
         }
       }
 
-      // Make sure there is a list of columns in the view settings
+      // Check if there is a list of columns in the view settings
       if (!('columns' in viewSettings)) {
         viewSettings.columns = Object.keys(index.columns)
           .filter(columnName => (
@@ -97,7 +96,7 @@ module.exports = (() => {
           }));
       }
 
-      // Make sure there is a list of lanes in the view settings
+      // Check if there is a list of lanes in the view settings
       if (!('lanes' in viewSettings) || viewSettings.lanes.length === 0) {
         viewSettings.lanes = [{
           name: 'All tasks'
@@ -109,10 +108,14 @@ module.exports = (() => {
         tasks = kanbn.filterAndSortTasks(index, tasks, viewSettings.filters, []);
       }
 
-      // Add column headings
-      table.push(viewSettings.columns.map(column => getColumnHeading(index, column.name)));
+      // Add columns
+      board.headings = viewSettings.columns.map(column => ({
+        name: column.name,
+        heading: getColumnHeading(index, column.name)
+      }));
 
       // Add lanes and column contents
+      board.lanes = [];
       for (let lane of viewSettings.lanes) {
         const columns = [];
         for (let column of viewSettings.columns) {
@@ -125,11 +128,26 @@ module.exports = (() => {
             },
             'sorters' in column ? column.sorters : []
           );
-          columns.push(cellTasks.map(task => getTaskString(index, task)).join(TASK_SEPARATOR));
+          columns.push(cellTasks);
         }
-        table.push([lane.name]);
-        table.push(columns);
+        board.lanes.push({
+          name: lane.name,
+          columns
+        });
       }
+
+      if (json) {
+        console.log(JSON.stringify(board, null, 2));
+        return;
+      }
+
+      // Prepare table
+      const table = [];
+      table.push(board.headings.map(heading => heading.heading));
+      board.lanes.forEach(lane => table.push(
+        [lane.name],
+        lane.columns.map(column => column.map(task => getTaskString(index, task)).join(TASK_SEPARATOR))
+      ));
 
       // Display as a table
       term.table(
