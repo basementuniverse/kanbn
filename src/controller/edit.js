@@ -480,15 +480,18 @@ module.exports = async args => {
     });
 
     // Add or update
-    for (let subTask of taskData.subTasks) {
+    for (let newSubTask of newSubTasks) {
 
-      // If this new sub-task isn't already in the task, add it to the task
-      if (newSubTasks.find(newSubTask => newSubTask.text === subTask.text) === undefined) {
+      // Check if a sub-task already exists in the task with matching text
+      const foundSubTask = taskData.subTasks.find(subTask => subTask.text === newSubTask.text);
+      if (foundSubTask === undefined) {
+
+        // The sub-task doesn't already exist
         taskData.subTasks.push(newSubTask);
 
-      // Otherwise, update the existing sub-task completed status
+      // Otherwise, the sub-task already exists so update its completed status
       } else {
-        subTask.completed = newSubTask.completed;
+        foundSubTask.completed = newSubTask.completed;
       }
     }
   }
@@ -547,15 +550,18 @@ module.exports = async args => {
     });
 
     // Add or update
-    for (let relation of taskData.relations) {
+    for (let newRelation of newRelations) {
 
-      // If this new relation isn't already in the task, add it to the task
-      if (newRelations.find(newRelation => newRelation.task === relation.task) === undefined) {
+      // Check if a relation already exists in the task with matching task id
+      const foundRelation = taskData.relations.find(relation => relation.task === newRelation.task);
+      if (foundRelation === undefined) {
+
+        // The relation doesn't already exist
         taskData.relations.push(newRelation);
 
-      // Otherwise, update the existing relation type
+      // Otherwise, the relation already exists so update its relation type
       } else {
-        relation.type = newRelation.type;
+        foundRelation.type = newRelation.type;
       }
     }
   }
