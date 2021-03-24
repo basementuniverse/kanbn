@@ -54,6 +54,7 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@types/typescript": "^2.0.0",
     "capture-stdout": "^1.0.0",
     "faker": "^5.1.0",
     "mock-argv": "^1.1.10",
