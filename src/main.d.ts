@@ -1,5 +1,54 @@
 /// <reference types="typescript" />
 
+declare type index = {
+  name: string,
+  description: string,
+  options: Record<string, any>,
+  columns: Record<string, string[]>
+};
+
+declare type subTask = {
+  text: string,
+  completed: boolean
+};
+
+declare type relation = {
+  task: string,
+  type: string
+};
+
+declare type comment = {
+  text: string,
+  author: string,
+  date: Date
+};
+
+declare type task = {
+  id: string,
+  name: string,
+  description: string,
+  metadata: Record<string, any>,
+  subTasks: subTask[],
+  relations: relation[],
+  comments: comment[],
+  column?: string,
+  workload?: number,
+  progress?: number,
+  remainingWorkload?: number,
+  due?: Record<string, any>
+};
+
+declare type status = {
+  tasks: number,
+  columnTasks: Record<string, number>
+};
+
+declare type sprint = {
+  start: Date,
+  name: string,
+  description?: string
+};
+
 /**
  * Get the kanbn folder location for the current working directory
  * @return {string} The kanbn folder path
@@ -8,34 +57,34 @@ export function getMainFolder(): string;
 
 /**
  * Get the index as an object
- * @return {Promise<object>} The index
+ * @return {Promise<index>} The index
  */
-export function getIndex(): Promise<object>;
+export function getIndex(): Promise<index>;
 
 /**
  * Get a task as an object
  * @param {string} taskId The task id to get
- * @return {Promise<object>} The task
+ * @return {Promise<task>} The task
  */
-export function getTask(taskId: string): Promise<object>;
+export function getTask(taskId: string): Promise<task>;
 
 /**
  * Add additional index-based information to a task
- * @param {object} index The index object
- * @param {object} task The task object
- * @return {object} The hydrated task
+ * @param {index} index The index object
+ * @param {task} task The task object
+ * @return {task} The hydrated task
  */
-export function hydrateTask(index: object, task: object): object;
+export function hydrateTask(index: index, task: task): task;
 
 /**
  * Return a filtered and sorted list of tasks
- * @param {object} index
- * @param {object[]} tasks
+ * @param {index} index
+ * @param {task[]} tasks
  * @param {object} filters
  * @param {object[]} sorters
- * @return {object[]}
+ * @return {task[]}
  */
-export function filterAndSortTasks(index: object, tasks: object[], filters: object, sorters: object[]): object[];
+export function filterAndSortTasks(index: index, tasks: task[], filters: object, sorters: object[]): task[];
 
 /**
  * Overwrite the index file with the specified data
@@ -46,9 +95,9 @@ export function saveIndex(indexData: object): Promise<void>;
 
 /**
  * Load the index file and parse it to an object
- * @return {Promise<object>}
+ * @return {Promise<index>}
  */
-export function loadIndex(): Promise<object>;
+export function loadIndex(): Promise<index>;
 
 /**
  * Overwrite a task file with the specified data
@@ -60,30 +109,31 @@ export function saveTask(path: string, taskData: object): Promise<void>;
 /**
  * Load a task file and parse it to an object
  * @param {Promise<void>} taskId
+ * @return {Promise<task>}
  */
-export function loadTask(taskId: string): Promise<void>;
+export function loadTask(taskId: string): Promise<task>;
 
 /**
  * Load all tracked tasks and return an array of task objects
- * @param {object} index The index object
+ * @param {index} index The index object
  * @param {?string} [columnName=null] The optional column name to filter tasks by
- * @return {Promise<object[]>} All tracked tasks
+ * @return {Promise<task[]>} All tracked tasks
  */
-export function loadAllTrackedTasks(index: object, columnName?: string|null): Promise<object[]>;
+export function loadAllTrackedTasks(index: index, columnName?: string|null): Promise<task[]>;
 
 /**
  * Get the date format defined in the index, or the default date format
- * @param {object} index
+ * @param {index} index
  * @return {string}
  */
-export function getDateFormat(index: object): string;
+export function getDateFormat(index: index): string;
 
 /**
  * Get the task template for displaying tasks on the kanbn board from the index, or the default task template
- * @param {object} index
+ * @param {index} index
  * @return {string}
  */
-export function getTaskTemplate(index: object): string;
+export function getTaskTemplate(index: index): string;
 
 /**
  * Check if the current working directory has been initialised
@@ -191,7 +241,7 @@ export function search(filters?: object, quiet?: boolean): Promise<object[]>;
  * @param {boolean} [due=false] Show information about overdue tasks and time remaining
  * @param {?string|?number} [sprint=null] The sprint name or number to show stats for, or null for current sprint
  * @param {?Date[]} [dates=null] The date(s) to show stats for, or null for no date filter
- * @return {Promise<object>} Project status information as an object
+ * @return {Promise<status>} Project status information as an object
  */
 export function status(
   quiet?: boolean,
@@ -199,7 +249,7 @@ export function status(
   due?: boolean,
   sprint?: string|number|null,
   dates?: Date[]|null
-): Promise<object>;
+): Promise<status>;
 
 /**
  * Validate the index and task files
@@ -222,9 +272,9 @@ export function sort(columnName: string, sorters: object[], save?: boolean): Pro
  * @param {string} name Sprint name
  * @param {string} description Sprint description
  * @param {Date} start Sprint start date
- * @return {Promise<object>} The sprint object
+ * @return {Promise<sprint>} The sprint object
  */
-export function sprint(name: string, description: string, start: Date): Promise<object>;
+export function sprint(name: string, description: string, start: Date): Promise<sprint>;
 
 /**
  * Output burndown chart data

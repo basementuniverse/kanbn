@@ -923,6 +923,7 @@ module.exports = (() => {
     /**
      * Load a task file and parse it to an object
      * @param {string} taskId
+     * @return {Promise<object>}
      */
     async loadTask(taskId) {
       const TASK = path.join(TASK_FOLDER, addFileExtension(taskId));
