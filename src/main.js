@@ -1477,6 +1477,18 @@ module.exports = (() => {
         columnName,
         index.columns[columnName].length
       ]));
+      if ('startedColumns' in index.options && index.options.startedColumns.length > 0) {
+        result.startedTasks = Object
+          .entries(index.columns)
+          .filter(c => index.options.startedColumns.indexOf(c[0]) > -1)
+          .reduce((a, c) => a + c[1].length, 0);
+      }
+      if ('completedColumns' in index.options && index.options.completedColumns.length > 0) {
+        result.completedTasks = Object
+          .entries(index.columns)
+          .filter(c => index.options.completedColumns.indexOf(c[0]) > -1)
+          .reduce((a, c) => a + c[1].length, 0);
+      }
 
       // If required, load more detailed task information
       if (!quiet) {

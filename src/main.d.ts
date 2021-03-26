@@ -40,7 +40,9 @@ declare type task = {
 
 declare type status = {
   tasks: number,
-  columnTasks: Record<string, number>
+  columnTasks: Record<string, number>,
+  startedTasks?: number,
+  completedTasks?: number
 };
 
 declare type sprint = {

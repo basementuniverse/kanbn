@@ -290,6 +290,7 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       'Column 2': 2,
       'Column 3': 3
     },
+    completedTasks: 3,
     totalWorkload: 22,
     totalRemainingWorkload: 6,
     columnWorkloads: {
