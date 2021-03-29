@@ -1,7 +1,7 @@
 {b}kanbn move "task-id"{b}
 {b}kanbn mv "task-id"{b}
 
-Move an existing task to a different column in the index. The task 'updated' date will also be set.
+Move an existing task to a different column or position. The task 'updated' date will also be set.
 
 Options:
   {b}kanbn move "task-id" --interactive{b}
@@ -10,11 +10,11 @@ Options:
 
   {b}kanbn move "task-id" --column "column"{b}
   {b}kanbn move "task-id" -c "column"{b}
-    Move the task to this column in the index. This option is required if not moving a task interactively.
+    Move the task to this column in the index. If this option is not specified, the task will remain in its current column.
 
   {b}kanbn move "task-id" --position N{b}
   {b}kanbn move "task-id" -p N{b}
-    Move the task to a specific position in the target column.
+    Move the task to a specific position in the target column. If this option is not specified, the task will be moved to the end of the target column.
 
   {b}kanbn move "task-id" --position N --relative{b}
   {b}kanbn move "task-id" --position N -r{b}
