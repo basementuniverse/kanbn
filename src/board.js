@@ -32,7 +32,7 @@ module.exports = (() => {
       workload: task.workload,
       progress: task.progress
     };
-    return new Function(...Object.keys(taskData), 'return `' + taskTemplate + '`;')(...Object.values(taskData));
+    return new Function(...Object.keys(taskData), 'return `^:' + taskTemplate + '`;')(...Object.values(taskData));
   }
 
   /**
@@ -42,7 +42,7 @@ module.exports = (() => {
    * @return {string} The column heading
    */
   function getColumnHeading(index, columnName) {
-    let heading = '';
+    let heading = '^:';
     if (
       'completedColumns' in index.options &&
       index.options.completedColumns.indexOf(columnName) !== -1
@@ -157,7 +157,7 @@ module.exports = (() => {
           contentHasMarkup: true,
           borderChars: 'lightRounded',
           borderAttr: { color: 'grey' },
-          textAttr: { bgColor: 'default' },
+          textAttr: { color: 'white', bgColor: 'default' },
           width: term.width,
           fit: true
         }
