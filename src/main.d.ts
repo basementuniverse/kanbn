@@ -52,6 +52,12 @@ declare type sprint = {
 };
 
 /**
+ * Get the name of the folder where the index and tasks are stored
+ * @return {string} The kanbn folder name
+ */
+export function getFolderName(): string;
+
+/**
  * Get the kanbn folder location for the current working directory
  * @return {string} The kanbn folder path
  */

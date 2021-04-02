@@ -759,6 +759,14 @@ module.exports = (() => {
   return {
 
     /**
+     * Get the name of the folder where the index and tasks are stored
+     * @return {string} The kanbn folder name
+     */
+    getFolderName() {
+      return FOLDER_NAME;
+    },
+
+    /**
      * Get the kanbn folder location for the current working directory
      * @return {string} The kanbn folder path
      */
