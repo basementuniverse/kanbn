@@ -1,57 +1,14 @@
-# KANBN
+# Kanbn Documentation
 
-## Features
+This is a CLI kanban board application. The kanban board and tasks live inside your repository as markdown files, so they are easy to read and edit in your IDE and you can benefit from source control, version history etc.
 
-* The kanban board and tasks live inside your repo
-* Task files are markdown, so they are easy to read and edit in your IDE
+To get started quickly, check out the [Quick Start](quick-start.md) guide.
 
-## Getting Started
+## Contents
 
-### Initialise a Kanbn board in your project
-
-```
-kanbn init
-```
-
-This will create a `.kanbn/` folder with an index (`.kanbn/index.md`) and a folder for tasks (`.kanbn/tasks/`)
-
-See [init](init.md) for more information on initialising kanbn.
-
-### Start adding tasks
-
-```
-kanbn add -n "My new task"
-```
-
-This will create a task file `.kanbn/tasks/my-new-task.md`.
-
-See [add](add.md) for more information on creating tasks.
-
-### View the kanbn board
-
-```
-kanbn board
-```
-
-This will show a kanbn board, something like this:
-
-```
-╭────────────────────────┬─────────────────────────┬────────────────────────╮
-│Todo                    │» In Progress            │✓ Done                  │
-├────────────────────────┼─────────────────────────┼────────────────────────┤
-│Task 1                  │Task 8                   │Task 5                  │
-│27 Nov 20, 19:35        │29 Nov 20, 19:35         │29 Nov 20, 19:35        │
-│                        │                         │                        │
-│Task 9                  │Task 3                   │Task 4                  │
-│29 Nov 20, 19:35        │28 Nov 20, 19:35         │29 Nov 20, 19:35        │
-│                        │                         │                        │
-│Task 15                 │                         │Task 6                  │
-│12 Dec 20, 22:00        │                         │29 Nov 20, 18:41        │
-│                        │                         │                        │
-│Task 2                  │                         │                        │
-│29 Nov 20, 19:35        │                         │                        │
-╰────────────────────────┴─────────────────────────┴────────────────────────╯
-```
+- [Quick Start](quick-start.md)
+- [Index Structure](index-structure.md)
+- [Task Structure](task-structure.md)
 
 ## Commands
 

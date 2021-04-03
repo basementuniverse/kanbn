@@ -1,6 +1,8 @@
-# KANBN
+# Kanbn
 
-A CLI kanban application.
+A CLI kanban board application.
+
+Documentation can be found [here](./docs/index.md).
 
 ## Installation
 
@@ -42,5 +44,3 @@ kanbn h <command>
 kanbn <command> --help
 kanbn <command> -h
 ```
-
-See [/docs](./docs/index.md) for more detailed documentation.
