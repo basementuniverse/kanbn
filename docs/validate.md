@@ -1,5 +1,0 @@
-# Validate
-
-```
-// TODO
-```
