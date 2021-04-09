@@ -10,7 +10,7 @@
   "bin": {
     "kanbn": "bin/kanbn"
   },
-  "author": "Gordon Larrigan <gordonlarrigan@gmail.com> (gordonlarrigan.com)",
+  "author": "Gordon Larrigan <gordonlarrigan@gmail.com> (https://gordonlarrigan.com)",
   "homepage": "",
   "repository": {
     "type": "git",
