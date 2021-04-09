@@ -1,53 +1,45 @@
-const fs = require('fs');
-const path = require('path');
-const glob = require('glob-promise');
-const parseIndex = require('./parse-index');
-const parseTask = require('./parse-task');
-const utility = require('./utility');
-const yaml = require('yamljs');
-const humanizeDuration = require('humanize-duration');
+const fs = require("fs");
+const path = require("path");
+const glob = require("glob-promise");
+const parseIndex = require("./parse-index");
+const parseTask = require("./parse-task");
+const utility = require("./utility");
+const yaml = require("yamljs");
+const humanizeDuration = require("humanize-duration");
+const rimraf = require("rimraf");
 
 module.exports = (() => {
   const ROOT = process.cwd();
-  const FOLDER_NAME = '.kanbn';
+  const FOLDER_NAME = ".kanbn";
   const MAIN_FOLDER = path.join(ROOT, FOLDER_NAME);
-  const INDEX = path.join(MAIN_FOLDER, 'index.md');
-  const TASK_FOLDER = path.join(MAIN_FOLDER, 'tasks/');
-  const CONFIG = path.join(MAIN_FOLDER, 'config.yaml');
+  const INDEX = path.join(MAIN_FOLDER, "index.md");
+  const TASK_FOLDER = path.join(MAIN_FOLDER, "tasks/");
+  const CONFIG = path.join(MAIN_FOLDER, "config.yaml");
 
   // Default fallback values for index options
   const DEFAULT_TASK_WORKLOAD = 2;
   const DEFAULT_TASK_WORKLOAD_TAGS = {
-    'Nothing': 0,
-    'Tiny': 1,
-    'Small': 2,
-    'Medium': 3,
-    'Large': 5,
-    'Huge': 8
+    Nothing: 0,
+    Tiny: 1,
+    Small: 2,
+    Medium: 3,
+    Large: 5,
+    Huge: 8,
   };
-  const DEFAULT_DATE_FORMAT = 'd mmm yy, H:MM';
+  const DEFAULT_DATE_FORMAT = "d mmm yy, H:MM";
   const DEFAULT_TASK_TEMPLATE = "^+^_${overdue ? '^R' : ''}${name}^: ${created ? ('\\n^-^/' + created) : ''}";
 
   /**
    * Default options for the initialise command
    */
   const defaultInitialiseOptions = {
-    name: 'Project Name',
-    description: '',
+    name: "Project Name",
+    description: "",
     options: {
-      startedColumns: [
-        'In Progress'
-      ],
-      completedColumns: [
-        'Done'
-      ]
+      startedColumns: ["In Progress"],
+      completedColumns: ["Done"],
     },
-    columns: [
-      'Backlog',
-      'Todo',
-      'In Progress',
-      'Done'
-    ]
+    columns: ["Backlog", "Todo", "In Progress", "Done"],
   };
 
   /**
@@ -79,7 +71,7 @@ module.exports = (() => {
    * @return {string} The task id with .md extension
    */
   function addFileExtension(taskId) {
-    if (!(/\.md$/).test(taskId)) {
+    if (!/\.md$/.test(taskId)) {
       return `${taskId}.md`;
     }
     return taskId;
@@ -91,8 +83,8 @@ module.exports = (() => {
    * @return {string} The task id without .md extension
    */
   function removeFileExtension(taskId) {
-    if ((/\.md$/).test(taskId)) {
-      return taskId.slice(0, taskId.length - '.md'.length);
+    if (/\.md$/.test(taskId)) {
+      return taskId.slice(0, taskId.length - ".md".length);
     }
     return taskId;
   }
@@ -107,7 +99,9 @@ module.exports = (() => {
     return new Set(
       columnName
         ? index.columns[columnName]
-        : Object.keys(index.columns).map(columnName => index.columns[columnName]).flat()
+        : Object.keys(index.columns)
+            .map((columnName) => index.columns[columnName])
+            .flat()
     );
   }
 
@@ -166,7 +160,7 @@ module.exports = (() => {
    */
   function removeTaskFromIndex(index, taskId) {
     for (let columnName in index.columns) {
-      index.columns[columnName] = index.columns[columnName].filter(t => t !== taskId);
+      index.columns[columnName] = index.columns[columnName].filter((t) => t !== taskId);
     }
     return index;
   }
@@ -180,7 +174,7 @@ module.exports = (() => {
    */
   function renameTaskInIndex(index, taskId, newTaskId) {
     for (let columnName in index.columns) {
-      index.columns[columnName] = index.columns[columnName].map(t => t === taskId ? newTaskId : t);
+      index.columns[columnName] = index.columns[columnName].map((t) => (t === taskId ? newTaskId : t));
     }
     return index;
   }
@@ -193,7 +187,7 @@ module.exports = (() => {
    * @return {object} The modified task object
    */
   function setTaskMetadata(taskData, property, value) {
-    if (!('metadata' in taskData)) {
+    if (!("metadata" in taskData)) {
       taskData.metadata = {};
     }
     taskData.metadata[property] = value;
@@ -208,10 +202,9 @@ module.exports = (() => {
    */
   function taskCompleted(index, task) {
     return (
-      'completed' in task.metadata || (
-        'completedColumns' in index.options &&
-        index.options.completedColumns.indexOf(findTaskColumn(index, task.id)) !== -1
-      )
+      "completed" in task.metadata ||
+      ("completedColumns" in index.options &&
+        index.options.completedColumns.indexOf(findTaskColumn(index, task.id)) !== -1)
     );
   }
 
@@ -224,34 +217,33 @@ module.exports = (() => {
    * @return {object} The modified index object
    */
   function sortColumnInIndex(index, tasks, columnName, sorters) {
-
     // Get a list of tasks in the target column and add computed fields
-    tasks = tasks.map(task => ({
+    tasks = tasks.map((task) => ({
       ...task,
       ...task.metadata,
-      created: 'created' in task.metadata ? task.metadata.created : '',
-      updated: 'updated' in task.metadata ? task.metadata.updated : '',
-      started: 'started' in task.metadata ? task.metadata.started : '',
-      completed: 'completed' in task.metadata ? task.metadata.completed : '',
-      due: 'due' in task.metadata ? task.metadata.due : '',
-      assigned: 'assigned' in task.metadata ? task.metadata.assigned : '',
+      created: "created" in task.metadata ? task.metadata.created : "",
+      updated: "updated" in task.metadata ? task.metadata.updated : "",
+      started: "started" in task.metadata ? task.metadata.started : "",
+      completed: "completed" in task.metadata ? task.metadata.completed : "",
+      due: "due" in task.metadata ? task.metadata.due : "",
+      assigned: "assigned" in task.metadata ? task.metadata.assigned : "",
       countSubTasks: task.subTasks.length,
-      subTasks: task.subTasks.map(subTask => `[${subTask.completed ? 'x' : ''}] ${subTask.text}`).join('\n'),
-      countTags: 'tags' in task.metadata ? task.metadata.tags.length : 0,
-      tags: 'tags' in task.metadata ? task.metadata.tags.join('\n') : '',
+      subTasks: task.subTasks.map((subTask) => `[${subTask.completed ? "x" : ""}] ${subTask.text}`).join("\n"),
+      countTags: "tags" in task.metadata ? task.metadata.tags.length : 0,
+      tags: "tags" in task.metadata ? task.metadata.tags.join("\n") : "",
       countRelations: task.relations.length,
-      relations: task.relations.map(relation => `${relation.type} ${relation.task}`).join('\n'),
+      relations: task.relations.map((relation) => `${relation.type} ${relation.task}`).join("\n"),
       countComments: task.comments.length,
-      comments: task.comments.map(comment => `${comment.author} ${comment.text}`).join('\n'),
+      comments: task.comments.map((comment) => `${comment.author} ${comment.text}`).join("\n"),
       workload: taskWorkload(index, task),
-      progress: taskProgress(index, task)
+      progress: taskProgress(index, task),
     }));
 
     // Sort the list of tasks
     tasks = sortTasks(tasks, sorters);
 
     // Save the list of tasks back to the index
-    index.columns[columnName] = tasks.map(task => task.id);
+    index.columns[columnName] = tasks.map((task) => task.id);
     return index;
   }
 
@@ -274,9 +266,7 @@ module.exports = (() => {
         if (compareA === compareB) {
           continue;
         }
-        return sorter.order === 'descending'
-          ? compareValues(compareB, compareA)
-          : compareValues(compareA, compareB);
+        return sorter.order === "descending" ? compareValues(compareB, compareA) : compareValues(compareA, compareB);
       }
       return 0;
     });
@@ -290,14 +280,12 @@ module.exports = (() => {
    * @return {string} The transformed value
    */
   function sortFilter(value, filter) {
-
     // Filter regex is global and case-insensitive
-    const matches = [...value.matchAll(new RegExp(filter, 'gi'))];
-    const result = matches.map(match => {
-
+    const matches = [...value.matchAll(new RegExp(filter, "gi"))];
+    const result = matches.map((match) => {
       // If the matched string has named capturing groups, concatenate their contents
       if (match.groups) {
-        return Object.values(match.groups).join('');
+        return Object.values(match.groups).join("");
       }
 
       // If the matched string has non-named capturing groups, use the contents of the first group
@@ -308,7 +296,7 @@ module.exports = (() => {
       // Otherwise use the matched string
       return match[0];
     });
-    return result.join('');
+    return result.join("");
   }
 
   /**
@@ -323,8 +311,8 @@ module.exports = (() => {
     }
     a = utility.coerceUndefined(a, typeof b);
     b = utility.coerceUndefined(b, typeof a);
-    if (typeof a === 'string' && typeof b === 'string') {
-      return a.localeCompare(b, undefined, { sensitivity: 'accent' });
+    if (typeof a === "string" && typeof b === "string") {
+      return a.localeCompare(b, undefined, { sensitivity: "accent" });
     }
     return a - b;
   }
@@ -336,8 +324,7 @@ module.exports = (() => {
    * @param {object} filters
    */
   function filterTasks(index, tasks, filters) {
-    return tasks.filter(task => {
-
+    return tasks.filter((task) => {
       // Get task id and column
       const taskId = utility.getTaskId(task.name);
       const column = findTaskColumn(index, taskId);
@@ -351,211 +338,159 @@ module.exports = (() => {
       let result = true;
 
       // Id
-      if ('id' in filters && !stringFilter(filters.id, task.id)) {
+      if ("id" in filters && !stringFilter(filters.id, task.id)) {
         result = false;
       }
 
       // Name
-      if ('name' in filters && !stringFilter(filters.name, task.name)) {
+      if ("name" in filters && !stringFilter(filters.name, task.name)) {
         result = false;
       }
 
       // Description
-      if ('description' in filters && !stringFilter(filters.description, task.description)) {
+      if ("description" in filters && !stringFilter(filters.description, task.description)) {
         result = false;
       }
 
       // Column
-      if ('column' in filters && !stringFilter(filters.column, column)) {
+      if ("column" in filters && !stringFilter(filters.column, column)) {
         result = false;
       }
 
       // Created date
       if (
-        'created' in filters && (
-          !('created' in task.metadata) ||
-          !dateFilter(filters.created, task.metadata.created)
-        )
+        "created" in filters &&
+        (!("created" in task.metadata) || !dateFilter(filters.created, task.metadata.created))
       ) {
         result = false;
       }
 
       // Updated date
       if (
-        'updated' in filters && (
-          !('updated' in task.metadata) ||
-          !dateFilter(filters.updated, task.metadata.updated)
-        )
+        "updated" in filters &&
+        (!("updated" in task.metadata) || !dateFilter(filters.updated, task.metadata.updated))
       ) {
         result = false;
       }
 
       // Started date
       if (
-        'started' in filters && (
-          !('started' in task.metadata) ||
-          !dateFilter(filters.started, task.metadata.started)
-        )
+        "started" in filters &&
+        (!("started" in task.metadata) || !dateFilter(filters.started, task.metadata.started))
       ) {
         result = false;
       }
 
       // Completed date
       if (
-        'completed' in filters && (
-          !('completed' in task.metadata) ||
-          !dateFilter(filters.completed, task.metadata.completed)
-        )
+        "completed" in filters &&
+        (!("completed" in task.metadata) || !dateFilter(filters.completed, task.metadata.completed))
       ) {
         result = false;
       }
 
       // Due
-      if (
-        'due' in filters && (
-          !('due' in task.metadata) ||
-          !dateFilter(filters.due, task.metadata.due)
-        )
-      ) {
+      if ("due" in filters && (!("due" in task.metadata) || !dateFilter(filters.due, task.metadata.due))) {
         result = false;
       }
 
       // Workload
-      if (
-        'workload' in filters &&
-        !numberFilter(filters.workload, taskWorkload(index, task))
-      ) {
+      if ("workload" in filters && !numberFilter(filters.workload, taskWorkload(index, task))) {
         result = false;
       }
 
       // Progress
-      if (
-        'progress' in filters &&
-        !numberFilter(filters.progress, taskProgress(index, task))
-      ) {
+      if ("progress" in filters && !numberFilter(filters.progress, taskProgress(index, task))) {
         result = false;
       }
 
       // Assigned
       if (
-        'assigned' in filters &&
-        !stringFilter(filters.assigned, 'assigned' in task.metadata ? task.metadata.assigned : '')
+        "assigned" in filters &&
+        !stringFilter(filters.assigned, "assigned" in task.metadata ? task.metadata.assigned : "")
       ) {
         result = false;
       }
 
       // Sub-tasks
       if (
-        'sub-task' in filters &&
+        "sub-task" in filters &&
         !stringFilter(
-          filters['sub-task'],
-          task.subTasks.map(subTask => `[${subTask.completed ? 'x' : ' '}] ${subTask.text}`).join('\n')
+          filters["sub-task"],
+          task.subTasks.map((subTask) => `[${subTask.completed ? "x" : " "}] ${subTask.text}`).join("\n")
         )
       ) {
         result = false;
       }
 
       // Count sub-tasks
-      if (
-        'count-sub-tasks' in filters &&
-        !numberFilter(
-          filters['count-sub-tasks'],
-          task.subTasks.length
-        )
-      ) {
+      if ("count-sub-tasks" in filters && !numberFilter(filters["count-sub-tasks"], task.subTasks.length)) {
         result = false;
       }
 
       // Tag
-      if (
-        'tag' in filters &&
-        !stringFilter(
-          filters.tag,
-          task.metadata.tags.join('\n')
-        )
-      ) {
+      if ("tag" in filters && !stringFilter(filters.tag, task.metadata.tags.join("\n"))) {
         result = false;
       }
 
       // Count tags
-      if (
-        'count-tags' in filters &&
-        !numberFilter(
-          filters['count-tags'],
-          task.tags.length
-        )
-      ) {
+      if ("count-tags" in filters && !numberFilter(filters["count-tags"], task.tags.length)) {
         result = false;
       }
 
       // Relation
       if (
-        'relation' in filters &&
+        "relation" in filters &&
         !stringFilter(
           filters.relation,
-          task.relations.map(relation => `${relation.type} ${relation.task}`).join('\n')
+          task.relations.map((relation) => `${relation.type} ${relation.task}`).join("\n")
         )
       ) {
         result = false;
       }
 
       // Count relations
-      if (
-        'count-relations' in filters &&
-        !numberFilter(
-          filters['count-relations'],
-          task.relations.length
-        )
-      ) {
+      if ("count-relations" in filters && !numberFilter(filters["count-relations"], task.relations.length)) {
         result = false;
       }
 
       // Comments
       if (
-        'comment' in filters &&
-        !stringFilter(
-          filters.comment,
-          task.comments.map(comment => `${comment.author} ${comment.text}`).join('\n')
-        )
+        "comment" in filters &&
+        !stringFilter(filters.comment, task.comments.map((comment) => `${comment.author} ${comment.text}`).join("\n"))
       ) {
         result = false;
       }
 
       // Count comments
-      if (
-        'count-comments' in filters &&
-        !numberFilter(
-          filters['count-comments'],
-          task.comments.length
-        )
-      ) {
+      if ("count-comments" in filters && !numberFilter(filters["count-comments"], task.comments.length)) {
         result = false;
       }
 
       // Custom metadata properties
-      if ('customFields' in index.options) {
+      if ("customFields" in index.options) {
         for (let customField of index.options.customFields) {
           if (customField.name in filters) {
             if (!(customField.name in task.metadata)) {
               result = false;
             } else {
               switch (customField.type) {
-                case 'boolean':
+                case "boolean":
                   if (task.metadata[customField.name] !== filters[customField.name]) {
                     result = false;
                   }
                   break;
-                case 'number':
+                case "number":
                   if (!numberFilter(filters[customField.name], task.metadata[customField.name])) {
                     result = false;
                   }
                   break;
-                case 'string':
+                case "string":
                   if (!stringFilter(filters[customField.name], task.metadata[customField.name])) {
                     result = false;
                   }
                   break;
-                case 'date':
+                case "date":
                   if (!dateFilter(filters[customField.name], task.metadata[customField.name])) {
                     result = false;
                   }
@@ -579,9 +514,9 @@ module.exports = (() => {
    */
   function stringFilter(filter, input) {
     if (Array.isArray(filter)) {
-      filter = filter.join('|');
+      filter = filter.join("|");
     }
-    return (new RegExp(filter, 'i')).test(input);
+    return new RegExp(filter, "i").test(input);
   }
 
   /**
@@ -620,15 +555,13 @@ module.exports = (() => {
    * @return {number} The task workload
    */
   function taskWorkload(index, task) {
-    const defaultTaskWorkload = 'defaultTaskWorkload' in index.options
-      ? index.options.defaultTaskWorkload
-      : DEFAULT_TASK_WORKLOAD;
-    const taskWorkloadTags = 'taskWorkloadTags' in index.options
-      ? index.options.taskWorkloadTags
-      : DEFAULT_TASK_WORKLOAD_TAGS;
+    const defaultTaskWorkload =
+      "defaultTaskWorkload" in index.options ? index.options.defaultTaskWorkload : DEFAULT_TASK_WORKLOAD;
+    const taskWorkloadTags =
+      "taskWorkloadTags" in index.options ? index.options.taskWorkloadTags : DEFAULT_TASK_WORKLOAD_TAGS;
     let workload = 0;
     let hasWorkloadTags = false;
-    if ('tags' in task.metadata) {
+    if ("tags" in task.metadata) {
       for (let workloadTag of Object.keys(taskWorkloadTags)) {
         if (task.metadata.tags.indexOf(workloadTag) !== -1) {
           workload += taskWorkloadTags[workloadTag];
@@ -652,7 +585,7 @@ module.exports = (() => {
     if (taskCompleted(index, task)) {
       return 1;
     }
-    return 'progress' in task.metadata ? task.metadata.progress : 0;
+    return "progress" in task.metadata ? task.metadata.progress : 0;
   }
 
   /**
@@ -664,18 +597,19 @@ module.exports = (() => {
    * @return {object} A statistics object
    */
   function taskWorkloadInPeriod(tasks, metadataProperty, start, end) {
-    const filteredTasks = tasks.filter(task => (
-      metadataProperty in task.metadata &&
-      task.metadata[metadataProperty] >= start &&
-      task.metadata[metadataProperty] <= end
-    ));
+    const filteredTasks = tasks.filter(
+      (task) =>
+        metadataProperty in task.metadata &&
+        task.metadata[metadataProperty] >= start &&
+        task.metadata[metadataProperty] <= end
+    );
     return {
-      tasks: filteredTasks.map(task => ({
+      tasks: filteredTasks.map((task) => ({
         id: task.id,
         column: task.column,
-        workload: task.workload
+        workload: task.workload,
       })),
-      workload: filteredTasks.reduce((a, task) => a + task.workload, 0)
+      workload: filteredTasks.reduce((a, task) => a + task.workload, 0),
     };
   }
 
@@ -687,8 +621,8 @@ module.exports = (() => {
    */
   function getWorkloadAtDate(tasks, date) {
     return tasks
-    .filter(task => task.started <= date && task.completed > date)
-    .reduce((a, task) => a += task.workload, 0);
+      .filter((task) => task.started <= date && task.completed > date)
+      .reduce((a, task) => (a += task.workload), 0);
   }
 
   /**
@@ -700,21 +634,20 @@ module.exports = (() => {
    * @return {object} The updated task data
    */
   function updateColumnLinkedCustomFields(index, taskData, columnName) {
-
     // Update built-in column-linked metadata properties first (started and completed dates)
-    taskData = updateColumnLinkedCustomField(index, taskData, columnName, 'completed', 'once');
-    taskData = updateColumnLinkedCustomField(index, taskData, columnName, 'started', 'once');
+    taskData = updateColumnLinkedCustomField(index, taskData, columnName, "completed", "once");
+    taskData = updateColumnLinkedCustomField(index, taskData, columnName, "started", "once");
 
     // Update column-linked custom fields
-    if ('customFields' in index.options) {
+    if ("customFields" in index.options) {
       for (let customField of index.options.customFields) {
-        if (customField.type === 'date') {
+        if (customField.type === "date") {
           taskData = updateColumnLinkedCustomField(
             index,
             taskData,
             columnName,
             customField.name,
-            customField.updateDate || 'none'
+            customField.updateDate || "none"
           );
         }
       }
@@ -734,17 +667,14 @@ module.exports = (() => {
    * @param {string} fieldName
    * @param {string} [updateCriteria='none']
    */
-  function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria = 'none') {
+  function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria = "none") {
     const columnList = `${fieldName}Columns`;
-    if (
-      columnList in index.options &&
-      index.options[columnList].indexOf(columnName) !== -1
-    ) {
+    if (columnList in index.options && index.options[columnList].indexOf(columnName) !== -1) {
       switch (updateCriteria) {
-        case 'always':
+        case "always":
           taskData = setTaskMetadata(taskData, fieldName, new Date());
           break;
-        case 'once':
+        case "once":
           if (!(fieldName in taskData.metadata && taskData.metadata[fieldName])) {
             taskData = setTaskMetadata(taskData, fieldName, new Date());
           }
@@ -757,7 +687,6 @@ module.exports = (() => {
   }
 
   return {
-
     /**
      * Get the name of the folder where the index and tasks are stored
      * @return {string} The kanbn folder name
@@ -779,10 +708,9 @@ module.exports = (() => {
      * @return {object} The index
      */
     async getIndex() {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
 
       return this.loadIndex();
@@ -814,12 +742,12 @@ module.exports = (() => {
       task.remainingWorkload = Math.ceil(task.workload * (1 - task.progress));
 
       // Add due information
-      if ('due' in task.metadata) {
+      if ("due" in task.metadata) {
         const dueData = {};
 
         // A task is overdue if it's due date is in the past and the task is not in a completed column
         // or doesn't have a completed dates
-        const completedDate = 'completed' in task.metadata ? task.metadata.completed : null;
+        const completedDate = "completed" in task.metadata ? task.metadata.completed : null;
 
         // Get task due delta - this is the difference between now and the due date, or if the task is completed
         // this is the difference between the completed and due dates
@@ -827,7 +755,7 @@ module.exports = (() => {
         if (completedDate !== null) {
           delta = completedDate - task.metadata.due;
         } else {
-          delta = (new Date()) - task.metadata.due;
+          delta = new Date() - task.metadata.due;
         }
 
         // Populate due information
@@ -838,14 +766,14 @@ module.exports = (() => {
         dueData.dueDelta = delta;
 
         // Prepare a due message for the task
-        let dueMessage = '';
+        let dueMessage = "";
         if (completed) {
-          dueMessage += 'Completed ';
+          dueMessage += "Completed ";
         }
         dueMessage += `${humanizeDuration(delta, {
           largest: 3,
-          round: true
-        })} ${delta > 0 ? 'overdue' : 'remaining'}`;
+          round: true,
+        })} ${delta > 0 ? "overdue" : "remaining"}`;
         dueData.dueMessage = dueMessage;
         task.dueData = dueData;
       }
@@ -869,9 +797,8 @@ module.exports = (() => {
      * @param {object} indexData
      */
     async saveIndex(indexData) {
-
       // Apply column sorting if any sorters are defined in options
-      if ('columnSorting' in indexData.options && Object.keys(indexData.options.columnSorting).length) {
+      if ("columnSorting" in indexData.options && Object.keys(indexData.options.columnSorting).length) {
         for (let columnName in indexData.options.columnSorting) {
           indexData = sortColumnInIndex(
             indexData,
@@ -898,9 +825,9 @@ module.exports = (() => {
      * @return {object}
      */
     async loadIndex() {
-      let indexData = '';
+      let indexData = "";
       try {
-        indexData = await fs.promises.readFile(INDEX, { encoding: 'utf-8' });
+        indexData = await fs.promises.readFile(INDEX, { encoding: "utf-8" });
       } catch (error) {
         throw new Error(`Couldn't access index file: ${error.message}`);
       }
@@ -935,9 +862,9 @@ module.exports = (() => {
      */
     async loadTask(taskId) {
       const TASK = path.join(TASK_FOLDER, addFileExtension(taskId));
-      let taskData = '';
+      let taskData = "";
       try {
-        taskData = await fs.promises.readFile(TASK, { encoding: 'utf-8' });
+        taskData = await fs.promises.readFile(TASK, { encoding: "utf-8" });
       } catch (error) {
         throw new Error(`Couldn't access task file: ${error.message}`);
       }
@@ -965,7 +892,7 @@ module.exports = (() => {
      * @return {string}
      */
     getDateFormat(index) {
-      return 'dateFormat' in index.options ? index.options.dateFormat : DEFAULT_DATE_FORMAT;
+      return "dateFormat" in index.options ? index.options.dateFormat : DEFAULT_DATE_FORMAT;
     },
 
     /**
@@ -974,7 +901,7 @@ module.exports = (() => {
      * @return {string}
      */
     getTaskTemplate(index) {
-      return 'taskTemplate' in index.options ? index.options.taskTemplate : DEFAULT_TASK_TEMPLATE;
+      return "taskTemplate" in index.options ? index.options.taskTemplate : DEFAULT_TASK_TEMPLATE;
     },
 
     /**
@@ -990,40 +917,43 @@ module.exports = (() => {
      * @param {object} [options={}] Initial columns and other config options
      */
     async initialise(options = {}) {
-
       // Create main folder if it doesn't already exist
-      if (!await exists(MAIN_FOLDER)) {
+      if (!(await exists(MAIN_FOLDER))) {
         await fs.promises.mkdir(MAIN_FOLDER, { recursive: true });
       }
 
       // Create tasks folder if it doesn't already exist
-      if (!await exists(TASK_FOLDER)) {
+      if (!(await exists(TASK_FOLDER))) {
         await fs.promises.mkdir(TASK_FOLDER, { recursive: true });
       }
 
       // Create index if one doesn't already exist
       let index;
-      if (!await exists(INDEX)) {
+      if (!(await exists(INDEX))) {
         const opts = Object.assign({}, defaultInitialiseOptions, options);
         index = {
           name: opts.name,
           description: opts.description,
           options: opts.options,
-          columns: Object.fromEntries(opts.columns.map(columnName => [columnName, []]))
+          columns: Object.fromEntries(opts.columns.map((columnName) => [columnName, []])),
         };
 
-      // Otherwise, if index already exists and we have specified new settings, re-write the index file
+        // Otherwise, if index already exists and we have specified new settings, re-write the index file
       } else if (Object.keys(options).length > 0) {
         index = await this.loadIndex();
-        'name' in options && (index.name = options.name);
-        'description' in options && (index.description = options.description);
-        'options' in options && (index.options = Object.assign(index.options, options.options));
-        'columns' in options && (index.columns = Object.assign(
-          index.columns,
-          Object.fromEntries(options.columns.map(
-            columnName => [columnName, columnName in index.columns ? index.columns[columnName] : []]
-          ))
-        ));
+        "name" in options && (index.name = options.name);
+        "description" in options && (index.description = options.description);
+        "options" in options && (index.options = Object.assign(index.options, options.options));
+        "columns" in options &&
+          (index.columns = Object.assign(
+            index.columns,
+            Object.fromEntries(
+              options.columns.map((columnName) => [
+                columnName,
+                columnName in index.columns ? index.columns[columnName] : [],
+              ])
+            )
+          ));
       }
       await this.saveIndex(index);
     },
@@ -1033,14 +963,13 @@ module.exports = (() => {
      * @param {string} taskId The task id to check
      */
     async taskExists(taskId) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
 
       // Check if the task file exists
-      if (!await exists(getTaskPath(taskId))) {
+      if (!(await exists(getTaskPath(taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1057,14 +986,13 @@ module.exports = (() => {
      * @return {string} The name of the column the task is in
      */
     async findTaskColumn(taskId) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
 
       // Check if the task file exists
-      if (!await exists(getTaskPath(taskId))) {
+      if (!(await exists(getTaskPath(taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1085,15 +1013,14 @@ module.exports = (() => {
      * @return {string} The id of the task that was created
      */
     async createTask(taskData, columnName) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
 
       // Make sure the task has a name
       if (!taskData.name) {
-        throw new Error('Task name cannot be blank');
+        throw new Error("Task name cannot be blank");
       }
 
       // Make sure a task doesn't already exist with the same name
@@ -1115,7 +1042,7 @@ module.exports = (() => {
       }
 
       // Set the created date
-      taskData = setTaskMetadata(taskData, 'created', new Date());
+      taskData = setTaskMetadata(taskData, "created", new Date());
 
       // Update task metadata dates
       taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
@@ -1134,15 +1061,14 @@ module.exports = (() => {
      * @return {string} The id of the task that was added
      */
     async addUntrackedTaskToIndex(taskId, columnName) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
       taskId = removeFileExtension(taskId);
 
       // Make sure the task file exists
-      if (!await exists(getTaskPath(taskId))) {
+      if (!(await exists(getTaskPath(taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1177,10 +1103,9 @@ module.exports = (() => {
      * @return {Set} A set of task ids
      */
     async findTrackedTasks(columnName = null) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
 
       // Get all tasks currently in index
@@ -1193,10 +1118,9 @@ module.exports = (() => {
      * @return {Set} A set of untracked task ids
      */
     async findUntrackedTasks() {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
 
       // Get all tasks currently in index
@@ -1205,10 +1129,10 @@ module.exports = (() => {
 
       // Get all tasks in the tasks folder
       const files = await glob(`${TASK_FOLDER}/*.md`);
-      const untrackedTasks = new Set(files.map(task => path.parse(task).name));
+      const untrackedTasks = new Set(files.map((task) => path.parse(task).name));
 
       // Return the set difference
-      return new Set([...untrackedTasks].filter(x => !trackedTasks.has(x)));
+      return new Set([...untrackedTasks].filter((x) => !trackedTasks.has(x)));
     },
 
     /**
@@ -1219,15 +1143,14 @@ module.exports = (() => {
      * @return {string} The id of the task that was updated
      */
     async updateTask(taskId, taskData, columnName = null) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
       taskId = removeFileExtension(taskId);
 
       // Make sure the task file exists
-      if (!await exists(getTaskPath(taskId))) {
+      if (!(await exists(getTaskPath(taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1239,7 +1162,7 @@ module.exports = (() => {
 
       // Make sure the updated task data has a name
       if (!taskData.name) {
-        throw new Error('Task name cannot be blank');
+        throw new Error("Task name cannot be blank");
       }
 
       // Rename the task if we're updating the name
@@ -1257,7 +1180,7 @@ module.exports = (() => {
       }
 
       // Set the updated date
-      taskData = setTaskMetadata(taskData, 'updated', new Date());
+      taskData = setTaskMetadata(taskData, "updated", new Date());
 
       // Save task
       await this.saveTask(getTaskPath(taskId), taskData);
@@ -1266,7 +1189,7 @@ module.exports = (() => {
       if (columnName) {
         await this.moveTask(taskId, columnName);
 
-      // Otherwise save the index
+        // Otherwise save the index
       } else {
         await this.saveIndex(index);
       }
@@ -1280,15 +1203,14 @@ module.exports = (() => {
      * @return {string} The new id of the task that was renamed
      */
     async renameTask(taskId, newTaskName) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
       taskId = removeFileExtension(taskId);
 
       // Make sure the task file exists
-      if (!await exists(getTaskPath(taskId))) {
+      if (!(await exists(getTaskPath(taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1313,7 +1235,7 @@ module.exports = (() => {
       // Update the task name and updated date
       let taskData = await this.loadTask(taskId);
       taskData.name = newTaskName;
-      taskData = setTaskMetadata(taskData, 'updated', new Date());
+      taskData = setTaskMetadata(taskData, "updated", new Date());
       await this.saveTask(getTaskPath(taskId), taskData);
 
       // Rename the task file
@@ -1334,15 +1256,14 @@ module.exports = (() => {
      * @return {string} The id of the task that was moved
      */
     async moveTask(taskId, columnName, position = null, relative = false) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
       taskId = removeFileExtension(taskId);
 
       // Make sure the task file exists
-      if (!await exists(getTaskPath(taskId))) {
+      if (!(await exists(getTaskPath(taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1359,7 +1280,7 @@ module.exports = (() => {
 
       // Update the task's updated date
       let taskData = await this.loadTask(taskId);
-      taskData = setTaskMetadata(taskData, 'updated', new Date());
+      taskData = setTaskMetadata(taskData, "updated", new Date());
 
       // Update task metadata dates
       taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
@@ -1389,10 +1310,9 @@ module.exports = (() => {
      * @return {string} The id of the task that was deleted
      */
     async deleteTask(taskId, removeFile = false) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
       taskId = removeFileExtension(taskId);
 
@@ -1406,7 +1326,7 @@ module.exports = (() => {
       index = removeTaskFromIndex(index, taskId);
 
       // Optionally remove the task file as well
-      if (removeFile && await exists(getTaskPath(taskId))) {
+      if (removeFile && (await exists(getTaskPath(taskId)))) {
         await fs.promises.unlink(getTaskPath(taskId));
       }
       await this.saveIndex(index);
@@ -1420,22 +1340,17 @@ module.exports = (() => {
      * @return {object[]} A list of tasks that match the filters
      */
     async search(filters = {}, quiet = false) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
 
       // Load all tracked tasks and filter the results
       const index = await this.loadIndex();
-      let tasks = filterTasks(
-        index,
-        await this.loadAllTrackedTasks(index),
-        filters
-      );
+      let tasks = filterTasks(index, await this.loadAllTrackedTasks(index), filters);
 
       // Return resulting task ids or the full tasks
-      return tasks.map(task => {
+      return tasks.map((task) => {
         return quiet ? utility.getTaskId(task.name) : this.hydrateTask(index, task);
       });
     },
@@ -1450,10 +1365,9 @@ module.exports = (() => {
      * @return {object} Project status information as an object
      */
     async status(quiet = false, untracked = false, due = false, sprint = null, dates = null) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
 
       // Get index and column names
@@ -1462,66 +1376,63 @@ module.exports = (() => {
 
       // Prepare output
       const result = {
-        name: index.name
+        name: index.name,
       };
 
       // Get un-tracked tasks if required
       if (untracked) {
-        result.untrackedTasks = [...await this.findUntrackedTasks()].map(taskId => `${taskId}.md`);
+        result.untrackedTasks = [...(await this.findUntrackedTasks())].map((taskId) => `${taskId}.md`);
 
         // If output is quiet, output a list of untracked task filenames
         if (quiet) {
           if (result.untrackedTasks.length) {
             return result.untrackedTasks;
           } else {
-            return 'No untracked tasks found';
+            return "No untracked tasks found";
           }
         }
       }
 
       // Get basic project status information
       result.tasks = columnNames.reduce((a, v) => a + index.columns[v].length, 0);
-      result.columnTasks = Object.fromEntries(columnNames.map(columnName => [
-        columnName,
-        index.columns[columnName].length
-      ]));
-      if ('startedColumns' in index.options && index.options.startedColumns.length > 0) {
-        result.startedTasks = Object
-          .entries(index.columns)
-          .filter(c => index.options.startedColumns.indexOf(c[0]) > -1)
+      result.columnTasks = Object.fromEntries(
+        columnNames.map((columnName) => [columnName, index.columns[columnName].length])
+      );
+      if ("startedColumns" in index.options && index.options.startedColumns.length > 0) {
+        result.startedTasks = Object.entries(index.columns)
+          .filter((c) => index.options.startedColumns.indexOf(c[0]) > -1)
           .reduce((a, c) => a + c[1].length, 0);
       }
-      if ('completedColumns' in index.options && index.options.completedColumns.length > 0) {
-        result.completedTasks = Object
-          .entries(index.columns)
-          .filter(c => index.options.completedColumns.indexOf(c[0]) > -1)
+      if ("completedColumns" in index.options && index.options.completedColumns.length > 0) {
+        result.completedTasks = Object.entries(index.columns)
+          .filter((c) => index.options.completedColumns.indexOf(c[0]) > -1)
           .reduce((a, c) => a + c[1].length, 0);
       }
 
       // If required, load more detailed task information
       if (!quiet) {
-
         // Load all tracked tasks and hydrate them
-        const tasks = [...await this.loadAllTrackedTasks(index)].map(task => this.hydrateTask(index, task));
+        const tasks = [...(await this.loadAllTrackedTasks(index))].map((task) => this.hydrateTask(index, task));
 
         // If showing due information, calculate time remaining or overdue time for each task
         if (due) {
           result.dueTasks = [];
-          tasks.forEach(task => {
-            if ('dueData' in task) {
+          tasks.forEach((task) => {
+            if ("dueData" in task) {
               result.dueTasks.push({
                 task: task.id,
                 workload: task.workload,
                 progress: task.progress,
                 remainingWorkload: task.remainingWorkload,
-                ...task.dueData
+                ...task.dueData,
               });
             }
           });
         }
 
         // Calculate total and per-column workload
-        let totalWorkload = 0, totalRemainingWorkload = 0;
+        let totalWorkload = 0,
+          totalRemainingWorkload = 0;
         const columnWorkloads = tasks.reduce(
           (a, task) => {
             totalWorkload += task.workload;
@@ -1530,46 +1441,53 @@ module.exports = (() => {
             a[task.column].remainingWorkload += task.remainingWorkload;
             return a;
           },
-          Object.fromEntries(columnNames.map(columnName => [columnName, {
-            workload: 0,
-            remainingWorkload: 0
-          }]))
+          Object.fromEntries(
+            columnNames.map((columnName) => [
+              columnName,
+              {
+                workload: 0,
+                remainingWorkload: 0,
+              },
+            ])
+          )
         );
         result.totalWorkload = totalWorkload;
         result.totalRemainingWorkload = totalRemainingWorkload;
         result.columnWorkloads = columnWorkloads;
-        result.taskWorkloads = Object.fromEntries(tasks.map(task => [task.id, {
-          workload: task.workload,
-          progress: task.progress,
-          remainingWorkload: task.remainingWorkload,
-          completed: taskCompleted(index, task)
-        }]));
+        result.taskWorkloads = Object.fromEntries(
+          tasks.map((task) => [
+            task.id,
+            {
+              workload: task.workload,
+              progress: task.progress,
+              remainingWorkload: task.remainingWorkload,
+              completed: taskCompleted(index, task),
+            },
+          ])
+        );
 
         // Calculate assigned task totals and workloads
-        const assignedTasks = tasks.reduce(
-          (a, task) => {
-            if ('assigned' in task.metadata) {
-              if (!(task.metadata.assigned in a)) {
-                a[task.metadata.assigned] = {
-                  total: 0,
-                  workload: 0,
-                  remainingWorkload: 0
-                };
-              }
-              a[task.metadata.assigned].total++;
-              a[task.metadata.assigned].workload += task.workload;
-              a[task.metadata.assigned].remainingWorkload += task.remainingWorkload;
+        const assignedTasks = tasks.reduce((a, task) => {
+          if ("assigned" in task.metadata) {
+            if (!(task.metadata.assigned in a)) {
+              a[task.metadata.assigned] = {
+                total: 0,
+                workload: 0,
+                remainingWorkload: 0,
+              };
             }
-            return a;
-          },
-          {}
-        );
+            a[task.metadata.assigned].total++;
+            a[task.metadata.assigned].workload += task.workload;
+            a[task.metadata.assigned].remainingWorkload += task.remainingWorkload;
+          }
+          return a;
+        }, {});
         if (Object.keys(assignedTasks).length > 0) {
           result.assigned = assignedTasks;
         }
 
         // If any sprints are defined in index options, calculate sprint statistics
-        if ('sprints' in index.options && index.options.sprints.length) {
+        if ("sprints" in index.options && index.options.sprints.length) {
           const sprints = index.options.sprints;
 
           // Default to current sprint
@@ -1578,18 +1496,17 @@ module.exports = (() => {
 
           // Check if we're requesting stats for a specific sprint
           if (sprint !== null) {
-
             // Select sprint by number (1-based index)
-            if (typeof sprint === 'number') {
+            if (typeof sprint === "number") {
               if (sprint < 1 || sprint > sprints.length) {
                 throw new Error(`Sprint ${sprint} does not exist`);
               } else {
                 sprintIndex = sprint - 1;
               }
 
-            // Or select sprint by name
-            } else if (typeof sprint === 'string') {
-              sprintIndex = sprints.findIndex(s => s.name === sprint);
+              // Or select sprint by name
+            } else if (typeof sprint === "string") {
+              sprintIndex = sprints.findIndex((s) => s.name === sprint);
               if (sprintIndex === -1) {
                 throw new Error(`No sprint found with name "${sprint}"`);
               }
@@ -1600,9 +1517,9 @@ module.exports = (() => {
           result.sprint = {
             number: sprintIndex + 1,
             name: sprints[sprintIndex].name,
-            start: sprints[sprintIndex].start
+            start: sprints[sprintIndex].start,
           };
-          if ((currentSprint - 1) !== sprintIndex) {
+          if (currentSprint - 1 !== sprintIndex) {
             if (sprintIndex === sprints.length - 1) {
               result.sprint.end = sprints[sprintIndex + 1].start;
             }
@@ -1612,28 +1529,26 @@ module.exports = (() => {
             result.sprint.description = sprints[sprintIndex].description;
           }
           const sprintStartDate = sprints[sprintIndex].start;
-          const sprintEndDate = sprintIndex === sprints.length - 1
-            ? new Date()
-            : sprints[sprintIndex + 1].start;
+          const sprintEndDate = sprintIndex === sprints.length - 1 ? new Date() : sprints[sprintIndex + 1].start;
 
           // Calculate sprint duration
           const duration = sprintEndDate - sprintStartDate;
           result.sprint.durationDelta = duration;
           result.sprint.durationMessage = humanizeDuration(duration, {
             largest: 3,
-            round: true
+            round: true,
           });
 
           // Add task workload information for the sprint
-          result.sprint.created = taskWorkloadInPeriod(tasks, 'created', sprintStartDate, sprintEndDate);
-          result.sprint.started = taskWorkloadInPeriod(tasks, 'started', sprintStartDate, sprintEndDate);
-          result.sprint.completed = taskWorkloadInPeriod(tasks, 'completed', sprintStartDate, sprintEndDate);
-          result.sprint.due = taskWorkloadInPeriod(tasks, 'due', sprintStartDate, sprintEndDate);
+          result.sprint.created = taskWorkloadInPeriod(tasks, "created", sprintStartDate, sprintEndDate);
+          result.sprint.started = taskWorkloadInPeriod(tasks, "started", sprintStartDate, sprintEndDate);
+          result.sprint.completed = taskWorkloadInPeriod(tasks, "completed", sprintStartDate, sprintEndDate);
+          result.sprint.due = taskWorkloadInPeriod(tasks, "due", sprintStartDate, sprintEndDate);
 
           // Add custom date property workload information for the sprint
-          if ('customFields' in index.options) {
+          if ("customFields" in index.options) {
             for (let customField of index.options.customFields) {
-              if (customField.type === 'date') {
+              if (customField.type === "date") {
                 result.sprint[customField.name] = taskWorkloadInPeriod(
                   tasks,
                   customField.name,
@@ -1660,21 +1575,16 @@ module.exports = (() => {
             result.period.start = periodStart = new Date(Math.min(...dates));
             result.period.end = periodEnd = new Date(Math.max(...dates));
           }
-          result.period.created = taskWorkloadInPeriod(tasks, 'created', periodStart, periodEnd);
-          result.period.started = taskWorkloadInPeriod(tasks, 'started', periodStart, periodEnd);
-          result.period.completed = taskWorkloadInPeriod(tasks, 'completed', periodStart, periodEnd);
-          result.period.due = taskWorkloadInPeriod(tasks, 'due', periodStart, periodEnd);
+          result.period.created = taskWorkloadInPeriod(tasks, "created", periodStart, periodEnd);
+          result.period.started = taskWorkloadInPeriod(tasks, "started", periodStart, periodEnd);
+          result.period.completed = taskWorkloadInPeriod(tasks, "completed", periodStart, periodEnd);
+          result.period.due = taskWorkloadInPeriod(tasks, "due", periodStart, periodEnd);
 
           // Add custom date property workload information for the selected date range
-          if ('customFields' in index.options) {
+          if ("customFields" in index.options) {
             for (let customField of index.options.customFields) {
-              if (customField.type === 'date') {
-                result.sprint[customField.name] = taskWorkloadInPeriod(
-                  tasks,
-                  customField.name,
-                  periodStart,
-                  periodEnd
-                );
+              if (customField.type === "date") {
+                result.sprint[customField.name] = taskWorkloadInPeriod(tasks, customField.name, periodStart, periodEnd);
               }
             }
           }
@@ -1689,10 +1599,9 @@ module.exports = (() => {
      * @return {boolean} True if everything validated, otherwise an array of parsing errors
      */
     async validate(save = false) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
       const errors = [];
 
@@ -1708,7 +1617,7 @@ module.exports = (() => {
       } catch (error) {
         errors.push({
           task: null,
-          errors: error.message
+          errors: error.message,
         });
       }
 
@@ -1730,7 +1639,7 @@ module.exports = (() => {
         } catch (error) {
           errors.push({
             task: taskId,
-            errors: error.message
+            errors: error.message,
           });
         }
       }
@@ -1749,10 +1658,9 @@ module.exports = (() => {
      * @param {boolean} [save=false] True if the settings should be saved in index
      */
     async sort(columnName, sorters, save = false) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
 
       // Get index and make sure the column exists
@@ -1763,14 +1671,14 @@ module.exports = (() => {
 
       // Save the sorter settings if required (the column will be sorted when saving the index)
       if (save) {
-        if (!('columnSorting' in index.options)) {
+        if (!("columnSorting" in index.options)) {
           index.options.columnSorting = {};
         }
         index.options.columnSorting[columnName] = sorters;
 
-      // Otherwise, remove sorting settings for the specified column and manually sort the column
+        // Otherwise, remove sorting settings for the specified column and manually sort the column
       } else {
-        if ('columnSorting' in index.options && columnName in index.options.columnSorting) {
+        if ("columnSorting" in index.options && columnName in index.options.columnSorting) {
           delete index.options.columnSorting[columnName];
         }
         const tasks = await this.loadAllTrackedTasks(index, columnName);
@@ -1787,20 +1695,19 @@ module.exports = (() => {
      * @return {object} The sprint object
      */
     async sprint(name, description, start) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
 
       // Get index and make sure it has a list of sprints in the options
       const index = await this.loadIndex();
-      if (!('sprints' in index.options)) {
+      if (!("sprints" in index.options)) {
         index.options.sprints = [];
       }
       const sprintNumber = index.options.sprints.length + 1;
       const sprint = {
-        start: start
+        start: start,
       };
 
       // If the name is blank, generate a default name
@@ -1831,69 +1738,72 @@ module.exports = (() => {
      * @return {object} Burndown chart data as an object
      */
     async burndown(sprints = null, dates = null, assigned = null, columns = null) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
 
       // Get index and tasks
       const index = await this.loadIndex();
-      const tasks = [...await this.loadAllTrackedTasks(index)]
-      .map(task => {
-        const created = 'created' in task.metadata ? task.metadata.created : new Date(0);
-        return {
-          ...task,
-          created,
-          started: 'started' in task.metadata ? task.metadata.started : created,
-          completed: 'completed' in task.metadata
-            ? task.metadata.completed
-            : (
-              'completedColumns' in index.options &&
-              index.options.completedColumns.indexOf(task.column) !== -1
-            ) ? created : false,
-          progress: taskProgress(index, task),
-          assigned: 'assigned' in task.metadata ? task.metadata.assigned : null,
-          workload: taskWorkload(index, task),
-          column: findTaskColumn(index, task.id)
-        };
-      })
-      .filter(task => (
-        (assigned === null || task.assigned === assigned) &&
-        (columns === null || columns.indexOf(task.column) !== -1)
-      ));
+      const tasks = [...(await this.loadAllTrackedTasks(index))]
+        .map((task) => {
+          const created = "created" in task.metadata ? task.metadata.created : new Date(0);
+          return {
+            ...task,
+            created,
+            started: "started" in task.metadata ? task.metadata.started : created,
+            completed:
+              "completed" in task.metadata
+                ? task.metadata.completed
+                : "completedColumns" in index.options && index.options.completedColumns.indexOf(task.column) !== -1
+                ? created
+                : false,
+            progress: taskProgress(index, task),
+            assigned: "assigned" in task.metadata ? task.metadata.assigned : null,
+            workload: taskWorkload(index, task),
+            column: findTaskColumn(index, task.id),
+          };
+        })
+        .filter(
+          (task) =>
+            (assigned === null || task.assigned === assigned) &&
+            (columns === null || columns.indexOf(task.column) !== -1)
+        );
 
       // Get sprints and dates to plot from arguments
       const series = [];
-      const indexSprints = ('sprints' in index.options && index.options.sprints.length) ? index.options.sprints : null;
+      const indexSprints = "sprints" in index.options && index.options.sprints.length ? index.options.sprints : null;
       if (sprints === null && dates === null) {
         if (indexSprints !== null) {
-
           // Show current sprint
           const currentSprint = indexSprints.length - 1;
           series.push({
             sprint: indexSprints[currentSprint],
             from: new Date(indexSprints[currentSprint].start),
-            to: new Date()
+            to: new Date(),
           });
         } else {
-
           // Show all time
           series.push({
-            from: new Date(Math.min(...tasks.map(
-              t => [
-                'created' in t.metadata && t.metadata.created,
-                'updated' in t.metadata && t.metadata.updated,
-                'started' in t.metadata && t.metadata.started,
-                'completed' in t.metadata && (t.metadata.completed || new Date(8640000000000000)),
-                'due' in t.metadata && t.metadata.due
-              ].filter(d => d)
-            ).flat())),
-            to: new Date()
+            from: new Date(
+              Math.min(
+                ...tasks
+                  .map((t) =>
+                    [
+                      "created" in t.metadata && t.metadata.created,
+                      "updated" in t.metadata && t.metadata.updated,
+                      "started" in t.metadata && t.metadata.started,
+                      "completed" in t.metadata && (t.metadata.completed || new Date(8640000000000000)),
+                      "due" in t.metadata && t.metadata.due,
+                    ].filter((d) => d)
+                  )
+                  .flat()
+              )
+            ),
+            to: new Date(),
           });
         }
       } else {
-
         // Show specified sprint
         if (sprints !== null) {
           if (indexSprints === null) {
@@ -1903,16 +1813,16 @@ module.exports = (() => {
               let sprintIndex = null;
 
               // Select sprint by number (1-based index)
-              if (typeof sprint === 'number') {
+              if (typeof sprint === "number") {
                 if (sprint < 1 || sprint > indexSprints.length) {
                   throw new Error(`Sprint ${sprint} does not exist`);
                 } else {
                   sprintIndex = sprint - 1;
                 }
 
-              // Or select sprint by name
-              } else if (typeof sprint === 'string') {
-                sprintIndex = indexSprints.findIndex(s => s.name === sprint);
+                // Or select sprint by name
+              } else if (typeof sprint === "string") {
+                sprintIndex = indexSprints.findIndex((s) => s.name === sprint);
                 if (sprintIndex === -1) {
                   throw new Error(`No sprint found with name "${sprint}"`);
                 }
@@ -1925,9 +1835,7 @@ module.exports = (() => {
               series.push({
                 sprint: indexSprints[sprintIndex],
                 from: new Date(indexSprints[sprintIndex].start),
-                to: sprintIndex < indexSprints.length - 1
-                  ? new Date(indexSprints[sprintIndex + 1].start)
-                  : new Date()
+                to: sprintIndex < indexSprints.length - 1 ? new Date(indexSprints[sprintIndex + 1].start) : new Date(),
               });
             }
           }
@@ -1937,33 +1845,33 @@ module.exports = (() => {
         if (dates !== null) {
           series.push({
             from: new Date(Math.min(...dates)),
-            to: dates.length === 1 ? new Date() : new Date(Math.max(...dates))
+            to: dates.length === 1 ? new Date() : new Date(Math.max(...dates)),
           });
         }
       }
 
       // Get workload datapoints for each period
-      series.forEach(s => {
+      series.forEach((s) => {
         s.dataPoints = [
           {
             x: s.from,
-            y: getWorkloadAtDate(tasks, s.from)
+            y: getWorkloadAtDate(tasks, s.from),
           },
           ...tasks
-          .map(task => [
-            task.started >= s.from && task.started <= s.to && task.started,
-            task.completed >= s.from && task.completed <= s.to && task.completed
-          ])
-          .flat()
-          .filter(d => d)
-          .map(x => ({
-            x,
-            y: getWorkloadAtDate(tasks, x)
-          })),
+            .map((task) => [
+              task.started >= s.from && task.started <= s.to && task.started,
+              task.completed >= s.from && task.completed <= s.to && task.completed,
+            ])
+            .flat()
+            .filter((d) => d)
+            .map((x) => ({
+              x,
+              y: getWorkloadAtDate(tasks, x),
+            })),
           {
             x: s.to,
-            y: getWorkloadAtDate(tasks, s.to)
-          }
+            y: getWorkloadAtDate(tasks, s.to),
+          },
         ].sort((a, b) => a.x.getTime() - b.x.getTime());
       });
       return { series };
@@ -1977,15 +1885,14 @@ module.exports = (() => {
      * @return {string} The task id
      */
     async comment(taskId, text, author) {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
       taskId = removeFileExtension(taskId);
 
       // Make sure the task file exists
-      if (!await exists(getTaskPath(taskId))) {
+      if (!(await exists(getTaskPath(taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1997,7 +1904,7 @@ module.exports = (() => {
 
       // Make sure the comment text isn't empty
       if (!text) {
-        throw new Error('Comment text cannot be empty');
+        throw new Error("Comment text cannot be empty");
       }
 
       // Add the comment
@@ -2006,7 +1913,7 @@ module.exports = (() => {
       taskData.comments.push({
         text,
         author,
-        date: new Date()
+        date: new Date(),
       });
 
       // Save the task
@@ -2018,12 +1925,11 @@ module.exports = (() => {
      * Nuke it from orbit, it's the only way to be sure
      */
     async removeAll() {
-
       // Check if this folder has been initialised
-      if (!await this.initialised()) {
-        throw new Error('Not initialised in this folder');
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
       }
-      await fs.promises.rmdir(MAIN_FOLDER, { recursive: true });
-    }
-  }
+      rimraf.sync(MAIN_FOLDER);
+    },
+  };
 })();

@@ -50,6 +50,7 @@
     "md-2-json": "^1.0.6",
     "minimist": "^1.2.5",
     "param-case": "^3.0.4",
+    "rimraf": "^3.0.2",
     "terminal-kit": "^1.44.0",
     "yamljs": "^0.3.0"
   },
