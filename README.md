@@ -7,7 +7,7 @@ Documentation can be found [here](./docs/index.md).
 ## Installation
 
 ```
-npm install -g git+https://github.com/basementuniverse/kanbn.git
+npm install -g @basementuniverse/kanbn
 ```
 
 ## Usage
