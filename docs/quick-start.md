@@ -9,7 +9,7 @@ kanbn init
 
 This will create a `.kanbn/` folder containing an index file (`.kanbn/index.md`) and a folder for tasks (`.kanbn/tasks/`).
 
-See [init](init.md) for more information on initialising kanbn.
+Run `kanbn init --help` for more information on initialising kanbn.
 
 ## Start adding tasks
 
@@ -19,7 +19,7 @@ kanbn add -n "My new task"
 
 This will create a task file `.kanbn/tasks/my-new-task.md`.
 
-See [add](add.md) for more information on creating tasks.
+Run `kanbn add --help` for more information on creating tasks.
 
 ## View the kanbn board
 
@@ -57,6 +57,6 @@ kanbn edit "my-new-task" -t "Large"
 
 This will add a "Huge" tag to the task and modify the task's updated date. If you're using the default settings, this will also affect the task's workload.
 
-See [edit](edit.md) for more information on editing tasks.
+Run `kanbn edit --help` for more information on editing tasks.
 
 See [index structure](index-structure.md) for more information on project settings, tags and workload calculations.
