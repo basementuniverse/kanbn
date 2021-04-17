@@ -614,15 +614,56 @@ module.exports = (() => {
   }
 
   /**
+   * Get a list of tasks that were started before and/or completed after a date
+   * @param {object[]} tasks
+   * @param {Date} date
+   * @return {object[]} A filtered list of tasks
+   */
+  function getActiveTasksAtDate(tasks, date) {
+    return tasks.filter((task) => task.started <= date && (task.completed === false || task.completed > date));
+  }
+
+  /**
    * Calculate the total workload at a specific date
    * @param {object[]} tasks
    * @param {Date} date
    * @return {number} The total workload at the specified date
    */
   function getWorkloadAtDate(tasks, date) {
-    return tasks
-      .filter((task) => task.started <= date && task.completed > date)
-      .reduce((a, task) => (a += task.workload), 0);
+    return getActiveTasksAtDate(tasks, date).reduce((a, task) => (a += task.workload), 0);
+  }
+
+  /**
+   * Get the number of tasks that were active at a specific date
+   * @param {object[]} tasks
+   * @param {Date} date
+   * @return {number} The total number of active tasks at the specified date
+   */
+  function countActiveTasksAtDate(tasks, date) {
+    return getActiveTasksAtDate(tasks, date).length;
+  }
+
+  /**
+   * Get a list of tasks that were started or completed on a specific date
+   * @param {object[]} tasks
+   * @param {Date} date
+   * @return {object[]} A list of event objects, with event type and task id
+   */
+  function getTaskEventsAtDate(tasks, date) {
+    return [
+      ...tasks
+        .filter((task) => task.started === date)
+        .map((task) => ({
+          eventType: "started",
+          taskId: task.id,
+        })),
+      ...tasks
+        .filter((task) => task.completed === date)
+        .map((task) => ({
+          eventType: "completed",
+          taskId: task.id,
+        })),
+    ];
   }
 
   /**
@@ -1856,6 +1897,8 @@ module.exports = (() => {
           {
             x: s.from,
             y: getWorkloadAtDate(tasks, s.from),
+            count: countActiveTasksAtDate(tasks, s.from),
+            tasks: getTaskEventsAtDate(tasks, s.from),
           },
           ...tasks
             .map((task) => [
@@ -1867,10 +1910,14 @@ module.exports = (() => {
             .map((x) => ({
               x,
               y: getWorkloadAtDate(tasks, x),
+              count: countActiveTasksAtDate(tasks, x),
+              tasks: getTaskEventsAtDate(tasks, x),
             })),
           {
             x: s.to,
             y: getWorkloadAtDate(tasks, s.to),
+            count: countActiveTasksAtDate(tasks, s.to),
+            tasks: getTaskEventsAtDate(tasks, s.to),
           },
         ].sort((a, b) => a.x.getTime() - b.x.getTime());
       });
