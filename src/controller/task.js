@@ -1,7 +1,8 @@
-const kanbn = require('../main');
-const utility = require('../utility');
-const parseTask = require('../parse-task');
-const cliMd = require('cli-markdown');
+const kanbn = require("../main");
+const utility = require("../utility");
+const parseTask = require("../parse-task");
+const marked = require("marked");
+const markedTerminalRenderer = require("marked-terminal");
 
 /**
  * Show task information
@@ -9,24 +10,26 @@ const cliMd = require('cli-markdown');
  */
 function showTask(taskId, json = false) {
   kanbn
-  .getTask(taskId)
-  .then(task => {
-    if (json) {
-      console.log(task);
-    } else {
-      console.log(cliMd(parseTask.json2md(task)));
-    }
-  })
-  .catch(error => {
-    utility.error(error, true);
-  });
+    .getTask(taskId)
+    .then((task) => {
+      if (json) {
+        console.log(task);
+      } else {
+        marked.setOptions({
+          renderer: new markedTerminalRenderer(),
+        });
+        console.log(marked(parseTask.json2md(task)));
+      }
+    })
+    .catch((error) => {
+      utility.error(error, true);
+    });
 }
 
-module.exports = async args => {
-
+module.exports = async (args) => {
   // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
+  if (!(await kanbn.initialised())) {
+    utility.error("Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}", true);
   }
 
   // Get the task that we're showing
