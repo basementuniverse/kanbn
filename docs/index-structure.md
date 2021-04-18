@@ -83,6 +83,8 @@ views:
 customFields:
   - name: 'myCustomField'
     type: 'date'
+{customFieldName}Columns:
+  - {Column name}
 ```
 
 ### `hiddenColumns`
@@ -169,3 +171,13 @@ Valid types are:
 - `date`
 - `number`
 - `string`
+
+Additionally, if a custom field has type `date`, the custom field can have a string property called `updateDate`. See the `{customFieldName}Columns` section for information on how this property is used.
+
+### `{customFieldName}Columns`
+
+A list of column names. `{customFieldName}` should match a custom field with type `date`. When a task is created in or dragged into one of these columns, the matching custom field in the task can be set to the current time.
+
+If the custom field has `updateDate` set to `once`, the field will only be updated if it doesn't already have a value.
+
+If the custom field has `updateDate` set to `always`, the field will be updated every time the task is moved into a linked column.
