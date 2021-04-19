@@ -655,13 +655,13 @@ module.exports = (() => {
         .filter((task) => task.started === date)
         .map((task) => ({
           eventType: "started",
-          taskId: task.id,
+          task
         })),
       ...tasks
         .filter((task) => task.completed === date)
         .map((task) => ({
           eventType: "completed",
-          taskId: task.id,
+          task
         })),
     ];
   }
