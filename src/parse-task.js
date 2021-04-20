@@ -1,5 +1,6 @@
 const md = require('md-2-json');
 const yaml = require('yamljs');
+const fm = require('front-matter');
 const marked = require('marked');
 const utility = require('./utility');
 const chrono = require('chrono-node');
@@ -182,6 +183,16 @@ module.exports = {
         throw new Error('data is not a string');
       }
 
+      // Get YAML front matter if any exists
+      if (fm.test(data)) {
+        ({ attributes: metadata, body: data } = fm(data));
+
+        // Make sure the front matter contains an object
+        if (typeof metadata !== 'object') {
+          throw new Error('invalid front matter content');
+        }
+      }
+
       // Parse markdown to an object
       let parsed = null;
       try {
@@ -204,55 +215,64 @@ module.exports = {
       id = utility.getTaskId(name);
 
       // Parse metadata
+      // Metadata will be serialized back to front-matter, this check remains here for backwards compatibility
       if ('Metadata' in task) {
-        metadata = yaml.parse(task['Metadata'].raw.trim().replace(/```(yaml|yml)?/g, ''));
-        validateMetadataFromMarkdown(metadata);
 
-        // Check created/updated/completed/due dates
-        if ('created' in metadata && !(metadata.created instanceof Date)) {
-          const dateValue = chrono.parseDate(metadata.created);
-          if (dateValue === null) {
-            throw new Error('unable to parse created date');
-          }
-          metadata.created = dateValue;
-        }
-        if ('updated' in metadata && !(metadata.updated instanceof Date)) {
-          const dateValue = chrono.parseDate(metadata.updated);
-          if (dateValue === null) {
-            throw new Error('unable to parse updated date');
-          }
-          metadata.updated = dateValue;
-        }
-        if ('started' in metadata && !(metadata.started instanceof Date)) {
-          const dateValue = chrono.parseDate(metadata.started);
-          if (dateValue === null) {
-            throw new Error('unable to parse started date');
-          }
-          metadata.started = dateValue;
-        }
-        if ('completed' in metadata && !(metadata.completed instanceof Date)) {
-          const dateValue = chrono.parseDate(metadata.completed);
-          if (dateValue === null) {
-            throw new Error('unable to parse completed date');
-          }
-          metadata.completed = dateValue;
-        }
-        if ('due' in metadata && !(metadata.due instanceof Date)) {
-          const dateValue = chrono.parseDate(metadata.due);
-          if (dateValue === null) {
-            throw new Error('unable to parse due date');
-          }
-          metadata.due = dateValue;
+        // Get embedded metadata and make sure it's an object
+        const embeddedMetadata = yaml.parse(task['Metadata'].raw.trim().replace(/```(yaml|yml)?/g, ''));
+        if (typeof embeddedMetadata !== 'object') {
+          throw new Error('invalid metadata content');
         }
 
-        // Check progress value
-        if ('progress' in metadata) {
-          const numberValue = parseFloat(metadata.progress);
-          if (isNaN(numberValue)) {
-            throw new Error('progress value is not numeric');
-          }
-          metadata.progress = numberValue;
+        // Merge with front matter metadata
+        metadata = Object.assign(metadata, embeddedMetadata);
+      }
+      validateMetadataFromMarkdown(metadata);
+
+      // Check created/updated/completed/due dates
+      if ('created' in metadata && !(metadata.created instanceof Date)) {
+        const dateValue = chrono.parseDate(metadata.created);
+        if (dateValue === null) {
+          throw new Error('unable to parse created date');
         }
+        metadata.created = dateValue;
+      }
+      if ('updated' in metadata && !(metadata.updated instanceof Date)) {
+        const dateValue = chrono.parseDate(metadata.updated);
+        if (dateValue === null) {
+          throw new Error('unable to parse updated date');
+        }
+        metadata.updated = dateValue;
+      }
+      if ('started' in metadata && !(metadata.started instanceof Date)) {
+        const dateValue = chrono.parseDate(metadata.started);
+        if (dateValue === null) {
+          throw new Error('unable to parse started date');
+        }
+        metadata.started = dateValue;
+      }
+      if ('completed' in metadata && !(metadata.completed instanceof Date)) {
+        const dateValue = chrono.parseDate(metadata.completed);
+        if (dateValue === null) {
+          throw new Error('unable to parse completed date');
+        }
+        metadata.completed = dateValue;
+      }
+      if ('due' in metadata && !(metadata.due instanceof Date)) {
+        const dateValue = chrono.parseDate(metadata.due);
+        if (dateValue === null) {
+          throw new Error('unable to parse due date');
+        }
+        metadata.due = dateValue;
+      }
+
+      // Check progress value
+      if ('progress' in metadata) {
+        const numberValue = parseFloat(metadata.progress);
+        if (isNaN(numberValue)) {
+          throw new Error('progress value is not numeric');
+        }
+        metadata.progress = numberValue;
       }
 
       // Parse sub-tasks
@@ -357,21 +377,20 @@ module.exports = {
         throw new Error('data object is missing name');
       }
 
-      // Add name and description
-      result.push(`# ${data.name}`);
-      if ('description' in data) {
-        result.push(data.description);
-      }
-
-      // Add metadata if present
+      // Add metadata as front-matter content if present
       if ('metadata' in data && data.metadata !== null) {
         validateMetadataFromJSON(data.metadata);
         if (Object.keys(data.metadata).length > 0) {
           result.push(
-            '## Metadata',
-            `\`\`\`yaml\n${yaml.stringify(data.metadata, 4, 2).trim()}\n\`\`\``
+            `---\n${yaml.stringify(data.metadata, 4, 2).trim()}\n---`
           );
         }
+      }
+
+      // Add name and description
+      result.push(`# ${data.name}`);
+      if ('description' in data) {
+        result.push(data.description);
       }
 
       // Add sub-tasks if present

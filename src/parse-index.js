@@ -1,5 +1,6 @@
 const md = require('md-2-json');
 const yaml = require('yamljs');
+const fm = require('front-matter');
 const marked = require('marked');
 const validate = require('jsonschema').validate;
 
@@ -191,6 +192,16 @@ module.exports = {
         throw new Error('data is not a string');
       }
 
+      // Get YAML front matter if any exists
+      if (fm.test(data)) {
+        ({ attributes: options, body: data } = fm(data));
+
+        // Make sure the front matter contains an object
+        if (typeof options !== 'object') {
+          throw new Error('invalid front matter content');
+        }
+      }
+
       // Parse markdown to an object
       let parsed = null;
       try {
@@ -213,10 +224,19 @@ module.exports = {
       description = 'raw' in index ? index.raw.trim() : '';
 
       // Parse options
+      // Options will be serialized back to front-matter, this check remains here for backwards-compatibility
       if ('Options' in index) {
-        options = yaml.parse(index['Options'].raw.trim().replace(/```(yaml|yml)?/g, ''));
-        validateOptions(options);
+
+        // Get embedded options and make sure it's an object
+        const embeddedOptions = yaml.parse(index['Options'].raw.trim().replace(/```(yaml|yml)?/g, ''));
+        if (typeof embeddedOptions !== 'object') {
+          throw new Error('invalid options content');
+        }
+
+        // Merge with front matter options
+        options = Object.assign(options, embeddedOptions);
       }
+      validateOptions(options);
 
       // Parse columns
       const columnNames = Object.keys(index).filter(column => ['raw', 'Options'].indexOf(column) === -1);
@@ -265,21 +285,20 @@ module.exports = {
         throw new Error('data object is missing name');
       }
 
-      // Add name and description
-      result.push(`# ${data.name}`);
-      if ('description' in data) {
-        result.push(data.description);
-      }
-
-      // Add options if present and not ignoring
+      // Add options as front-matter content if present and not ignoring
       if ('options' in data && data.options !== null && !ignoreOptions) {
         validateOptions(data.options);
         if (Object.keys(data.options).length) {
           result.push(
-            '## Options',
-            `\`\`\`yaml\n${yaml.stringify(data.options, 4, 2).trim()}\n\`\`\``
+            `---\n${yaml.stringify(data.options, 4, 2).trim()}\n---`
           );
         }
+      }
+
+      // Add name and description
+      result.push(`# ${data.name}`);
+      if ('description' in data) {
+        result.push(data.description);
       }
 
       // Check columns
