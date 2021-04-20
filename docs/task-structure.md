@@ -3,13 +3,7 @@
 Here is a sample task file (`.kanbn/tasks/task-name.md`):
 
 ```markdown
-# Task Name
-
-Task description...
-
-## Metadata
-
-\```yaml
+---
 created: 2021-03-18T02:08:42.293Z
 updated: 2021-03-18T02:08:42.293Z
 tags:
@@ -19,7 +13,11 @@ progress: 0.5
 started: 2021-03-21T04:58:38.653Z
 completed: 2021-03-21T04:58:38.653Z
 due: 2021-03-21T04:58:38.653Z
-\```
+---
+
+# Task Name
+
+Task description...
 
 ## Sub-tasks
 
@@ -38,15 +36,21 @@ due: 2021-03-21T04:58:38.653Z
   This is a comment...
 ```
 
-There should be a level-1 heading at the top containing the task name.
+The task file can optionally begin with YAML front-matter containing task metadata.
+
+There should be a single level-1 heading at the top of the markdown body containing the task name.
 
 The task description should appear below the title. The description can be of any length and can contain markdown.
 
 The following level-2 headings are reserved for special purposes:
 
-## Task metadata
+## Metadata
 
 The 'Metadata' heading should be followed by a code block containing YAML. The 'yaml' info-string is not required, but might help with syntax highlighting in some editors.
+
+Task metadata will be merged with YAML front-matter if any is present.
+
+*Note: when a task is saved, all task metadata will be placed into YAML front-matter. The 'Metadata' heading is still supported for backwards-compatibility.*
 
 ```yaml
 created: 2021-03-18T02:08:42.293Z

@@ -3,15 +3,13 @@
 Here is a sample index file (`.kanbn/index.md`):
 
 ```markdown
+---
+optionName: optionValue
+---
+
 # Project Name
 
 Project description...
-
-## Options
-
-\```yaml
-optionName: optionValue
-\```
 
 ## Column 1
 
@@ -23,9 +21,11 @@ optionName: optionValue
 - [task-3](tasks/task-3.md)
 ```
 
-There should be a level-1 heading at the top containing the project name.
+The index file can optionally begin with YAML front-matter containing project options.
 
-The project description should appear below the title. The description can be of any length and can contain markdown, however it cannot contain any headings.
+There should be a single level-1 heading at the top of the markdown body containing the project name.
+
+The project description should appear below the title. The description can be of any length and can contain markdown, however it must not contain any headings.
 
 Below the description there should be one or more level-2 headings. The 'Options' name is reserved for project options.
 
@@ -34,6 +34,10 @@ All level-2 headings (except for 'Options') will be treated as columns. Columns 
 ## Project options
 
 The 'Options' heading should be followed by a code block containing YAML. The 'yaml' info-string is not required, but might help with syntax highlighting in some editors.
+
+Project options will be merged with YAML front-matter if any is present.
+
+*Note: when the index is saved, all project options will be placed into YAML front-matter. The 'Options' heading is still supported for backwards-compatibility.*
 
 ```yaml
 hiddenColumns:
