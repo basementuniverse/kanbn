@@ -2,16 +2,13 @@ const parseIndex = require('../../src/parse-index.js');
 
 QUnit.module('Index JSON to markdown conversion tests');
 
-const CASE_1 = `
+const CASE_1 = `---
+option1: a
+---
+
 # Project name
 
 Project description
-
-## Options
-
-\`\`\`yaml
-option1: a
-\`\`\`
 
 ## Column1
 
@@ -23,14 +20,11 @@ option1: a
 - [task-id-3](tasks/task-id-3.md)
 `;
 
-const CASE_2 = `
-# Project name
-
-## Options
-
-\`\`\`yaml
+const CASE_2 = `---
 option1: a
-\`\`\`
+---
+
+# Project name
 
 ## Column1
 

@@ -122,7 +122,7 @@ ${TEST_DESCRIPTION_1}
 
 Invalid metadata
 `,
-    error: /instance is not of a type\(s\) object/
+    error: /invalid metadata content/
   },
   {
     md: `
@@ -192,6 +192,28 @@ completed: test
 due: test
 `,
     error: /unable to parse due date/
+  },
+  {
+    md: `---
+Invalid metadata
+---
+
+# ${TEST_NAME}
+`,
+    error: /invalid front matter content/
+  },
+  {
+    md: `---
+test: 1
+---
+
+# ${TEST_NAME}
+
+## Metadata
+
+Invalid metadata
+`,
+    error: /invalid metadata content/
   }
 ];
 
@@ -429,6 +451,48 @@ ${TEST_DESCRIPTION_3}`,
         TEST_RELATION_4_JSON,
         TEST_RELATION_5_JSON
       ],
+      comments: []
+    }
+  },
+  {
+    md: `---
+${TEST_METADATA}
+---
+
+# ${TEST_NAME}`,
+    json: {
+      id: TEST_ID,
+      name: TEST_NAME,
+      description: '',
+      metadata: TEST_METADATA_JSON,
+      subTasks: [],
+      relations: [],
+      comments: []
+    }
+  },
+  {
+    md: `---
+validMetadata: test1
+---
+
+# ${TEST_NAME}
+
+## Metadata
+\`\`\`
+validMetadata: test2
+moreValidMetadata: test3
+\`\`\`
+`,
+    json: {
+      id: TEST_ID,
+      name: TEST_NAME,
+      description: '',
+      metadata: {
+        validMetadata: 'test2',
+        moreValidMetadata: 'test3'
+      },
+      subTasks: [],
+      relations: [],
       comments: []
     }
   }

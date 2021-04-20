@@ -40,7 +40,7 @@ ${TEST_DESCRIPTION}
 
 Invalid options
 `,
-    error: /instance is not of a type\(s\) object/
+    error: /invalid options content/
   },
   {
     md: `
@@ -51,6 +51,28 @@ Invalid options
 Invalid column contents
 `,
     error: new RegExp(`column "${TEST_COLUMN_1}" must contain a list`)
+  },
+  {
+    md: `---
+Invalid Options
+---
+
+# ${TEST_NAME}
+`,
+    error: /invalid front matter content/
+  },
+  {
+    md: `---
+test: 1
+---
+
+# ${TEST_NAME}
+
+## Options
+
+Invalid options
+`,
+    error: /invalid options content/
   }
 ];
 
@@ -199,6 +221,67 @@ ${TEST_DESCRIPTION}
           TEST_TASK_2
         ],
         [TEST_COLUMN_2]: [
+          TEST_TASK_1,
+          TEST_TASK_2
+        ]
+      }
+    }
+  },
+  {
+    md: `---
+validOptions: test
+---
+
+# ${TEST_NAME}
+
+${TEST_DESCRIPTION}
+
+## ${TEST_COLUMN_1}
+- [${TEST_TASK_1}](${TEST_TASK_1}.md)
+- [${TEST_TASK_2}](${TEST_TASK_2}.md)
+`,
+    json: {
+      name: TEST_NAME,
+      description: TEST_DESCRIPTION,
+      options: {
+        validOptions: 'test'
+      },
+      columns: {
+        [TEST_COLUMN_1]: [
+          TEST_TASK_1,
+          TEST_TASK_2
+        ]
+      }
+    }
+  },
+  {
+    md: `---
+validOption: test1
+---
+
+# ${TEST_NAME}
+
+${TEST_DESCRIPTION}
+
+## Options
+\`\`\`
+validOption: test2
+anotherValidOption: test3
+\`\`\`
+
+## ${TEST_COLUMN_1}
+- [${TEST_TASK_1}](${TEST_TASK_1}.md)
+- [${TEST_TASK_2}](${TEST_TASK_2}.md)
+`,
+    json: {
+      name: TEST_NAME,
+      description: TEST_DESCRIPTION,
+      options: {
+        validOption: 'test2',
+        anotherValidOption: 'test3'
+      },
+      columns: {
+        [TEST_COLUMN_1]: [
           TEST_TASK_1,
           TEST_TASK_2
         ]

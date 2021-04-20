@@ -2,7 +2,13 @@ const parseTask = require('../../src/parse-task.js');
 
 QUnit.module('Task JSON to markdown conversion tests');
 
-const CASE_1 = `
+const CASE_1 = `---
+tags:
+  - tag1
+  - tag2
+  - tag3
+---
+
 # Task Name
 
 This is a *task* description
@@ -31,15 +37,6 @@ And more data...
 
 Even more data!
 
-## Metadata
-
-\`\`\`yaml
-tags:
-  - tag1
-  - tag2
-  - tag3
-\`\`\`
-
 ## Sub-tasks
 
 - [ ] this is a sub-task
@@ -52,19 +49,16 @@ tags:
 - [blocks this-task](this-task.md)
 `;
 
-const CASE_2 = `
-# Task Name
-
-This is a *task* description
-
-## Metadata
-
-\`\`\`yaml
+const CASE_2 = `---
 tags:
   - tag1
   - tag2
   - tag3
-\`\`\`
+---
+
+# Task Name
+
+This is a *task* description
 `;
 
 const CASE_3 = `

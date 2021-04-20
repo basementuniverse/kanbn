@@ -82,7 +82,7 @@ QUnit.test('Validate with problems in task files should return array of task err
     },
     {
       task: 'task-3',
-      errors: 'Unable to parse task: \ninstance is not of a type(s) object'
+      errors: 'Unable to parse task: invalid metadata content'
     }
   ]);
 });
