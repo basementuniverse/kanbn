@@ -14,7 +14,7 @@ module.exports = (() => {
   const MAIN_FOLDER = path.join(ROOT, FOLDER_NAME);
   const INDEX = path.join(MAIN_FOLDER, "index.md");
   const TASK_FOLDER = path.join(MAIN_FOLDER, "tasks/");
-  const CONFIG = path.join(MAIN_FOLDER, "config.yaml");
+  const CONFIG = path.join(ROOT, "kanbn.yml");
 
   // Default fallback values for index options
   const DEFAULT_TASK_WORKLOAD = 2;
