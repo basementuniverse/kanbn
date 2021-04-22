@@ -70,7 +70,7 @@ QUnit.test('Rename a task', async assert => {
   await kanbn.updateTask('task-1', { name: 'Task 3' });
 
   // Verify that the task file and index were updated
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   context.taskFileExists(assert, BASE_PATH, 'task-3');
   context.indexHasTask(assert, BASE_PATH, 'task-3');
 });
@@ -85,7 +85,7 @@ QUnit.test('Rename a task to a name that already exists should throw "task alrea
 });
 
 QUnit.test('Update a task', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   const TEST_DESCRIPTION = 'Test description...';
   const TEST_TAGS = ['Tag 1', 'Tag 2'];
   const TEST_SUB_TASK = {
@@ -136,5 +136,5 @@ QUnit.test('Move a task using the update method', async assert => {
   await kanbn.updateTask('task-1', task, 'Column 2');
 
   // Verify that the index was updated
-  context.indexHasTask(assert, kanbn.getMainFolder(), 'task-1', 'Column 2');
+  context.indexHasTask(assert, await kanbn.getMainFolder(), 'task-1', 'Column 2');
 });

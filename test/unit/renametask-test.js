@@ -67,7 +67,7 @@ QUnit.test('Rename a task to a name that already exists should throw "task alrea
 });
 
 QUnit.test('Rename a task', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   const currentDate = (new Date()).toISOString();
   await kanbn.renameTask('task-1', 'task-3');
 

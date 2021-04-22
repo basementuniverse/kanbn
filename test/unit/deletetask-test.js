@@ -59,7 +59,7 @@ QUnit.test('Delete a task from the index but leave the file', async assert => {
   await kanbn.deleteTask('task-1', false);
 
   // Verify that the task was removed from the index
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   context.indexHasTask(assert, BASE_PATH, 'task-1', null, false);
 
   // Verify that the task file still exists
@@ -70,7 +70,7 @@ QUnit.test('Delete a task from the index and remove the file', async assert => {
   await kanbn.deleteTask('task-1', true);
 
   // Verify that the task was removed from the index
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   context.indexHasTask(assert, BASE_PATH, 'task-1', null, false);
 
   // Verify that the task file no longer exists

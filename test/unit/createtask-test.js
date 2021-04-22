@@ -107,7 +107,7 @@ QUnit.test('Create task', async assert => {
   const TASK_ID = await kanbn.createTask({ name: 'Test name' }, 'Backlog');
 
   // Verify that the file exists and is indexed
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   context.taskFileExists(assert, BASE_PATH, TASK_ID);
   context.indexHasTask(assert, BASE_PATH, TASK_ID, 'Backlog');
 });

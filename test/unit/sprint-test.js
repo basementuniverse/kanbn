@@ -33,7 +33,7 @@ QUnit.test('Start a sprint should create a new sprint', async assert => {
   await kanbn.sprint(SPRINT_NAME, SPRINT_DESCRIPTION, SPRINT_DATE);
 
   // Verify that the sprint exists
-  context.indexHasOptions(assert, kanbn.getMainFolder(), {
+  context.indexHasOptions(assert, await kanbn.getMainFolder(), {
     sprints: [
       {
         name: SPRINT_NAME,
@@ -45,7 +45,7 @@ QUnit.test('Start a sprint should create a new sprint', async assert => {
 });
 
 QUnit.test('Start a sprint with auto-generated name', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   const SPRINT_DATE = new Date();
   await kanbn.initialise();
 

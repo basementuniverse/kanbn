@@ -65,5 +65,5 @@ QUnit.test('Add untracked task to the index', async assert => {
   const TASK_ID = await kanbn.addUntrackedTaskToIndex('test-task-2', 'Test Column');
 
   // Verify that the task is in the index
-  context.indexHasTask(assert, kanbn.getMainFolder(), TASK_ID, 'Test Column');
+  context.indexHasTask(assert, await kanbn.getMainFolder(), TASK_ID, 'Test Column');
 });

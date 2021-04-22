@@ -14,7 +14,7 @@ QUnit.module('removeAll tests', {
 });
 
 QUnit.test('Remove all should remove all kanbn files and folders', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
 
   // Kanbn should be initialised
   assert.equal(await kanbn.initialised(), true);

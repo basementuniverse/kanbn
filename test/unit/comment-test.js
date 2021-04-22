@@ -67,7 +67,7 @@ QUnit.test('Add a comment with blank text throw "blank text" error', async asser
 });
 
 QUnit.test('Add a comment to a task', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   const TEST_TEXT = 'Test comment...';
   const TEST_AUTHOR = 'Test Author';
 

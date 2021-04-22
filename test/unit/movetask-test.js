@@ -73,7 +73,7 @@ QUnit.test('Move a task to a non-existent column should throw "column not found"
 });
 
 QUnit.test('Move a task', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   const currentDate = (new Date()).toISOString();
   await kanbn.moveTask('task-1', 'Column 2');
 
@@ -87,7 +87,7 @@ QUnit.test('Move a task', async assert => {
 });
 
 QUnit.test('Move a task into a started column should update the started date', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   const currentDate = (new Date()).toISOString();
   await kanbn.moveTask('task-1', 'Column 2');
 
@@ -101,7 +101,7 @@ QUnit.test('Move a task into a started column should update the started date', a
 });
 
 QUnit.test('Move a task into a completed column should update the completed date', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   const currentDate = (new Date()).toISOString();
   await kanbn.moveTask('task-1', 'Column 3');
 
@@ -115,7 +115,7 @@ QUnit.test('Move a task into a completed column should update the completed date
 });
 
 QUnit.test('Move a task into a custom metadata-linked column (update date once)', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   const TEST_DATE_1 = '2000-01-01T00:00:00.000Z';
   const TEST_DATE_2 = '2000-01-02T00:00:00.000Z';
 
@@ -159,7 +159,7 @@ QUnit.test('Move a task into a custom metadata-linked column (update date once)'
 });
 
 QUnit.test('Move a task into a custom metadata-linked column (update date always)', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
   const TEST_DATE_1 = '2000-01-01T00:00:00.000Z';
   const TEST_DATE_2 = '2000-01-02T00:00:00.000Z';
 
@@ -203,7 +203,7 @@ QUnit.test('Move a task into a custom metadata-linked column (update date always
 });
 
 QUnit.test('Move a task to an absolute position in the same column', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
 
   await kanbn.moveTask('task-1', 'Column 1', -1);
   context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 0);
@@ -240,7 +240,7 @@ QUnit.test('Move a task to an absolute position in the same column', async asser
 });
 
 QUnit.test('Move a task to an absolute position in another column', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
 
   await kanbn.moveTask('task-1', 'Column 2', -1);
   context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 2', 0);
@@ -268,7 +268,7 @@ QUnit.test('Move a task to an absolute position in another column', async assert
 });
 
 QUnit.test('Move a task to a relative position in the same column', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
 
   await kanbn.moveTask('task-1', 'Column 1', -1, true);
   context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 1', 0);
@@ -287,7 +287,7 @@ QUnit.test('Move a task to a relative position in the same column', async assert
 });
 
 QUnit.test('Move a task to a relative position in another column', async assert => {
-  const BASE_PATH = kanbn.getMainFolder();
+  const BASE_PATH = await kanbn.getMainFolder();
 
   await kanbn.moveTask('task-1', 'Column 2', 1, true);
   context.taskHasPositionInColumn(assert, BASE_PATH, 'task-1', 'Column 2', 1);
