@@ -1,5 +1,11 @@
 /// <reference types="typescript" />
 
+declare type config = {
+  mainFolder?: string,
+  indexFile?: string,
+  taskFolder?: string
+};
+
 declare type index = {
   name: string,
   description: string,
@@ -52,16 +58,46 @@ declare type sprint = {
 };
 
 /**
- * Get the name of the folder where the index and tasks are stored
- * @return {string} The kanbn folder name
+ * Get configuration settings from the config file if it exists, otherwise return null
+ * @return {Promise<config|null>} Configuration settings or null if there is no separate config file
  */
-export function getFolderName(): string;
+export function getConfig(): Promise<config|null>;
+
+/**
+ * Get the name of the folder where the index and tasks are stored
+ * @return {Promise<string>} The kanbn folder name
+ */
+export function getFolderName(): Promise<string>;
+
+/**
+ * Get the index filename
+ * @return {Promise<string>} The index filename
+ */
+export function getIndexFileName(): Promise<string>;
+
+/**
+ * Get the name of the folder where tasks are stored
+ * @return {Promise<string>} The task folder name
+ */
+export function getTaskFolderName(): Promise<string>;
 
 /**
  * Get the kanbn folder location for the current working directory
- * @return {string} The kanbn folder path
+ * @return {Promise<string>} The kanbn folder path
  */
-export function getMainFolder(): string;
+export function getMainFolder(): Promise<string>;
+
+/**
+ * Get the index path
+ * @return {Promise<string>} The kanbn index path
+ */
+export function getIndexPath(): Promise<string>;
+
+/**
+ * Get the task folder path
+ * @return {Promise<string>} The kanbn task folder path
+ */
+export function getTaskFolderPath(): Promise<string>;
 
 /**
  * Get the index as an object
