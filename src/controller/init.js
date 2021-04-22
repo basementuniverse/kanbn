@@ -68,14 +68,14 @@ async function interactive(options, initialised) {
  * @param {object} options
  * @param {boolean} initialised
  */
-function initialise(options, initialised) {
-  kanbn
-  .initialise(options)
+async function initialise(options, initialised) {
+  const mainFolder = await kanbn.getMainFolder();
+  kanbn.initialise(options)
   .then(() => {
     if (initialised) {
-      console.log(`Reinitialised existing kanbn board in ${kanbn.getMainFolder()}`);
+      console.log(`Reinitialised existing kanbn board in ${mainFolder}`);
     } else {
-      console.log(`Initialised empty kanbn board in ${kanbn.getMainFolder()}`);
+      console.log(`Initialised empty kanbn board in ${mainFolder}`);
     }
   })
   .catch(error => {
@@ -118,11 +118,11 @@ module.exports = async args => {
   // Interactive initialisation
   if (args.interactive) {
     interactive(options, initialised)
-    .then(answers => {
+    .then(async (answers) => {
       if ('columns' in answers) {
         answers.columns = answers.columns.map(column => column.columnName);
       }
-      initialise(answers, initialised);
+      await initialise(answers, initialised);
     })
     .catch(error => {
       utility.error(error, true);
@@ -130,6 +130,6 @@ module.exports = async args => {
 
   // Non-interactive initialisation
   } else {
-    initialise(options, initialised);
+    await initialise(options, initialised);
   }
 };

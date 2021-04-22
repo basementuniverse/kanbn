@@ -10,11 +10,11 @@ const rimraf = require("rimraf");
 
 module.exports = (() => {
   const ROOT = process.cwd();
-  const FOLDER_NAME = ".kanbn";
-  const MAIN_FOLDER = path.join(ROOT, FOLDER_NAME);
-  const INDEX = path.join(MAIN_FOLDER, "index.md");
-  const TASK_FOLDER = path.join(MAIN_FOLDER, "tasks/");
-  const CONFIG = path.join(ROOT, "kanbn.yml");
+  const CONFIG_YAML = path.join(ROOT, "kanbn.yml");
+  const CONFIG_JSON = path.join(ROOT, "kanbn.json");
+  const DEFAULT_FOLDER_NAME = ".kanbn";
+  const DEFAULT_INDEX_FILE_NAME = "index.md";
+  const DEFAULT_TASKS_FOLDER_NAME = "tasks";
 
   // Default fallback values for index options
   const DEFAULT_TASK_WORKLOAD = 2;
@@ -28,6 +28,9 @@ module.exports = (() => {
   };
   const DEFAULT_DATE_FORMAT = "d mmm yy, H:MM";
   const DEFAULT_TASK_TEMPLATE = "^+^_${overdue ? '^R' : ''}${name}^: ${created ? ('\\n^-^/' + created) : ''}";
+
+  // Memoize config
+  let configMemo = null;
 
   /**
    * Default options for the initialise command
@@ -57,12 +60,32 @@ module.exports = (() => {
   }
 
   /**
+   * Check if a separate config file exists
+   * @returns {boolean} True if a config file exists
+   */
+  async function configExists() {
+    return await exists(CONFIG_YAML) || await exists(CONFIG_JSON);
+  }
+
+  /**
+   * Save configuration data to a separate config file
+   */
+  async function saveConfig(config) {
+    if (await exists(CONFIG_YAML)) {
+      await fs.promises.writeFile(CONFIG_YAML, yaml.stringify(config, 4, 2));
+    } else {
+      await fs.promises.writeFile(CONFIG_JSON, JSON.stringify(config, null, 4));
+    }
+  }
+
+  /**
    * Get a task path from the id
+   * @param {string} tasksPath The path to the tasks folder
    * @param {string} taskId The task id
    * @return {string} The task path
    */
-  function getTaskPath(taskId) {
-    return path.join(TASK_FOLDER, addFileExtension(taskId));
+  function getTaskPath(tasksPath, taskId) {
+    return path.join(tasksPath, addFileExtension(taskId));
   }
 
   /**
@@ -729,19 +752,90 @@ module.exports = (() => {
 
   return {
     /**
+     * Get configuration settings from the config file if it exists, otherwise return null
+     * @return {Object|null} Configuration settings or null if there is no separate config file
+     */
+    async getConfig() {
+      if (configMemo === null) {
+        let config = null;
+        if (await exists(CONFIG_YAML)) {
+          try {
+            config = yaml.load(CONFIG_YAML);
+          } catch (error) {
+            throw new Error(`Couldn't load config file: ${error.message}`);
+          }
+        } else if (await exists(CONFIG_JSON)) {
+          try {
+            config = JSON.parse(await fs.promises.readFile(CONFIG_JSON, { encoding: "utf-8" }));
+          } catch (error) {
+            throw new Error(`Couldn't load config file: ${error.message}`);
+          }
+        }
+        configMemo = config;
+      }
+      return configMemo;
+    },
+
+    // async saveConfig()
+
+    /**
      * Get the name of the folder where the index and tasks are stored
      * @return {string} The kanbn folder name
      */
-    getFolderName() {
-      return FOLDER_NAME;
+    async getFolderName() {
+      const config = await this.getConfig();
+      if (config !== null && 'mainFolder' in config) {
+        return config.mainFolder;
+      }
+      return DEFAULT_FOLDER_NAME;
+    },
+
+    /**
+     * Get the index filename
+     * @return {string} The index filename
+     */
+    async getIndexFileName() {
+      const config = await this.getConfig();
+      if (config !== null && 'indexFile' in config) {
+        return config.indexFile;
+      }
+      return DEFAULT_INDEX_FILE_NAME;
+    },
+
+    /**
+     * Get the name of the folder where tasks are stored
+     * @return {string} The task folder name
+     */
+    async getTaskFolderName() {
+      const config = await this.getConfig();
+      if (config !== null && 'taskFolder' in config) {
+        return config.taskFolder;
+      }
+      return DEFAULT_TASKS_FOLDER_NAME;
     },
 
     /**
      * Get the kanbn folder location for the current working directory
      * @return {string} The kanbn folder path
      */
-    getMainFolder() {
-      return MAIN_FOLDER;
+    async getMainFolder() {
+      return path.join(ROOT, await this.getFolderName());
+    },
+
+    /**
+     * Get the index path
+     * @return {string} The kanbn index path
+     */
+    async getIndexPath() {
+      return path.join(await this.getMainFolder(), await this.getIndexFileName());
+    },
+
+    /**
+     * Get the task folder path
+     * @return {string} The kanbn task folder path
+     */
+    async getTaskFolderPath() {
+      return path.join(await this.getMainFolder(), await this.getTaskFolderName());
     },
 
     /**
@@ -852,13 +946,13 @@ module.exports = (() => {
 
       // If there is a separate config file, save options to this file
       let ignoreOptions = false;
-      if (await exists(CONFIG)) {
-        await fs.promises.writeFile(CONFIG, yaml.stringify(indexData.options, 4, 2));
+      if (await configExists()) {
+        await saveConfig(indexData.options);
         ignoreOptions = true;
       }
 
       // Save index
-      await fs.promises.writeFile(INDEX, parseIndex.json2md(indexData, ignoreOptions));
+      await fs.promises.writeFile(await this.getIndexPath(), parseIndex.json2md(indexData, ignoreOptions));
     },
 
     /**
@@ -868,20 +962,15 @@ module.exports = (() => {
     async loadIndex() {
       let indexData = "";
       try {
-        indexData = await fs.promises.readFile(INDEX, { encoding: "utf-8" });
+        indexData = await fs.promises.readFile(await this.getIndexPath(), { encoding: "utf-8" });
       } catch (error) {
         throw new Error(`Couldn't access index file: ${error.message}`);
       }
       const index = parseIndex.md2json(indexData);
 
-      // Check for separate config file
-      if (await exists(CONFIG)) {
-        let config;
-        try {
-          config = yaml.load(CONFIG);
-        } catch (error) {
-          throw new Error(`Couldn't load config file: ${error.message}`);
-        }
+      // If configuration settings exist in a separate config file, merge them with index options
+      const config = await this.getConfig();
+      if (config !== null) {
         index.options = { ...index.options, ...config };
       }
       return index;
@@ -902,10 +991,10 @@ module.exports = (() => {
      * @return {Promise<object>}
      */
     async loadTask(taskId) {
-      const TASK = path.join(TASK_FOLDER, addFileExtension(taskId));
+      const taskPath = path.join(await this.getTaskFolderPath(), addFileExtension(taskId));
       let taskData = "";
       try {
-        taskData = await fs.promises.readFile(TASK, { encoding: "utf-8" });
+        taskData = await fs.promises.readFile(taskPath, { encoding: "utf-8" });
       } catch (error) {
         throw new Error(`Couldn't access task file: ${error.message}`);
       }
@@ -950,7 +1039,7 @@ module.exports = (() => {
      * @return {boolean} True if the current working directory has been initialised, otherwise false
      */
     async initialised() {
-      return await exists(INDEX);
+      return await exists(await this.getIndexPath());
     },
 
     /**
@@ -958,24 +1047,33 @@ module.exports = (() => {
      * @param {object} [options={}] Initial columns and other config options
      */
     async initialise(options = {}) {
+      // Check if a main folder is defined in an existing config file
+      const mainFolder = await this.getMainFolder();
+
       // Create main folder if it doesn't already exist
-      if (!(await exists(MAIN_FOLDER))) {
-        await fs.promises.mkdir(MAIN_FOLDER, { recursive: true });
+      if (!(await exists(mainFolder))) {
+        await fs.promises.mkdir(mainFolder, { recursive: true });
       }
 
       // Create tasks folder if it doesn't already exist
-      if (!(await exists(TASK_FOLDER))) {
-        await fs.promises.mkdir(TASK_FOLDER, { recursive: true });
+      const taskFolder = await this.getTaskFolderPath();
+      if (!(await exists(taskFolder))) {
+        await fs.promises.mkdir(taskFolder, { recursive: true });
       }
 
       // Create index if one doesn't already exist
       let index;
-      if (!(await exists(INDEX))) {
+      if (!(await exists(await this.getIndexPath()))) {
+
+        // If config already exists in a separate file, merge it into the options
+        const config = await this.getConfig();
+
+        // Create initial options
         const opts = Object.assign({}, defaultInitialiseOptions, options);
         index = {
           name: opts.name,
           description: opts.description,
-          options: opts.options,
+          options: Object.assign({}, opts.options, config || {}),
           columns: Object.fromEntries(opts.columns.map((columnName) => [columnName, []])),
         };
 
@@ -1010,7 +1108,7 @@ module.exports = (() => {
       }
 
       // Check if the task file exists
-      if (!(await exists(getTaskPath(taskId)))) {
+      if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1033,7 +1131,7 @@ module.exports = (() => {
       }
 
       // Check if the task file exists
-      if (!(await exists(getTaskPath(taskId)))) {
+      if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1066,7 +1164,7 @@ module.exports = (() => {
 
       // Make sure a task doesn't already exist with the same name
       const taskId = utility.getTaskId(taskData.name);
-      const taskPath = getTaskPath(taskId);
+      const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
       if (await exists(taskPath)) {
         throw new Error(`A task with id "${taskId}" already exists`);
       }
@@ -1109,7 +1207,7 @@ module.exports = (() => {
       taskId = removeFileExtension(taskId);
 
       // Make sure the task file exists
-      if (!(await exists(getTaskPath(taskId)))) {
+      if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1126,7 +1224,7 @@ module.exports = (() => {
 
       // Load task data
       let taskData = await this.loadTask(taskId);
-      const taskPath = getTaskPath(taskId);
+      const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
 
       // Update task metadata dates
       taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
@@ -1169,7 +1267,7 @@ module.exports = (() => {
       const trackedTasks = getTrackedTaskIds(index);
 
       // Get all tasks in the tasks folder
-      const files = await glob(`${TASK_FOLDER}/*.md`);
+      const files = await glob(`${await this.getTaskFolderPath()}/*.md`);
       const untrackedTasks = new Set(files.map((task) => path.parse(task).name));
 
       // Return the set difference
@@ -1191,7 +1289,7 @@ module.exports = (() => {
       taskId = removeFileExtension(taskId);
 
       // Make sure the task file exists
-      if (!(await exists(getTaskPath(taskId)))) {
+      if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1224,7 +1322,7 @@ module.exports = (() => {
       taskData = setTaskMetadata(taskData, "updated", new Date());
 
       // Save task
-      await this.saveTask(getTaskPath(taskId), taskData);
+      await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
 
       // Move the task if we're updating the column
       if (columnName) {
@@ -1251,7 +1349,7 @@ module.exports = (() => {
       taskId = removeFileExtension(taskId);
 
       // Make sure the task file exists
-      if (!(await exists(getTaskPath(taskId)))) {
+      if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1263,7 +1361,7 @@ module.exports = (() => {
 
       // Make sure there isn't already a task with the new task id
       const newTaskId = utility.getTaskId(newTaskName);
-      const newTaskPath = getTaskPath(newTaskId);
+      const newTaskPath = getTaskPath(await this.getTaskFolderPath(), newTaskId);
       if (await exists(newTaskPath)) {
         throw new Error(`A task with id "${newTaskId}" already exists`);
       }
@@ -1277,10 +1375,10 @@ module.exports = (() => {
       let taskData = await this.loadTask(taskId);
       taskData.name = newTaskName;
       taskData = setTaskMetadata(taskData, "updated", new Date());
-      await this.saveTask(getTaskPath(taskId), taskData);
+      await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
 
       // Rename the task file
-      await fs.promises.rename(getTaskPath(taskId), newTaskPath);
+      await fs.promises.rename(getTaskPath(await this.getTaskFolderPath(), taskId), newTaskPath);
 
       // Update the task id in the index
       index = renameTaskInIndex(index, taskId, newTaskId);
@@ -1304,7 +1402,7 @@ module.exports = (() => {
       taskId = removeFileExtension(taskId);
 
       // Make sure the task file exists
-      if (!(await exists(getTaskPath(taskId)))) {
+      if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1325,7 +1423,7 @@ module.exports = (() => {
 
       // Update task metadata dates
       taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
-      await this.saveTask(getTaskPath(taskId), taskData);
+      await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
 
       // If we're moving the task to a new position, calculate the absolute position
       const currentColumnName = findTaskColumn(index, taskId);
@@ -1367,8 +1465,8 @@ module.exports = (() => {
       index = removeTaskFromIndex(index, taskId);
 
       // Optionally remove the task file as well
-      if (removeFile && (await exists(getTaskPath(taskId)))) {
-        await fs.promises.unlink(getTaskPath(taskId));
+      if (removeFile && (await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+        await fs.promises.unlink(getTaskPath(await this.getTaskFolderPath(), taskId));
       }
       await this.saveIndex(index);
       return taskId;
@@ -1675,7 +1773,7 @@ module.exports = (() => {
 
           // Re-save tasks if required
           if (save) {
-            await this.saveTask(getTaskPath(taskId), task);
+            await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), task);
           }
         } catch (error) {
           errors.push({
@@ -1939,7 +2037,7 @@ module.exports = (() => {
       taskId = removeFileExtension(taskId);
 
       // Make sure the task file exists
-      if (!(await exists(getTaskPath(taskId)))) {
+      if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
         throw new Error(`No task file found with id "${taskId}"`);
       }
 
@@ -1956,7 +2054,7 @@ module.exports = (() => {
 
       // Add the comment
       const taskData = await this.loadTask(taskId);
-      const taskPath = getTaskPath(taskId);
+      const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
       taskData.comments.push({
         text,
         author,
@@ -1976,7 +2074,7 @@ module.exports = (() => {
       if (!(await this.initialised())) {
         throw new Error("Not initialised in this folder");
       }
-      rimraf.sync(MAIN_FOLDER);
+      rimraf.sync(await this.getMainFolder());
     },
   };
 })();
