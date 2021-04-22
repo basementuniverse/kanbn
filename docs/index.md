@@ -9,3 +9,4 @@ To get started quickly, check out the [Quick Start](quick-start.md) guide.
 - [Quick Start](quick-start.md)
 - [Index Structure](index-structure.md)
 - [Task Structure](task-structure.md)
+- [Advanced Configuration](advanced-configuration.md)
