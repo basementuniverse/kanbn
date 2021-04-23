@@ -1,6 +1,6 @@
 {b}kanbn remove-all{b}
 
-Completely remove the '.kanbn' directory and all of the contents.
+Completely remove the Kanbn directory and all of the contents.
 
 Make sure you have anything that you want to keep backed-up before running this.
 
