@@ -643,7 +643,10 @@ module.exports = (() => {
    * @return {object[]} A filtered list of tasks
    */
   function getActiveTasksAtDate(tasks, date) {
-    return tasks.filter((task) => task.started <= date && (task.completed === false || task.completed > date));
+    return tasks.filter((task) => (
+      (task.started !== false && task.started <= date) &&
+      (task.completed === false || task.completed > date)
+    ));
   }
 
   /**
@@ -675,13 +678,19 @@ module.exports = (() => {
   function getTaskEventsAtDate(tasks, date) {
     return [
       ...tasks
-        .filter((task) => task.started === date)
+        .filter((task) => (task.created ? task.created.getTime() : 0) === date.getTime())
+        .map((task) => ({
+          eventType: "created",
+          task
+        })),
+      ...tasks
+        .filter((task) => (task.started ? task.started.getTime() : 0) === date.getTime())
         .map((task) => ({
           eventType: "started",
           task
         })),
       ...tasks
-        .filter((task) => task.completed === date)
+        .filter((task) => (task.completed ? task.completed.getTime() : 0) === date.getTime())
         .map((task) => ({
           eventType: "completed",
           task
@@ -1890,7 +1899,12 @@ module.exports = (() => {
           return {
             ...task,
             created,
-            started: "started" in task.metadata ? task.metadata.started : created,
+            started:
+              "started" in task.metadata
+                ? task.metadata.started
+                : "startedColumns" in index.options && index.options.startedColumns.indexOf(task.column) !== -1
+                ? created
+                : false,
             completed:
               "completed" in task.metadata
                 ? task.metadata.completed
@@ -1930,10 +1944,8 @@ module.exports = (() => {
                   .map((t) =>
                     [
                       "created" in t.metadata && t.metadata.created,
-                      "updated" in t.metadata && t.metadata.updated,
                       "started" in t.metadata && t.metadata.started,
-                      "completed" in t.metadata && (t.metadata.completed || new Date(8640000000000000)),
-                      "due" in t.metadata && t.metadata.due,
+                      "completed" in t.metadata && (t.metadata.completed || new Date(8640000000000000))
                     ].filter((d) => d)
                   )
                   .flat()
@@ -1999,9 +2011,23 @@ module.exports = (() => {
             tasks: getTaskEventsAtDate(tasks, s.from),
           },
           ...tasks
+            .filter((task) => {
+              let result = false;
+              if (task.created && task.created >= s.from && task.created <= s.to) {
+                result = true;
+              }
+              if (task.started && task.started >= s.from && task.started <= s.to) {
+                result = true;
+              }
+              if (task.completed && task.completed >= s.from && task.completed <= s.to) {
+                result = true;
+              }
+              return result;
+            })
             .map((task) => [
-              task.started >= s.from && task.started <= s.to && task.started,
-              task.completed >= s.from && task.completed <= s.to && task.completed,
+              task.created,
+              task.started,
+              task.completed
             ])
             .flat()
             .filter((d) => d)
