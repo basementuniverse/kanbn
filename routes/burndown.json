@@ -12,14 +12,16 @@
       "date",
       "sprint",
       "assigned",
-      "column"
+      "column",
+      "normalise"
     ],
     "alias": {
       "json": ["j"],
       "date": ["d"],
       "sprint": ["p"],
       "assigned": ["a"],
-      "column": ["c"]
+      "column": ["c"],
+      "normalise": ["n"]
     }
   },
   "controller": "./src/controller/burndown",

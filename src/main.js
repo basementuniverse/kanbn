@@ -16,6 +16,12 @@ module.exports = (() => {
   const DEFAULT_INDEX_FILE_NAME = "index.md";
   const DEFAULT_TASKS_FOLDER_NAME = "tasks";
 
+  // Date normalisation intervals measured in milliseconds
+  const SECOND = 1000;
+  const MINUTE = 60 * SECOND;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+
   // Default fallback values for index options
   const DEFAULT_TASK_WORKLOAD = 2;
   const DEFAULT_TASK_WORKLOAD_TAGS = {
@@ -696,6 +702,29 @@ module.exports = (() => {
           task
         })),
     ];
+  }
+
+  /**
+   * Quantize a burndown chart date to 1-hour resolution
+   * @param {Date} date
+   * @param {string} resolution One of 'days', 'hours', 'minutes', 'seconds'
+   * @return {Date} The quantized dates
+   */
+  function normaliseDate(date, resolution = 'minutes') {
+    const result = new Date(date.getTime());
+    switch (resolution) {
+      case 'days':
+        result.setHours(0);
+      case 'hours':
+        result.setMinutes(0);
+      case 'minutes':
+        result.setSeconds(0);
+      case 'seconds':
+        result.setMilliseconds(0);
+      default:
+        break;
+    }
+    return result;
   }
 
   /**
@@ -1883,9 +1912,10 @@ module.exports = (() => {
      * @param {?Date[]} [dates=null] The dates to show a chart for, or null for no date filter
      * @param {?string} [assigned=null] The assigned user to filter for, or null for no assigned filter
      * @param {?string[]} [columns=null] The columns to filter for, or null for no column filter
+     * @param {?string} [normalise=null] The date normalisation mode
      * @return {object} Burndown chart data as an object
      */
-    async burndown(sprints = null, dates = null, assigned = null, columns = null) {
+    async burndown(sprints = null, dates = null, assigned = null, columns = null, normalise = null) {
       // Check if this folder has been initialised
       if (!(await this.initialised())) {
         throw new Error("Not initialised in this folder");
@@ -1999,6 +2029,41 @@ module.exports = (() => {
             to: dates.length === 1 ? new Date() : new Date(Math.max(...dates)),
           });
         }
+      }
+
+      // If normalise mode is 'auto', find the most appropriate normalisation mode
+      if (normalise === 'auto') {
+        const delta = series[0].to - series[0].from;
+        if (delta >= DAY * 7) {
+          normalise = 'days';
+        } else if (delta >= DAY) {
+          normalise = 'hours';
+        } else if (delta >= HOUR ) {
+          normalise = 'minutes';
+        } else {
+          normalise = 'seconds';
+        }
+      }
+      if (normalise !== null) {
+
+        // Normalize series from and to dates
+        series.forEach((s) => {
+          s.from = normaliseDate(s.from, normalise);
+          s.to = normaliseDate(s.to, normalise);
+        });
+
+        // Normalise task dates
+        tasks.forEach((task) => {
+          if (task.created) {
+            task.created = normaliseDate(task.created, normalise);
+          }
+          if (task.started) {
+            task.started = normaliseDate(task.started, normalise);
+          }
+          if (task.completed) {
+            task.completed = normaliseDate(task.completed, normalise);
+          }
+        });
       }
 
       // Get workload datapoints for each period

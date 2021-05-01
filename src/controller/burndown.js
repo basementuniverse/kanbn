@@ -49,9 +49,18 @@ module.exports = async args => {
     columns = utility.arrayArg(args.column);
   }
 
+  // Get normalisation mode
+  let normalise = null;
+  if (args.normalise) {
+    normalise = args.normalise.toLowerCase();
+    if (!['days', 'hours', 'minutes', 'seconds'].includes(normalise)) {
+      normalise = 'auto';
+    }
+  }
+
   // Show burndown chart
   kanbn
-  .burndown(sprints, dates, assigned, columns)
+  .burndown(sprints, dates, assigned, columns, normalise)
   .then(data => {
     if (args.json) {
 

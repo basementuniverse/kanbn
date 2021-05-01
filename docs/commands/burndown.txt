@@ -28,3 +28,8 @@ Options:
   {b}kanbn burndown --assigned "user"{b}
   {b}kanbn burndown -a "user"{b}
     Filter for tasks that are assigned to a particular user.
+
+  {b}kanbn burndown --normalise "days"|"hours"|"minutes"|"seconds"{b}
+  {b}kanbn burndown --n "days"|"hours"|"minutes"|"seconds"{b}
+    Normalise dates. Task created, started and completed times will be rounded down to the nearest day, hour, minute or second. This may cause task events to be grouped together.
+    If this option is set to a blank or unsupported value, the normalisation mode will be automatically selected based on the date range.

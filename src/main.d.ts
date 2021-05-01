@@ -327,13 +327,15 @@ export function sprint(name: string, description: string, start: Date): Promise<
  * @param {?Date[]} [dates=null] The dates to show a chart for, or null for no date filter
  * @param {?string} [assigned=null] The assigned user to filter for, or null for no assigned filter
  * @param {?string[]} [columns=null] The columns to filter for, or null for no column filter
+ * @param {?string} [normalise=null] The date normalisation mode
  * @return {Promise<object>} Burndown chart data as an object
  */
 export function burndown(
   sprints?: string[]|null,
   dates?: Date[]|null,
   assigned?: string|null,
-  columns?: string[]|null
+  columns?: string[]|null,
+  normalise?: string|null
 ): Promise<object>;
 
 /**
