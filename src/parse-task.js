@@ -1,28 +1,30 @@
-const md = require('md-2-json');
 const yaml = require('yamljs');
 const fm = require('front-matter');
 const marked = require('marked');
 const utility = require('./utility');
 const chrono = require('chrono-node');
 const validate = require('jsonschema').validate;
+const parseMarkdown = require('./parse-markdown');
 
 /**
- * Recursively construct a description string from different levels of headings in the data object
- * @param {string[]} description
+ * Compile separate headings together into a task description
  * @param {object} data
- * @param {number} level
  */
-function compileDescription(description, data, level) {
+function compileDescription(data) {
+  const description = [];
   if ('raw' in data) {
-    description.push(data.raw.replace(/[\r\n]{3}/g, '\n\n').trim());
+    description.push(data.raw.content.replace(/[\r\n]{3}/g, '\n\n').trim());
   }
   for (let heading in data) {
     if (['raw', 'Metadata', 'Sub-tasks', 'Relations', 'Comments'].indexOf(heading) !== -1) {
       continue;
     }
-    description.push(`${new Array(level + 1).join('#')} ${heading}`);
-    compileDescription(description, data[heading], level + 1);
+    description.push(
+      /^# (.*)/.test(data[heading].heading) ? '' : data[heading].heading,
+      data[heading].content
+    );
   }
+  return description.join('\n\n').trim();
 }
 
 /**
@@ -194,22 +196,21 @@ module.exports = {
       }
 
       // Parse markdown to an object
-      let parsed = null;
+      let task = null;
       try {
-        parsed = md.parse(data);
+        task = parseMarkdown(data);
       } catch (error) {
-        throw new Error('invalid markdown');
+        throw new Error(`invalid markdown (${error.message})`);
       }
 
       // Check resulting object
-      const parsedKeys = Object.keys(parsed);
-      if (parsedKeys.length === 0 || parsedKeys[0] === 'raw') {
+      const taskHeadings = Object.keys(task);
+      if (taskHeadings.length === 0 || taskHeadings[0] === 'raw') {
         throw new Error('data is missing a name heading');
       }
 
       // Get name
-      name = parsedKeys[0];
-      const task = parsed[name];
+      name = taskHeadings[0];
 
       // Get id from name
       id = utility.getTaskId(name);
@@ -219,13 +220,14 @@ module.exports = {
       if ('Metadata' in task) {
 
         // Get embedded metadata and make sure it's an object
-        const embeddedMetadata = yaml.parse(task['Metadata'].raw.trim().replace(/```(yaml|yml)?/g, ''));
+        const embeddedMetadata = yaml.parse(task['Metadata'].content.trim().replace(/```(yaml|yml)?/g, ''));
         if (typeof embeddedMetadata !== 'object') {
           throw new Error('invalid metadata content');
         }
 
         // Merge with front matter metadata
         metadata = Object.assign(metadata, embeddedMetadata);
+        delete task['Metadata'];
       }
       validateMetadataFromMarkdown(metadata);
 
@@ -278,19 +280,20 @@ module.exports = {
       // Parse sub-tasks
       if ('Sub-tasks' in task) {
         try {
-          subTasks = marked.lexer(task['Sub-tasks'].raw)[0].items.map(item => ({
+          subTasks = marked.lexer(task['Sub-tasks'].content)[0].items.map(item => ({
             text: item.text.trim(),
             completed: item.checked || false
           }));
         } catch (error) {
           throw new Error('sub-tasks must contain a list');
         }
+        delete task['Sub-tasks'];
       }
 
       // Parse relations
       if ('Relations' in task) {
         try {
-          relations = marked.lexer(task['Relations'].raw)[0].items.map(item => {
+          relations = marked.lexer(task['Relations'].content)[0].items.map(item => {
             const parts = item.tokens[0].tokens[0].text.split(' ');
             return parts.length === 1
               ? {
@@ -305,20 +308,22 @@ module.exports = {
         } catch (error) {
           throw new Error('relations must contain a list');
         }
+        delete task['Relations'];
       }
 
       // Parse comments
       if ('Comments' in task) {
         try {
-          const commentsHeading = '## Comments';
-          const start = data.indexOf(commentsHeading) + commentsHeading.length;
-          let end = data.substring(start).search(/\n#/);
-          if (end >= 0) {
-            end += start;
-          } else {
-            end = data.length;
-          }
-          const parsedComments = marked.lexer(data.slice(start, end).trim())[0].items;
+          // const commentsHeading = '## Comments';
+          // const start = data.indexOf(commentsHeading) + commentsHeading.length;
+          // let end = data.substring(start).search(/\n#/);
+          // if (end >= 0) {
+          //   end += start;
+          // } else {
+          //   end = data.length;
+          // }
+          // const parsedComments = marked.lexer(data.slice(start, end).trim())[0].items;
+          const parsedComments = marked.lexer(task['Comments'].content)[0].items;
           for (let parsedComment of parsedComments) {
             const comment = { text: [] };
             const parts = parsedComment.text.split('\n');
@@ -341,12 +346,13 @@ module.exports = {
         } catch (error) {
           throw new Error('comments must contain a list');
         }
+        delete task['Comments'];
       }
 
       // Assemble description
-      const descriptionParts = [];
-      compileDescription(descriptionParts, task, 2);
-      description = descriptionParts.join('\n\n');
+      // const descriptionParts = [];
+      description = compileDescription(task);
+      // description = descriptionParts.join('\n\n');
     } catch (error) {
       throw new Error(`Unable to parse task: ${error.message}`);
     }

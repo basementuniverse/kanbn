@@ -1,6 +1,6 @@
 {
   "name": "@basementuniverse/kanbn",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "A CLI Kanban application",
   "main": "index.js",
   "scripts": {
@@ -48,7 +48,6 @@
     "jsonschema": "^1.4.0",
     "marked": "^1.2.7",
     "marked-terminal": "^4.1.1",
-    "md-2-json": "^1.0.6",
     "minimist": "^1.2.5",
     "param-case": "^3.0.4",
     "rimraf": "^3.0.2",

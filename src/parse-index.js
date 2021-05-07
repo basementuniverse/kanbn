@@ -1,8 +1,8 @@
-const md = require('md-2-json');
 const yaml = require('yamljs');
 const fm = require('front-matter');
 const marked = require('marked');
 const validate = require('jsonschema').validate;
+const parseMarkdown = require('./parse-markdown');
 
 /**
  * Validate the options object
@@ -203,32 +203,31 @@ module.exports = {
       }
 
       // Parse markdown to an object
-      let parsed = null;
+      let index = null;
       try {
-        parsed = md.parse(data);
+        index = parseMarkdown(data);
       } catch (error) {
-        throw new Error('invalid markdown');
+        throw new Error(`invalid markdown (${error.message})`);
       }
 
       // Check resulting object
-      const parsedKeys = Object.keys(parsed);
-      if (parsedKeys.length === 0 || parsedKeys[0] === 'raw') {
+      const indexHeadings = Object.keys(index);
+      if (indexHeadings.length === 0 || indexHeadings[0] === 'raw') {
         throw new Error('data is missing a name heading');
       }
 
       // Get name
-      name = parsedKeys[0];
-      const index = parsed[name];
+      name = indexHeadings[0];
 
       // Get description
-      description = 'raw' in index ? index.raw.trim() : '';
+      description = name in index ? index[name].content.trim() : '';
 
       // Parse options
       // Options will be serialized back to front-matter, this check remains here for backwards-compatibility
       if ('Options' in index) {
 
         // Get embedded options and make sure it's an object
-        const embeddedOptions = yaml.parse(index['Options'].raw.trim().replace(/```(yaml|yml)?/g, ''));
+        const embeddedOptions = yaml.parse(index['Options'].content.trim().replace(/```(yaml|yml)?/g, ''));
         if (typeof embeddedOptions !== 'object') {
           throw new Error('invalid options content');
         }
@@ -239,14 +238,14 @@ module.exports = {
       validateOptions(options);
 
       // Parse columns
-      const columnNames = Object.keys(index).filter(column => ['raw', 'Options'].indexOf(column) === -1);
+      const columnNames = Object.keys(index).filter(column => ['raw', 'Options', name].indexOf(column) === -1);
       if (columnNames.length) {
         columns = Object.fromEntries(columnNames.map(columnName => {
           try {
             return [
               columnName,
-              'raw' in index[columnName]
-                ? marked.lexer(index[columnName].raw)[0].items.map(item => item.tokens[0].tokens[0].text)
+              index[columnName].content
+                ? marked.lexer(index[columnName].content)[0].items.map(item => item.tokens[0].tokens[0].text)
                 : []
             ];
           } catch (error) {

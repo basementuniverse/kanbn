@@ -48,7 +48,7 @@ QUnit.test(
     assert.deepEqual(await kanbn.validate(), [
       {
         task: null,
-        errors: 'Unable to parse index: invalid markdown'
+        errors: 'Unable to parse index: data is missing a name heading'
       }
     ]);
   }

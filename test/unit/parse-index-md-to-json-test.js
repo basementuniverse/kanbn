@@ -24,7 +24,7 @@ const invalidCases = [
   },
   {
     md: '#',
-    error: /invalid markdown/
+    error: /data is missing a name heading/
   },
   {
     md: 'test',
