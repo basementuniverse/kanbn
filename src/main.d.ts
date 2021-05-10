@@ -285,7 +285,7 @@ export function search(filters?: object, quiet?: boolean): Promise<object[]>;
  * @param {boolean} [due=false] Show information about overdue tasks and time remaining
  * @param {?string|?number} [sprint=null] The sprint name or number to show stats for, or null for current sprint
  * @param {?Date[]} [dates=null] The date(s) to show stats for, or null for no date filter
- * @return {Promise<status>} Project status information as an object
+ * @return {Promise<status|string[]>} Project status information as an object, or an array of untracked task filenames
  */
 export function status(
   quiet?: boolean,
@@ -293,7 +293,7 @@ export function status(
   due?: boolean,
   sprint?: string|number|null,
   dates?: Date[]|null
-): Promise<status>;
+): Promise<status|string[]>;
 
 /**
  * Validate the index and task files

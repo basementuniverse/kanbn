@@ -1539,7 +1539,7 @@ module.exports = (() => {
      * @param {boolean} [due=false] Show information about overdue tasks and time remaining
      * @param {?string|?number} [sprint=null] The sprint name or number to show stats for, or null for current sprint
      * @param {?Date[]} [dates=null] The date(s) to show stats for, or null for no date filter
-     * @return {object} Project status information as an object
+     * @return {object|string[]} Project status information as an object, or an array of untracked task filenames
      */
     async status(quiet = false, untracked = false, due = false, sprint = null, dates = null) {
       // Check if this folder has been initialised
@@ -1562,11 +1562,7 @@ module.exports = (() => {
 
         // If output is quiet, output a list of untracked task filenames
         if (quiet) {
-          if (result.untrackedTasks.length) {
-            return result.untrackedTasks;
-          } else {
-            return "No untracked tasks found";
-          }
+          return result.untrackedTasks;
         }
       }
 

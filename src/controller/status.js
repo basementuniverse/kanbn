@@ -46,7 +46,11 @@ module.exports = async args => {
   )
   .then(output => {
     if (args.quiet && args.untracked && !args.json) {
-      console.log(output.join('\n'));
+      console.log(
+        output.length
+          ? output.join('\n')
+          : 'No untracked tasks found'
+      );
     } else {
       console.log(args.json ? JSON.stringify(output, null, 2) : yaml.stringify(output, 4, 2));
     }
