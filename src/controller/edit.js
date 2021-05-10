@@ -511,13 +511,13 @@ module.exports = async args => {
         utility.error(`Tag "${removedSubTask.text}" doesn't exist`, true);
       }
     }
-    taskData.tags = taskData.tags.filter(tag => removedTags.indexOf(tag) === -1);
+    taskData.metadata.tags = taskData.metadata.tags.filter(tag => removedTags.indexOf(tag) === -1);
   }
 
   // Add tags and overwrite existing tags
   if (args.tag) {
     const newTags = utility.arrayArg(args.tag);
-    taskData.tags = [...new Set([...taskData.tags, ...newTags])];
+    taskData.metadata.tags = [...new Set([...taskData.metadata.tags || [], ...newTags])];
   }
 
   // Remove relations
