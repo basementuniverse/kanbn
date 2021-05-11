@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const parseIndex = require('../src/parse-index');
 const parseTask = require('../src/parse-task');
+const mockStdIn = require('mock-stdin').stdin();
 
 function loadIndex(basePath) {
   return parseIndex.md2json(fs.readFileSync(path.join(basePath, 'index.md'), { encoding: 'utf-8' }));
@@ -12,6 +13,25 @@ function loadTask(basePath, taskId) {
 }
 
 module.exports = {
+
+  keys: {
+    up: '\x1B\x5B\x41',
+    down: '\x1B\x5B\x42',
+    enter: '\x0D',
+    space: '\x20',
+    ctrl_c: '\x03'
+  },
+
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  },
+
+  async sendInput(inputs) {
+    for (let input of inputs) {
+      mockStdIn.send(input);
+      await this.sleep(50);
+    }
+  },
 
   kanbnFolderExists(assert, basePath, expected = true) {
     assert.equal(fs.existsSync(basePath), expected);
