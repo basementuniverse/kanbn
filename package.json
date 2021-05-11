@@ -60,6 +60,7 @@
     "mock-argv": "^1.1.10",
     "mock-fs": "^4.13.0",
     "mock-require": "^3.0.3",
+    "mock-stdin": "^1.0.0",
     "mockdate": "^3.0.2",
     "qunit": "^2.13.0",
     "strip-ansi": "^6.0.0"
