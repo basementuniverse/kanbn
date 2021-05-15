@@ -1,5 +1,3 @@
-const paramCase = require('param-case').paramCase;
-
 module.exports = (() => {
   const tags = {
     b: 'bold',
@@ -22,12 +20,23 @@ module.exports = (() => {
     },
 
     /**
+     * Convert a string to simplified paramcase, e.g:
+     *  PascalCase -> pascalcase
+     *  Test Word -> test-word
+     * @param {string} s The string to convert
+     * @return {string} The converted string
+     */
+    paramCase(s) {
+      return s.toLowerCase().split(/[\s!?.,@:;|\\/"'`£$%\^&*{}[\]()<>~#+\-=_¬]+/g).join('-');
+    },
+
+    /**
      * Get a task id from the task name
      * @param {string} name The task name
      * @return {string} The task id
      */
-    getTaskId(name) {
-      return paramCase(name);
+     getTaskId(name) {
+      return this.paramCase(name);
     },
 
     /**

@@ -30,7 +30,7 @@ QUnit.test('Status untracked and quiet, no untracked tasks', async assert => {
   await kanbn.initialise();
 
   // Get status with untracked and quiet options
-  assert.equal(await kanbn.status(true, true), 'No untracked tasks found');
+  assert.deepEqual(await kanbn.status(true, true), []);
 });
 
 QUnit.test('Status untracked and quiet should return list of untracked tasks', async assert => {
