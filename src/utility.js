@@ -27,7 +27,13 @@ module.exports = (() => {
      * @return {string} The converted string
      */
     paramCase(s) {
-      return s.toLowerCase().split(/[\s!?.,@:;|\\/"'`£$%\^&*{}[\]()<>~#+\-=_¬]+/g).join('-');
+      return s
+        .replace(
+          /([A-Z]+(.))/g,
+          (_, separator, letter, offset) => (offset ? "-" + separator : separator).toLowerCase()
+        )
+        .split(/[\s!?.,@:;|\\/"'`£$%\^&*{}[\]()<>~#+\-=_¬]+/g)
+        .join('-');
     },
 
     /**

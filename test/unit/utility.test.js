@@ -7,8 +7,8 @@ QUnit.module('utility tests', {
 });
 
 QUnit.test('paramCase() should convert strings to param-case', async assert => {
-  assert.equal(utility.paramCase('PascalCase'), 'pascalcase');
-  assert.equal(utility.paramCase('camelCase'), 'camelcase');
+  assert.equal(utility.paramCase('PascalCase'), 'pascal-case');
+  assert.equal(utility.paramCase('camelCase'), 'camel-case');
   assert.equal(utility.paramCase('snake_case'), 'snake-case');
   assert.equal(utility.paramCase('No Case'), 'no-case');
   assert.equal(utility.paramCase('With 2 numbers 3'), 'with-2-numbers-3');
