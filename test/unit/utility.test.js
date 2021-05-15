@@ -20,6 +20,12 @@ QUnit.test('paramCase() should convert strings to param-case', async assert => {
     utility.paramCase('M!o?r.e, @p:u;n|c\\t/u"a\'t`i£o$n% ^c&h*a{r}a[c]t(e)r<s> ~l#i+k-e= _t¬hese'),
     'm-o-r-e-p-u-n-c-t-u-a-t-i-o-n-c-h-a-r-a-c-t-e-r-s-l-i-k-e-t-hese'
   );
+  assert.equal(utility.paramCase('This string ends with punctuation!'), 'this-string-ends-with-punctuation');
+  assert.equal(utility.paramCase('?This string starts with punctuation'), 'this-string-starts-with-punctuation');
+  assert.equal(
+    utility.paramCase('#This string has punctuation at both ends&'),
+    'this-string-has-punctuation-at-both-ends'
+  );
   assert.equal(utility.paramCase('軟件 測試'), '軟件-測試');
   assert.equal(utility.paramCase('実験 試し'), '実験-試し');
   assert.equal(utility.paramCase('יקספּערמענאַל פּרובירן'), 'יקספּערמענאַל-פּרובירן');

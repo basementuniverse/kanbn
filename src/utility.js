@@ -33,7 +33,8 @@ module.exports = (() => {
           (_, separator, letter, offset) => (offset ? "-" + separator : separator).toLowerCase()
         )
         .split(/[\s!?.,@:;|\\/"'`£$%\^&*{}[\]()<>~#+\-=_¬]+/g)
-        .join('-');
+        .join('-')
+        .replace(/(^-|-$)/g, '');
     },
 
     /**
