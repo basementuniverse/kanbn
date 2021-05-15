@@ -11,6 +11,7 @@ inquirer.registerPrompt('recursive', require('inquirer-recursive'));
  * @return {Promise<any>}
  */
 async function interactive(options, initialised) {
+  const columnNames = [];
   return await inquirer
   .prompt([
     {
@@ -52,9 +53,13 @@ async function interactive(options, initialised) {
             if (value.length === 0) {
               return 'Column name cannot be empty';
             }
-            if (options.columns.indexOf(value) !== -1) {
+            if (
+              (options.columns || []).indexOf(value) !== -1 ||
+              columnNames.indexOf(value) !== -1
+            ) {
               return 'Column name already exists';
             }
+            columnNames.push(value);
             return true;
           }
         }
