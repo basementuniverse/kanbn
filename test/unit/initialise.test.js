@@ -106,5 +106,3 @@ QUnit.test('Reinitialise with additional settings should add settings to index',
     ...CUSTOM_COLUMNS
   ]);
 });
-
-// TODO initialise using kanbn.json and kanbn.yml advanced config

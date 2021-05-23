@@ -37,12 +37,12 @@ module.exports = {
     assert.equal(fs.existsSync(basePath), expected);
   },
 
-  tasksFolderExists(assert, basePath, expected = true) {
-    assert.equal(fs.existsSync(path.join(basePath, 'tasks')), expected);
+  tasksFolderExists(assert, basePath, expected = true, tasksFolderName = 'tasks') {
+    assert.equal(fs.existsSync(path.join(basePath, tasksFolderName)), expected);
   },
 
-  indexExists(assert, basePath, expected = true) {
-    assert.equal(fs.existsSync(path.join(basePath, 'index.md')), expected);
+  indexExists(assert, basePath, expected = true, indexName = 'index.md') {
+    assert.equal(fs.existsSync(path.join(basePath, indexName)), expected);
   },
 
   indexHasName(assert, basePath, name = null) {

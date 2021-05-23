@@ -253,5 +253,3 @@ QUnit.test('Initialise kanbn interactively with a duplicate column name', async 
   output.stopCapture();
   assert.contains(output.getCapturedText(), /Column name already exists/);
 });
-
-// TODO reinitialise interactively tests

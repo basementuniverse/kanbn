@@ -814,7 +814,12 @@ module.exports = (() => {
       return configMemo;
     },
 
-    // async saveConfig()
+    /**
+     * Clear cached config
+     */
+    clearConfigCache() {
+      configMemo = null;
+    },
 
     /**
      * Get the name of the folder where the index and tasks are stored

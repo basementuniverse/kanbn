@@ -64,6 +64,11 @@ declare type sprint = {
 export function getConfig(): Promise<config|null>;
 
 /**
+ * Clear cached config
+ */
+export function clearConfigCache(): void;
+
+/**
  * Get the name of the folder where the index and tasks are stored
  * @return {Promise<string>} The kanbn folder name
  */
