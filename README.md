@@ -35,6 +35,8 @@ Where <command> is one of:
   sprint ........ Start a new sprint
   burndown ...... View a burndown chart
   validate ...... Validate index and task files
+  archive ....... Archive a task
+  restore ....... Restore a task from the archive
   remove-all .... Remove the kanbn board and all tasks
 
 For more help with commands, try:

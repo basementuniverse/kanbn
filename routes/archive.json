@@ -1,0 +1,17 @@
+{
+  "name": "Archive Task",
+  "commands": [
+    "archive",
+    "arc"
+  ],
+  "args": {
+    "boolean": [
+      "list"
+    ],
+    "alias": {
+      "list": ["l"]
+    }
+  },
+  "controller": "./src/controller/archive",
+  "help": "./docs/commands/archive.txt"
+}

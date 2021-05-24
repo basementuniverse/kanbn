@@ -3,7 +3,8 @@
 declare type config = {
   mainFolder?: string,
   indexFile?: string,
-  taskFolder?: string
+  taskFolder?: string,
+  archiveFolder?: string
 };
 
 declare type index = {
@@ -127,38 +128,38 @@ export function hydrateTask(index: index, task: task): task;
 
 /**
  * Return a filtered and sorted list of tasks
- * @param {index} index
- * @param {task[]} tasks
- * @param {object} filters
- * @param {object[]} sorters
+ * @param {index} index The index object
+ * @param {task[]} tasks A list of task objects
+ * @param {object} filters A list of task filters
+ * @param {object[]} sorters A list of task sorters
  * @return {task[]}
  */
 export function filterAndSortTasks(index: index, tasks: task[], filters: object, sorters: object[]): task[];
 
 /**
  * Overwrite the index file with the specified data
- * @param {object} indexData
+ * @param {object} indexData Index data to save
  * @return {Promise<void>}
  */
 export function saveIndex(indexData: object): Promise<void>;
 
 /**
  * Load the index file and parse it to an object
- * @return {Promise<index>}
+ * @return {Promise<index>} The index object
  */
 export function loadIndex(): Promise<index>;
 
 /**
  * Overwrite a task file with the specified data
- * @param {string} path
- * @param {Promise<void>} taskData
+ * @param {string} path The task path
+ * @param {Promise<void>} taskData The task data
  */
 export function saveTask(path: string, taskData: object): Promise<void>;
 
 /**
  * Load a task file and parse it to an object
- * @param {Promise<void>} taskId
- * @return {Promise<task>}
+ * @param {Promise<void>} taskId The task id
+ * @return {Promise<task>} The task object
  */
 export function loadTask(taskId: string): Promise<task>;
 
@@ -172,15 +173,15 @@ export function loadAllTrackedTasks(index: index, columnName?: string|null): Pro
 
 /**
  * Get the date format defined in the index, or the default date format
- * @param {index} index
- * @return {string}
+ * @param {index} index The index object
+ * @return {string} The date format
  */
 export function getDateFormat(index: index): string;
 
 /**
  * Get the task template for displaying tasks on the kanbn board from the index, or the default task template
- * @param {index} index
- * @return {string}
+ * @param {index} index The index object
+ * @return {string} The task template
  */
 export function getTaskTemplate(index: index): string;
 
@@ -221,8 +222,8 @@ export function createTask(taskData: object, columnName: string): Promise<string
 
 /**
  * Add an untracked task to the specified column in the index
- * @param {string} taskId
- * @param {string} columnName
+ * @param {string} taskId The untracked task id
+ * @param {string} columnName The column to add the task to
  * @return {Promise<string>} The id of the task that was added
  */
 export function addUntrackedTaskToIndex(taskId: string, columnName: string): Promise<string>;
@@ -351,6 +352,20 @@ export function burndown(
  * @return {Promise<string>} The task id
  */
 export function comment(taskId: string, text: string, author: string): Promise<string>;
+
+/**
+ * Move a task to the archive
+ * @param taskId The task id
+ * @return {Promise<string>} The task id
+ */
+export function archiveTask(taskId: string): Promise<string>;
+
+/**
+ * Restore a task from the archive
+ * @param taskId The task id
+ * @return {Promise<string>} The task id
+ */
+export function restoreTask(taskId: string): Promise<string>;
 
 /**
  * Nuke it from orbit, it's the only way to be sure

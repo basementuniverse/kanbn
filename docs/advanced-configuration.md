@@ -18,13 +18,15 @@ However, these paths can be configured by adding the following optional fields t
 {
   "mainFolder": "custom-kanbn-folder",
   "indexFile": "custom-index.md",
-  "taskFolder": "custom-task-folder"
+  "taskFolder": "custom-task-folder",
+  "archiveFolder": "custom-archive-folder"
 }
 ```
 ```yaml
 mainFolder: custom-kanbn-folder
 indexFile: custom-index.md
 taskFolder: custom-task-folder
+archiveFolder: custom-archive-folder
 ```
 
 _Note: these options must go inside the configuration file in the root of your workspace. If they're added to the index file they will have no effect._
@@ -40,3 +42,7 @@ This will rename the index file. By default this is `index.md`. It is relative t
 ### `taskFolder`
 
 This will rename the folder where tasks are stored. By default this is `tasks`. It is relative to the main folder.
+
+### `archiveFolder`
+
+This will rename the archive folder where archived tasks are stored. By default this is `archive`. It is relative to the main folder.

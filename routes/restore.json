@@ -1,0 +1,17 @@
+{
+  "name": "Restore Archived Task",
+  "commands": [
+    "restore",
+    "res"
+  ],
+  "args": {
+    "string": [
+      "column"
+    ],
+    "alias": {
+      "column": ["c"]
+    }
+  },
+  "controller": "./src/controller/restore",
+  "help": "./docs/commands/restore.txt"
+}

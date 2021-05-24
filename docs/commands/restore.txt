@@ -1,0 +1,12 @@
+{b}kanbn restore "task-id"{b}
+{b}kanbn res "task-id"{b}
+
+Restore an archived task from the archive.
+
+Options:
+  {b}kanbn restore "task-id"{b}
+    Restore a task from the archive and place it in the task's original column.
+
+  {b}kanbn restore "task-id" --column "column"{b}
+  {b}kanbn restore "task-id" -c "column"{b}
+    Restore a task from the archive and place it in the specified column.

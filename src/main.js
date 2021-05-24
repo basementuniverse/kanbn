@@ -960,11 +960,11 @@ module.exports = (() => {
 
     /**
      * Return a filtered and sorted list of tasks
-     * @param {object} index
-     * @param {object[]} tasks
-     * @param {object} filters
-     * @param {object[]} sorters
-     * @return {object[]}
+     * @param {object} index The index object
+     * @param {object[]} tasks A list of task objects
+     * @param {object} filters A list of task filters
+     * @param {object[]} sorters A list of task sorters
+     * @return {object[]} A filtered and sorted list of tasks
      */
     filterAndSortTasks(index, tasks, filters, sorters) {
       return sortTasks(filterTasks(index, tasks, filters), sorters);
@@ -972,7 +972,7 @@ module.exports = (() => {
 
     /**
      * Overwrite the index file with the specified data
-     * @param {object} indexData
+     * @param {object} indexData Index data to save
      */
     async saveIndex(indexData) {
       // Apply column sorting if any sorters are defined in options
@@ -1000,7 +1000,7 @@ module.exports = (() => {
 
     /**
      * Load the index file and parse it to an object
-     * @return {object}
+     * @return {object} The index object
      */
     async loadIndex() {
       let indexData = "";
@@ -1021,8 +1021,8 @@ module.exports = (() => {
 
     /**
      * Overwrite a task file with the specified data
-     * @param {string} path
-     * @param {object} taskData
+     * @param {string} path The task path
+     * @param {object} taskData The task data
      */
     async saveTask(path, taskData) {
       await fs.promises.writeFile(path, parseTask.json2md(taskData));
@@ -1030,8 +1030,8 @@ module.exports = (() => {
 
     /**
      * Load a task file and parse it to an object
-     * @param {string} taskId
-     * @return {Promise<object>}
+     * @param {string} taskId The task id
+     * @return {object} The task object
      */
     async loadTask(taskId) {
       const taskPath = path.join(await this.getTaskFolderPath(), addFileExtension(taskId));
@@ -1061,8 +1061,8 @@ module.exports = (() => {
 
     /**
      * Get the date format defined in the index, or the default date format
-     * @param {object} index
-     * @return {string}
+     * @param {object} index The index object
+     * @return {string} The date format
      */
     getDateFormat(index) {
       return "dateFormat" in index.options ? index.options.dateFormat : DEFAULT_DATE_FORMAT;
@@ -1070,8 +1070,8 @@ module.exports = (() => {
 
     /**
      * Get the task template for displaying tasks on the kanbn board from the index, or the default task template
-     * @param {object} index
-     * @return {string}
+     * @param {object} index The index object
+     * @return {string} The task template
      */
     getTaskTemplate(index) {
       return "taskTemplate" in index.options ? index.options.taskTemplate : DEFAULT_TASK_TEMPLATE;
@@ -1238,8 +1238,8 @@ module.exports = (() => {
 
     /**
      * Add an untracked task to the specified column in the index
-     * @param {string} taskId
-     * @param {string} columnName
+     * @param {string} taskId The untracked task id
+     * @param {string} columnName The column to add the task to
      * @return {string} The id of the task that was added
      */
     async addUntrackedTaskToIndex(taskId, columnName) {
@@ -2155,6 +2155,40 @@ module.exports = (() => {
 
       // Save the task
       await this.saveTask(taskPath, taskData);
+      return taskId;
+    },
+
+    /**
+     * Move a task to the archive
+     * @param {string} taskId The task id
+     * @return {string} The task id
+     */
+    async archiveTask(taskId) {
+      // Check if this folder has been initialised
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
+      }
+      taskId = removeFileExtension(taskId);
+
+      // TODO archive task
+
+      return taskId;
+    },
+
+    /**
+     * Restore a task from the archive
+     * @param {string} taskId The task id
+     * @return {string} The task id
+     */
+    async restoreTask(taskId, columnName) {
+      // Check if this folder has been initialised
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
+      }
+      taskId = removeFileExtension(taskId);
+
+      // TODO restore task
+
       return taskId;
     },
 

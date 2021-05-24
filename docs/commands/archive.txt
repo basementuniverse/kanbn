@@ -1,0 +1,12 @@
+{b}kanbn archive "task-id"{b}
+{b}kanbn arc "task-id"{b}
+
+Move an existing task to the archive. The task's column will be stored in the task metadata.
+
+Options:
+  {b}kanbn archive "task-id"{b}
+    Move a task to the archive.
+
+  {b}kanbn archive --list{b}
+  {b}kanbn archive -l{b}
+    Show a list of archived task filenames.
