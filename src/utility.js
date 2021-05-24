@@ -9,14 +9,14 @@ module.exports = (() => {
     /**
      * Show an error message in the console
      * @param {Error|string} error
-     * @param {boolean} exit
+     * @param {boolean} dontExit
      */
-    error(error, exit = false) {
+    error(error, dontExit = false) {
       const message = error instanceof Error
         ? (process.env.DEBUG === 'true' ? error : this.replaceTags(error.message))
         : this.replaceTags(error);
       console.error(message);
-      exit && process.exit(1);
+      !dontExit && process.env.KANBN_ENV !== 'test' && process.exit(1);
     },
 
     /**
