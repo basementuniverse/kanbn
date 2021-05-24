@@ -225,7 +225,7 @@ function findTasks(filters, quiet, json) {
     }
   })
   .catch(error => {
-    utility.error(error, true);
+    utility.error(error);
   });
 }
 
@@ -301,7 +301,8 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+    return;
   }
 
   // Get the index and make sure it has some columns
@@ -309,11 +310,13 @@ module.exports = async args => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    utility.error(error, true);
+    utility.error(error);
+    return;
   }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
+    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}');
+    return;
   }
 
   // Add custom fields to search fields
@@ -338,59 +341,70 @@ module.exports = async args => {
   // Check and convert numeric filters
   if ('count-sub-tasks' in filters) {
     if (!convertNumericFilters(filters, 'count-sub-tasks')) {
-      utility.error('Count sub-tasks filter value must be numeric', true);
+      utility.error('Count sub-tasks filter value must be numeric');
+      return;
     }
   }
   if ('count-tags' in filters) {
     if (!convertNumericFilters(filters, 'count-tags')) {
-      utility.error('Count tags filter value must be numeric', true);
+      utility.error('Count tags filter value must be numeric');
+      return;
     }
   }
   if ('count-relations' in filters) {
     if (!convertNumericFilters(filters, 'count-relations')) {
-      utility.error('Count relations filter value must be numeric', true);
+      utility.error('Count relations filter value must be numeric');
+      return;
     }
   }
   if ('count-comments' in filters) {
     if (!convertNumericFilters(filters, 'count-comments')) {
-      utility.error('Count comments filter value must be numeric', true);
+      utility.error('Count comments filter value must be numeric');
+      return;
     }
   }
   if ('workload' in filters){
     if (!convertNumericFilters(filters, 'workoad')) {
-      utility.error('Workload filter value must be numeric', true);
+      utility.error('Workload filter value must be numeric');
+      return;
     }
   }
   if ('progress' in filters){
     if (!convertNumericFilters(filters, 'progress')) {
-      utility.error('Progress filter value must be numeric', true);
+      utility.error('Progress filter value must be numeric');
+      return;
     }
   }
 
   // Check date filters
   if ('created' in filters) {
     if (!convertDateFilters(filters, 'created')) {
-      utility.error('Unable to parse created date', true);
+      utility.error('Unable to parse created date');
+      return;
     }
   }
   if ('updated' in filters) {
     if (!convertDateFilters(filters, 'updated')) {
-      utility.error('Unable to parse updated date', true);
+      utility.error('Unable to parse updated date');
+      return;
     }
   }
   if ('started' in filters) {
     if (!convertDateFilters(filters, 'started')) {
-      utility.error('Unable to parse started date', true);
+      utility.error('Unable to parse started date');
+      return;
     }
   }
   if ('completed' in filters) {
     if (!convertDateFilters(filters, 'completed')) {
-      utility.error('Unable to parse completed date', true);
+      utility.error('Unable to parse completed date');
+      return;
     }
   }
   if ('due' in filters) {
     if (!convertDateFilters(filters, 'due')) {
-      utility.error('Unable to parse due date', true);
+      utility.error('Unable to parse due date');
+      return;
     }
   }
 
@@ -402,17 +416,20 @@ module.exports = async args => {
         switch (customField.type) {
           case 'boolean':
             if (typeof filters[customField.name] !== 'boolean') {
-              utility.error(`Custom field "${customField.name}" value is not a boolean`, true);
+              utility.error(`Custom field "${customField.name}" value is not a boolean`);
+              return;
             }
             break;
           case 'number':
             if (!convertNumericFilters(filters, customField.name)) {
-              utility.error(`Custom field "${customField.name}" value is not a number`, true);
+              utility.error(`Custom field "${customField.name}" value is not a number`);
+              return;
             }
             break;
           case 'date':
             if (!convertDateFilters(filters, customField.name)) {
-              utility.error(`Unable to parse date for custom field "${customField.name}"`, true);
+              utility.error(`Unable to parse date for custom field "${customField.name}"`);
+              return;
             }
             break;
           default: break;
@@ -451,11 +468,11 @@ module.exports = async args => {
         findTasks(filters, !otherAnswers.nonquiet, otherAnswers.json);
       })
       .catch(error => {
-        utility.error(error, true);
+        utility.error(error);
       });
     })
     .catch(error => {
-      utility.error(error, true);
+      utility.error(error);
     });
 
   // Otherwise create task non-interactively

@@ -202,7 +202,7 @@ function createTask(taskData, columnName) {
     console.log(`Created task "${taskId}" in column "${columnName}"`);
   })
   .catch(error => {
-    utility.error(error, true);
+    utility.error(error);
   });
 }
 
@@ -216,7 +216,8 @@ async function addUntrackedTasks(untrackedTasks, columnName) {
     try {
       await kanbn.addUntrackedTaskToIndex(untrackedTask, columnName);
     } catch (error) {
-      utility.error(error, true);
+      utility.error(error);
+      return;
     }
   }
   console.log(
@@ -228,7 +229,8 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+    return;
   }
 
   // Get the index and make sure it has some columns
@@ -236,11 +238,13 @@ module.exports = async args => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    utility.error(error, true);
+    utility.error(error);
+    return;
   }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
+    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}');
+    return;
   }
 
   // Get column name if specified, otherwise default to the first available column
@@ -248,7 +252,8 @@ module.exports = async args => {
   if (args.column) {
     columnName = utility.strArg(args.column);
     if (columnNames.indexOf(columnName) === -1) {
-      utility.error(`Column "${columnName}" doesn't exist`, true);
+      utility.error(`Column "${columnName}" doesn't exist`);
+      return;
     }
   }
 
@@ -263,7 +268,8 @@ module.exports = async args => {
       try {
         untrackedTasks.push(...await kanbn.findUntrackedTasks());
       } catch (error) {
-        utility.error(error, true);
+        utility.error(error);
+        return;
       }
     }
 
@@ -280,7 +286,7 @@ module.exports = async args => {
         await addUntrackedTasks(answers.untrackedTasks, answers.column);
       })
       .catch(error => {
-        utility.error(error, true);
+        utility.error(error);
       });
       return;
     } else {
@@ -312,7 +318,8 @@ module.exports = async args => {
   if (args.due) {
     taskData.metadata.due = chrono.parseDate(utility.strArg(args.due));
     if (taskData.metadata.due === null) {
-      utility.error('Unable to parse due date', true);
+      utility.error('Unable to parse due date');
+      return;
     }
   }
 
@@ -321,6 +328,7 @@ module.exports = async args => {
     const progressValue = parseFloat(utility.strArg(args.progress));
     if (isNaN(progressValue)) {
       utility.error('Progress value is not a number');
+      return;
     }
     taskData.metadata.progress = progressValue;
   }
@@ -378,7 +386,8 @@ module.exports = async args => {
     // Make sure each relation is an existing task
     for (let relation of relations) {
       if (taskIds.indexOf(relation.task) === -1) {
-        utility.error(`Related task ${relation.task} doesn't exist`, true);
+        utility.error(`Related task ${relation.task} doesn't exist`);
+        return;
       }
     }
     taskData.relations = relations;
@@ -396,7 +405,8 @@ module.exports = async args => {
             if (typeof args[arg] === 'boolean') {
               taskData.metadata[arg] = args[arg];
             } else {
-              utility.error(`Custom field "${arg}" value is not a boolean`, true);
+              utility.error(`Custom field "${arg}" value is not a boolean`);
+              return;
             }
             break;
           case 'number':
@@ -404,14 +414,16 @@ module.exports = async args => {
             if (!isNaN(numberValue)) {
               taskData.metadata[arg] = numberValue;
             } else {
-              utility.error(`Custom field "${arg}" value is not a number`, true);
+              utility.error(`Custom field "${arg}" value is not a number`);
+              return;
             }
             break;
           case 'string':
             if (typeof args[arg] === 'string') {
               taskData.metadata[arg] = args[arg];
             } else {
-              utility.error(`Custom field "${arg}" value is not a string`, true);
+              utility.error(`Custom field "${arg}" value is not a string`);
+              return;
             }
             break;
           case 'date':
@@ -419,7 +431,8 @@ module.exports = async args => {
             if (dateValue instanceof Date) {
               taskData.metadata[arg] = dateValue;
             } else {
-              utility.error(`Unable to parse date for custom field "${arg}"`, true);
+              utility.error(`Unable to parse date for custom field "${arg}"`);
+              return;
             }
             break;
           default: break;
@@ -461,7 +474,7 @@ module.exports = async args => {
       createTask(taskData, columnName);
     })
     .catch(error => {
-      utility.error(error, true);
+      utility.error(error);
     });
 
   // Otherwise create task non-interactively

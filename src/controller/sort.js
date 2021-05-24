@@ -253,7 +253,7 @@ function sortColumn(columnName, sorters, save) {
     console.log(`Column "${columnName}" sorted`);
   })
   .catch(error => {
-    utility.error(error, true);
+    utility.error(error);
   });
 }
 
@@ -286,7 +286,8 @@ module.exports = async (args, argv) => {
 
   // Column name must be defined if not sorting interactively
   if (columnName === null && !args.interactive) {
-    utility.error('No column name specified\nTry running {b}kanbn sort "column"{b} or {b}kanbn sort -i{b}', true);
+    utility.error('No column name specified\nTry running {b}kanbn sort "column"{b} or {b}kanbn sort -i{b}');
+    return;
   }
 
   // Get the index and make sure it has some columns
@@ -294,11 +295,13 @@ module.exports = async (args, argv) => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    utility.error(error, true);
+    utility.error(error);
+    return;
   }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
+    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}');
+    return;
   }
 
   // Add custom fields to sort fields
@@ -318,7 +321,8 @@ module.exports = async (args, argv) => {
   // If a column name is defined, make sure it exists in the index
   if (columnName !== null) {
     if (columnNames.indexOf(columnName) === -1) {
-      utility.error(`Column "${columnName}" doesn't exist`, true);
+      utility.error(`Column "${columnName}" doesn't exist`);
+      return;
     }
     argv.shift();
   }
@@ -377,11 +381,11 @@ module.exports = async (args, argv) => {
         sortColumn(answers.column, answers.sorters, saveAnswer.save);
       })
       .catch(error => {
-        utility.error(error, true);
+        utility.error(error);
       });
     })
     .catch(error => {
-      utility.error(error, true);
+      utility.error(error);
     });
 
   // Otherwise sort a column non-interactively

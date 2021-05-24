@@ -50,7 +50,7 @@ function startSprint(name, description) {
     console.log(`Started new sprint "${sprint.name}" at ${sprint.start.toISOString()}`);
   })
   .catch(error => {
-    utility.error(error, true);
+    utility.error(error);
   });
 }
 
@@ -58,7 +58,8 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+    return;
   }
 
   // Get sprint settings from arguments
@@ -81,7 +82,7 @@ module.exports = async args => {
       startSprint(answers.name, answers.description || '');
     })
     .catch(error => {
-      utility.error(error, true);
+      utility.error(error);
     });
 
   // Otherwise start sprint non-interactively

@@ -84,7 +84,7 @@ async function initialise(options, initialised) {
     }
   })
   .catch(error => {
-    utility.error(error, true);
+    utility.error(error);
   });
 }
 
@@ -100,7 +100,8 @@ module.exports = async args => {
       options.description = index.description;
       options.columns = Object.keys(index.columns);
     } catch (error) {
-      utility.error(error, true);
+      utility.error(error);
+      return;
     }
   }
 
@@ -130,7 +131,7 @@ module.exports = async args => {
       await initialise(answers, initialised);
     })
     .catch(error => {
-      utility.error(error, true);
+      utility.error(error);
     });
 
   // Non-interactive initialisation

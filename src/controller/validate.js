@@ -6,7 +6,8 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+    return;
   }
 
   // Validate kanbn files
@@ -20,12 +21,11 @@ module.exports = async args => {
           args.json
             ? JSON.stringify(result, null, 2)
             : yaml.stringify(result, 4, 2)
-        )}`,
-        true
+        )}`
       );
     }
   })
   .catch(error => {
-    utility.error(error, true);
+    utility.error(error);
   });
 };

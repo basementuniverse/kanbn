@@ -49,7 +49,7 @@ function moveTask(taskId, columnName, position = null, relative = false) {
     console.log(`Moved task "${taskId}" to column "${columnName}"`);
   })
   .catch(error => {
-    utility.error(error, true);
+    utility.error(error);
   });
 }
 
@@ -57,20 +57,23 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+    return;
   }
 
   // Get the task that we're moving
   const taskId = args._[1];
   if (!taskId) {
-    utility.error('No task id specified\nTry running {b}kanbn move "task id"{b}', true);
+    utility.error('No task id specified\nTry running {b}kanbn move "task id"{b}');
+    return;
   }
 
   // Make sure the task exists
   try {
     await kanbn.taskExists(taskId);
   } catch (error) {
-    utility.error(error, true);
+    utility.error(error);
+    return;
   }
 
   // Get the index and make sure it has some columns
@@ -78,11 +81,13 @@ module.exports = async args => {
   try {
     index = await kanbn.getIndex();
   } catch (error) {
-    utility.error(error, true);
+    utility.error(error);
+    return;
   }
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
-    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}', true);
+    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}');
+    return;
   }
 
   // Get column name if specified
@@ -91,7 +96,8 @@ module.exports = async args => {
   if (args.column) {
     columnName = utility.strArg(args.column);
     if (columnNames.indexOf(columnName) === -1) {
-      utility.error(`Column "${columnName}" doesn't exist`, true);
+      utility.error(`Column "${columnName}" doesn't exist`);
+      return;
     }
   }
 
@@ -101,7 +107,8 @@ module.exports = async args => {
   if (newPosition) {
     newPosition = parseInt(utility.trimLeftEscapeCharacters(newPosition));
     if (isNaN(newPosition)) {
-      utility.error('Position value must be numeric', true);
+      utility.error('Position value must be numeric');
+      return;
     }
   } else {
     newPosition = null;
@@ -126,7 +133,7 @@ module.exports = async args => {
       moveTask(taskId, answers.column, answers.position);
     })
     .catch(error => {
-      utility.error(error, true);
+      utility.error(error);
     });
 
   // Otherwise move task non-interactively

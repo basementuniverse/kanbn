@@ -45,7 +45,7 @@ function addComment(taskId, text, author) {
     console.log(`Added comment to task "${taskId}"`);
   })
   .catch(error => {
-    utility.error(error, true);
+    utility.error(error);
   });
 }
 
@@ -53,20 +53,23 @@ module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}', true);
+    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+    return;
   }
 
   // Get the task that we're add a comment to
   const taskId = args._[1];
   if (!taskId) {
-    utility.error('No task id specified\nTry running {b}kanbn comment "task id"{b}', true);
+    utility.error('No task id specified\nTry running {b}kanbn comment "task id"{b}');
+    return;
   }
 
   // Make sure the task exists
   try {
     await kanbn.taskExists(taskId);
   } catch (error) {
-    utility.error(error, true);
+    utility.error(error);
+    return;
   }
 
   // Get comment values from arguments
@@ -91,7 +94,7 @@ module.exports = async args => {
       addComment(taskId, answers.text, answers.author);
     })
     .catch(error => {
-      utility.error(error, true);
+      utility.error(error);
     });
 
   // Otherwise add comment non-interactively

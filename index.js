@@ -14,7 +14,8 @@ module.exports = async () => {
 
   // Make sure we have a valid route
   if (found === undefined) {
-    utility.error(`"${command}" is not a valid command`, true);
+    utility.error(`"${command}" is not a valid command`);
+    return;
   }
   ({ 0: route.id, 1: route.config } = found);
 
