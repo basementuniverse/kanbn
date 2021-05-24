@@ -1,75 +1,66 @@
 const TEST_INDEX = {
-  name: 'TEST_INDEX',
-  description: 'TEST_INDEX_DESCRIPTION',
-  options: {},
+  name: 'Test Project',
+  description: 'Test description',
   columns: {
-    TEST_COLUMN: ['test-task-1']
-  }
+    'Test Column': [
+      'test-task-1'
+    ]
+  },
+  options: {}
 };
 
 const TEST_TASK = {
   name: 'Test Task 1',
-  description: 'TEST_TASK_DESCRIPTION',
+  description: 'Task ',
   metadata: {},
   subTasks: [],
   relations: [],
   comments: []
 };
 
-const mockKanbn = {
-  async getConfig() {
-    return new Promise(() => ({
-      mainFolder: 'KANBN_MAIN_FOLDER'
-    }));
-  },
+// Store mock settings and output
+const config = {
+  output: null,
+  initialised: false,
+  mainFolderName: 'test',
+  index: TEST_INDEX,
+  task: TEST_TASK,
+  trackedTasks: [],
+  untrackedTasks: []
+};
 
-  async getFolderName() {
-    return new Promise(() => 'FOLDER_NAME');
+// Mock kanbn library
+const kanbn = {
+  async initialised() {
+    return config.initialised;
   },
-
-  async getIndexFileName() {
-    return new Promise(() => 'INDEX_FILE_NAME');
-  },
-
-  async getTaskFolderName() {
-    return new Promise(() => 'TASK_FOLDER_NAME');
-  },
-
   async getMainFolder() {
-    return new Promise(() => 'MAIN_FOLDER');
+    return config.mainFolderName;
   },
-
-  async getIndexPath() {
-    return new Promise(() => 'INDEX_PATH');
+  async initialise(options = {}) {
+    config.output = options;
   },
-
-  async getTaskFolderPath() {
-    return new Promise(() => 'TASK_FOLDER_PATH');
-  },
-
   async getIndex() {
-    return new Promise(() => TEST_INDEX);
+    return config.index;
   },
-
-  async getTask(taskId) {
-    return new Promise(() => ({
-      id: taskId,
-      ...TEST_TASK
-    }));
+  async findTrackedTasks() {
+    return config.trackedTasks;
   },
-
-  hydrateTask(index, task) {
-    return {
-      ...task,
-      column: 'TEST_COLUMN',
-      workload: 1,
-      progress: 0,
-      remainingWorkload: 1,
-      due: new Date(0)
+  async findUntrackedTasks() {
+    return config.untrackedTasks;
+  },
+  async createTask(taskData, columnName) {
+    config.output = {
+      taskData,
+      columnName
     };
   },
-
-  filterAndSortTasks(index, tasks, filters, sorters) {
-    // return task[];
+  async addUntrackedTaskToIndex(untrackedTask, columnName) {
+    config.output = {
+      untrackedTask,
+      columnName
+    };
   }
 };
+
+module.exports = { config, kanbn };
