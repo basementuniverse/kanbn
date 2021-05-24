@@ -7,7 +7,6 @@ const {
 } = require('../mock-kanbn');
 const context = require('../context');
 
-// The kanbn command that will be called during tests
 let kanbn;
 
 QUnit.module('init controller tests', {

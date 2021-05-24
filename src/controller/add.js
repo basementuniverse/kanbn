@@ -275,7 +275,7 @@ module.exports = async args => {
 
     // Make sure there are some untracked tasks to add
     if (untrackedTasks.length === 0) {
-      console.log('No untracked tasks to add');
+      utility.error('No untracked tasks to add');
       return;
     }
 
