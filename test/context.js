@@ -41,6 +41,10 @@ module.exports = {
     assert.equal(fs.existsSync(path.join(basePath, tasksFolderName)), expected);
   },
 
+  archiveFolderExists(assert, basePath, expected = true, archiveFolderName = 'archive') {
+    assert.equal(fs.existsSync(path.join(basePath, archiveFolderName)), expected);
+  },
+
   indexExists(assert, basePath, expected = true, indexName = 'index.md') {
     assert.equal(fs.existsSync(path.join(basePath, indexName)), expected);
   },
@@ -108,6 +112,10 @@ module.exports = {
 
   taskFileExists(assert, basePath, taskId, expected = true) {
     assert.equal(fs.existsSync(path.join(basePath, 'tasks', `${taskId}.md`)), expected);
+  },
+
+  archivedTaskFileExists(assert, basePath, taskId, expected = true) {
+    assert.equal(fs.existsSync(path.join(basePath, 'archive', `${taskId}.md`)), expected);
   },
 
   taskHasName(assert, basePath, taskId, name = null) {

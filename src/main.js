@@ -2309,15 +2309,15 @@ module.exports = (() => {
         throw new Error(`No archived task found with id "${taskId}"`);
       }
 
-      // Check if there is already a task with the same id
-      if (await exists(taskPath)) {
-        throw new Error(`There is already an active task with id "${taskId}"`);
-      }
-
       // Get index and make sure there isn't already an indexed task with the same id
       let index = await this.loadIndex();
       if (taskInIndex(index, taskId)) {
         throw new Error(`There is already an indexed task with id "${taskId}"`);
+      }
+
+      // Check if there is already a task with the same id
+      if (await exists(taskPath)) {
+        throw new Error(`There is already an untracked task with id "${taskId}"`);
       }
 
       // Make sure the index has some columns
