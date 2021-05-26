@@ -25,8 +25,10 @@ const config = {
   mainFolderName: 'test',
   index: TEST_INDEX,
   task: TEST_TASK,
+  taskExists: false,
   trackedTasks: [],
-  untrackedTasks: []
+  untrackedTasks: [],
+  archivedTasks: []
 };
 
 // Mock kanbn library
@@ -49,6 +51,11 @@ const kanbn = {
   async findUntrackedTasks() {
     return config.untrackedTasks;
   },
+  async taskExists(taskId) {
+    if (!config.taskExists) {
+      throw new Error(`No task file found with id "${taskId}"`);
+    }
+  },
   async createTask(taskData, columnName) {
     config.output = {
       taskData,
@@ -60,6 +67,22 @@ const kanbn = {
       untrackedTask,
       columnName
     };
+  },
+  async listArchivedTasks() {
+    return config.archivedTasks;
+  },
+  async archiveTask(taskId) {
+    config.output = {
+      taskId
+    };
+    return taskId;
+  },
+  async restoreTask(taskId, columnName) {
+    config.output = {
+      taskId,
+      columnName
+    };
+    return taskId;
   }
 };
 
