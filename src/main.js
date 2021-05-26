@@ -15,6 +15,7 @@ module.exports = (() => {
   const DEFAULT_FOLDER_NAME = ".kanbn";
   const DEFAULT_INDEX_FILE_NAME = "index.md";
   const DEFAULT_TASKS_FOLDER_NAME = "tasks";
+  const DEFAULT_ARCHIVE_FOLDER_NAME = "archive";
 
   // Date normalisation intervals measured in milliseconds
   const SECOND = 1000;
@@ -209,7 +210,21 @@ module.exports = (() => {
   }
 
   /**
-   * Set a metadata value in a task
+   * Get a metadata property from a task, or undefined if the metadata property doesn't exist or
+   * if the task has no metadata
+   * @param {object} taskData The task object
+   * @param {string} property The metadata property to check
+   * @return {any} The metadata property value
+   */
+  function getTaskMetadata(taskData, property) {
+    if ("metadata" in taskData && property in taskData.metadata) {
+      return taskData.metadata[property];
+    }
+    return undefined;
+  }
+
+  /**
+   * Set a metadata value in a task. If the value is undefined, remove the metadata property instead
    * @param {object} taskData The task object
    * @param {string} property The metadata property to update
    * @param {string} value The value to set
@@ -219,7 +234,11 @@ module.exports = (() => {
     if (!("metadata" in taskData)) {
       taskData.metadata = {};
     }
-    taskData.metadata[property] = value;
+    if (property in taskData.metadata && value === undefined) {
+      delete taskData.metadata[property];
+    } else {
+      taskData.metadata[property] = value;
+    }
     return taskData;
   }
 
@@ -858,6 +877,18 @@ module.exports = (() => {
     },
 
     /**
+     * Get the name of the archive folder
+     * @return {string} The archive folder name
+     */
+    async getArchiveFolderName() {
+      const config = await this.getConfig();
+      if (config !== null && 'archiveFolder' in config) {
+        return config.archiveFolder;
+      }
+      return DEFAULT_ARCHIVE_FOLDER_NAME;
+    },
+
+    /**
      * Get the kanbn folder location for the current working directory
      * @return {string} The kanbn folder path
      */
@@ -879,6 +910,14 @@ module.exports = (() => {
      */
     async getTaskFolderPath() {
       return path.join(await this.getMainFolder(), await this.getTaskFolderName());
+    },
+
+    /**
+     * Get the archive folder path
+     * @return {string} The kanbn archive folder path
+     */
+    async getArchiveFolderPath() {
+      return path.join(await this.getMainFolder(), await this.getArchiveFolderName());
     },
 
     /**
@@ -1057,6 +1096,22 @@ module.exports = (() => {
         result.push(await this.loadTask(taskId));
       }
       return result;
+    },
+
+    /**
+     * Load a task file from the archive and parse it to an object
+     * @param {string} taskId The task id
+     * @return {object} The task object
+     */
+    async loadArchivedTask(taskId) {
+      const taskPath = path.join(await this.getArchiveFolderPath(), addFileExtension(taskId));
+      let taskData = "";
+      try {
+        taskData = await fs.promises.readFile(taskPath, { encoding: "utf-8" });
+      } catch (error) {
+        throw new Error(`Couldn't access archived task file: ${error.message}`);
+      }
+      return parseTask.md2json(taskData);
     },
 
     /**
@@ -2159,6 +2214,27 @@ module.exports = (() => {
     },
 
     /**
+     * Return a list of archived tasks
+     * @return {string[]} A list of archived task ids
+     */
+    async listArchivedTasks() {
+      // Check if this folder has been initialised
+      if (!(await this.initialised())) {
+        throw new Error("Not initialised in this folder");
+      }
+
+      // Make sure the archive folder exists
+      const archiveFolder = await this.getArchiveFolderPath();
+      if (!(await exists(archiveFolder))) {
+        throw new Error("Archive folder doesn't exist");
+      }
+
+      // Get a list of archived task files
+      const files = await glob(`${archiveFolder}/*.md`);
+      return [...new Set(files.map((task) => path.parse(task).name))];
+    },
+
+    /**
      * Move a task to the archive
      * @param {string} taskId The task id
      * @return {string} The task id
@@ -2170,7 +2246,38 @@ module.exports = (() => {
       }
       taskId = removeFileExtension(taskId);
 
-      // TODO archive task
+      // Make sure the task file exists
+      if (!(await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+        throw new Error(`No task file found with id "${taskId}"`);
+      }
+
+      // Get index and make sure the task is indexed
+      let index = await this.loadIndex();
+      if (!taskInIndex(index, taskId)) {
+        throw new Error(`Task "${taskId}" is not in the index`);
+      }
+
+      // Make sure there isn't already an archived task with the same id
+      const archiveFolder = await this.getArchiveFolderPath();
+      const archivedTaskPath = getTaskPath(archiveFolder, taskId);
+      if (await exists(archivedTaskPath)) {
+        throw new Error(`An archived task with id "${taskId}" already exists`);
+      }
+
+      // Create archive folder if it doesn't already exist
+      if (!(await exists(archiveFolder))) {
+        await fs.promises.mkdir(archiveFolder, { recursive: true });
+      }
+
+      // Save the column name in the task's metadata
+      let taskData = await this.loadTask(taskId);
+      taskData = setTaskMetadata(taskData, "column", findTaskColumn(index, taskId));
+
+      // Save the task inside the archive folder
+      await this.saveTask(archivedTaskPath, taskData);
+
+      // Remove the original task
+      await this.deleteTask(taskId, true);
 
       return taskId;
     },
@@ -2178,16 +2285,62 @@ module.exports = (() => {
     /**
      * Restore a task from the archive
      * @param {string} taskId The task id
+     * @param {?string} [columnName=null] The column to restore the task to
      * @return {string} The task id
      */
-    async restoreTask(taskId, columnName) {
+    async restoreTask(taskId, columnName = null) {
       // Check if this folder has been initialised
       if (!(await this.initialised())) {
         throw new Error("Not initialised in this folder");
       }
       taskId = removeFileExtension(taskId);
 
-      // TODO restore task
+      const archiveFolder = await this.getArchiveFolderPath();
+      const archivedTaskPath = getTaskPath(archiveFolder, taskId);
+      const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
+
+      // Make sure the archive folder exists
+      if (!(await exists(archiveFolder))) {
+        throw new Error("Archive folder doesn't exist");
+      }
+
+      // Make sure the task file exists in the archive
+      if (!(await exists(archivedTaskPath))) {
+        throw new Error(`No archived task found with id "${taskId}"`);
+      }
+
+      // Check if there is already a task with the same id
+      if (await exists(taskPath)) {
+        throw new Error(`There is already an active task with id "${taskId}"`);
+      }
+
+      // Get index and make sure there isn't already an indexed task with the same id
+      let index = await this.loadIndex();
+      if (taskInIndex(index, taskId)) {
+        throw new Error(`There is already an indexed task with id "${taskId}"`);
+      }
+
+      // Make sure the index has some columns
+      const columns = Object.keys(index.columns);
+      if (columns.length === 0) {
+        throw new Error('No columns defined in the index');
+      }
+
+      // Load the task from the archive
+      let taskData = await this.loadArchivedTask(taskId);
+      let actualColumnName = columnName || getTaskMetadata(taskData, "column") || columns[0];
+      taskData = setTaskMetadata(taskData, "column", undefined);
+
+      // Update task metadata dates and save task
+      taskData = updateColumnLinkedCustomFields(index, taskData, actualColumnName);
+      await this.saveTask(taskPath, taskData);
+
+      // Add the task to the column and save the index
+      index = addTaskToIndex(index, taskId, actualColumnName);
+      await this.saveIndex(index);
+
+      // Delete the archived task file
+      await fs.promises.unlink(archivedTaskPath);
 
       return taskId;
     },

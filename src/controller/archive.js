@@ -16,11 +16,31 @@ function archiveTask(taskId) {
   });
 }
 
+/**
+ * Show a list of archived task filenames
+ */
+function listArchivedTasks() {
+  kanbn
+  .listArchivedTasks()
+  .then(archivedTasks => {
+    console.log(archivedTasks.join('\n'));
+  })
+  .catch(error => {
+    utility.error(error);
+  });
+}
+
 module.exports = async args => {
 
   // Make sure kanbn has been initialised
   if (!await kanbn.initialised()) {
     utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+    return;
+  }
+
+  // Check if we're listing archived tasks
+  if (args.list) {
+    listArchivedTasks();
     return;
   }
 

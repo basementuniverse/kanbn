@@ -88,6 +88,12 @@ export function getIndexFileName(): Promise<string>;
 export function getTaskFolderName(): Promise<string>;
 
 /**
+ * Get the name of the archive folder
+ * @return {Promise<string>} The archive folder name
+ */
+export function getArchiveFolderName(): Promise<string>;
+
+/**
  * Get the kanbn folder location for the current working directory
  * @return {Promise<string>} The kanbn folder path
  */
@@ -104,6 +110,12 @@ export function getIndexPath(): Promise<string>;
  * @return {Promise<string>} The kanbn task folder path
  */
 export function getTaskFolderPath(): Promise<string>;
+
+/**
+ * Get the archive folder path
+ * @return {Promise<string>} The kanbn archive folder path
+ */
+export function getArchiveFolderPath(): Promise<string>;
 
 /**
  * Get the index as an object
@@ -152,13 +164,13 @@ export function loadIndex(): Promise<index>;
 /**
  * Overwrite a task file with the specified data
  * @param {string} path The task path
- * @param {Promise<void>} taskData The task data
+ * @param {object} taskData The task data
  */
 export function saveTask(path: string, taskData: object): Promise<void>;
 
 /**
  * Load a task file and parse it to an object
- * @param {Promise<void>} taskId The task id
+ * @param {string} taskId The task id
  * @return {Promise<task>} The task object
  */
 export function loadTask(taskId: string): Promise<task>;
@@ -170,6 +182,13 @@ export function loadTask(taskId: string): Promise<task>;
  * @return {Promise<task[]>} All tracked tasks
  */
 export function loadAllTrackedTasks(index: index, columnName?: string|null): Promise<task[]>;
+
+/**
+ * Load a task file from the archive and parse it to an object
+ * @param {string} taskId The task id
+ * @return {object} The task object
+ */
+export function loadArchivedTask(taskId: string): Promise<task>;
 
 /**
  * Get the date format defined in the index, or the default date format
@@ -354,18 +373,25 @@ export function burndown(
 export function comment(taskId: string, text: string, author: string): Promise<string>;
 
 /**
+ * Return a list of archived tasks
+ * @return {Promise<string[]>} A list of archived task ids
+ */
+export function listArchivedTasks(): Promise<string[]>;
+
+/**
  * Move a task to the archive
- * @param taskId The task id
+ * @param {string} taskId The task id
  * @return {Promise<string>} The task id
  */
 export function archiveTask(taskId: string): Promise<string>;
 
 /**
  * Restore a task from the archive
- * @param taskId The task id
+ * @param {string} taskId The task id
+ * @param {?string} [columnName=null] The column to restore the task to
  * @return {Promise<string>} The task id
  */
-export function restoreTask(taskId: string): Promise<string>;
+export function restoreTask(taskId: string, columnName?: string|null): Promise<string>;
 
 /**
  * Nuke it from orbit, it's the only way to be sure
