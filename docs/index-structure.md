@@ -146,11 +146,14 @@ dueMessage
 column
 workload
 progress
+{...customFields}
 ```
 
 The default task template is `^+^_${overdue ? '^R' : ''}${name}^: ${created ? ('\\n^-^/' + created) : ''}`.
 
 This string can contain markup sequences. See [terminal-kit](https://github.com/cronvel/terminal-kit/blob/21607fb51749853dd9193c6aaf205b14c63b2768/doc/markup.md#markup) for markup reference.
+
+*Note: custom fields can also be interpolated into the task template, but only if they are defined in `customFields` (see below).*
 
 ### `dateFormat`
 
@@ -180,8 +183,24 @@ Additionally, if a custom field has type `date`, the custom field can have a str
 
 ### `{customFieldName}Columns`
 
-A list of column names. `{customFieldName}` should match a custom field with type `date`. When a task is created in or dragged into one of these columns, the matching custom field in the task can be set to the current time.
+A list of column names. `{customFieldName}` should be the name of a custom field with type `date` (see the `customFields` section above for more information).
+
+When a task is created in or dragged into one of these columns, the matching custom field in the task can be set to the current time.
 
 If the custom field has `updateDate` set to `once`, the field will only be updated if it doesn't already have a value.
 
 If the custom field has `updateDate` set to `always`, the field will be updated every time the task is moved into a linked column.
+
+Here's an example of how this could be used:
+
+* Assume we have added a column called `Testing`
+* In `index.md` (or `kanbn.json` / `kanbn.yml` if using a separate configuration file), we have:
+  ```
+  customFields:
+    - name: testedAt
+      type: date
+      updateDate: once
+  testedAtColumns:
+    - Testing
+  ```
+* When a task is moved into the `Testing` column and the task doesn't already have a `testedAt` value in its metadata, this value will be automatically populated with the current date/time.

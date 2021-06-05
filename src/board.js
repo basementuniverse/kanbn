@@ -1,6 +1,7 @@
 const kanbn = require('./main');
 const term = require('terminal-kit').terminal;
 const formatDate = require('dateformat');
+const utility = require('./utility');
 
 module.exports = (() => {
   const TASK_SEPARATOR = '\n\n';
@@ -14,6 +15,18 @@ module.exports = (() => {
   function getTaskString(index, task) {
     const taskTemplate = kanbn.getTaskTemplate(index);
     const dateFormat = kanbn.getDateFormat(index);
+
+    // Get an object containing custom fields from the task
+    let customFields = {};
+    if ('customFields' in index.options) {
+      const customFieldNames = index.options.customFields.map(customField => customField.name);
+      customFields = Object.fromEntries(utility.zip(
+        customFieldNames,
+        customFieldNames.map(customFieldName => task.metadata[customFieldName] || '')
+      ));
+    }
+
+    // Prepare task data for interpolation
     const taskData = {
       name: task.name,
       description: task.name,
@@ -30,9 +43,15 @@ module.exports = (() => {
       dueMessage: 'dueData' in task && 'dueMessage' in task.dueData ? task.dueData.dueMessage : '',
       column: task.column,
       workload: task.workload,
-      progress: task.progress
+      progress: task.progress,
+      ...customFields
     };
-    return new Function(...Object.keys(taskData), 'return `^:' + taskTemplate + '`;')(...Object.values(taskData));
+    try {
+      return new Function(...Object.keys(taskData), 'return `^:' + taskTemplate + '`;')(...Object.values(taskData));
+    } catch (e) {
+      utility.error(`Unable to build task template: ${e.message}`);
+      return;
+    }
   }
 
   /**
