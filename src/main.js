@@ -48,7 +48,7 @@ const defaultInitialiseOptions = {
 /**
  * Check if a file or folder exists
  * @param {string} path
- * @return {boolean} True if the file or folder exists
+ * @return {Promise<boolean>} True if the file or folder exists
  */
 async function exists(path) {
   try {
@@ -800,7 +800,7 @@ class Kanbn {
 
   /**
    * Check if a separate config file exists
-   * @returns {boolean} True if a config file exists
+   * @returns {Promise<boolean>} True if a config file exists
    */
   async configExists() {
     return await exists(this.CONFIG_YAML) || await exists(this.CONFIG_JSON);
@@ -819,7 +819,7 @@ class Kanbn {
 
   /**
    * Get configuration settings from the config file if it exists, otherwise return null
-   * @return {Object|null} Configuration settings or null if there is no separate config file
+   * @return {Promise<Object|null>} Configuration settings or null if there is no separate config file
    */
   async getConfig() {
     if (this.configMemo === null) {
@@ -851,7 +851,7 @@ class Kanbn {
 
   /**
    * Get the name of the folder where the index and tasks are stored
-   * @return {string} The kanbn folder name
+   * @return {Promise<string>} The kanbn folder name
    */
   async getFolderName() {
     const config = await this.getConfig();
@@ -863,7 +863,7 @@ class Kanbn {
 
   /**
    * Get the index filename
-   * @return {string} The index filename
+   * @return {Promise<string>} The index filename
    */
   async getIndexFileName() {
     const config = await this.getConfig();
@@ -875,7 +875,7 @@ class Kanbn {
 
   /**
    * Get the name of the folder where tasks are stored
-   * @return {string} The task folder name
+   * @return {Promise<string>} The task folder name
    */
   async getTaskFolderName() {
     const config = await this.getConfig();
@@ -887,7 +887,7 @@ class Kanbn {
 
   /**
    * Get the name of the archive folder
-   * @return {string} The archive folder name
+   * @return {Promise<string>} The archive folder name
    */
   async getArchiveFolderName() {
     const config = await this.getConfig();
@@ -899,7 +899,7 @@ class Kanbn {
 
   /**
    * Get the kanbn folder location for the current working directory
-   * @return {string} The kanbn folder path
+   * @return {Promise<string>} The kanbn folder path
    */
   async getMainFolder() {
     return path.join(this.ROOT, await this.getFolderName());
@@ -907,7 +907,7 @@ class Kanbn {
 
   /**
    * Get the index path
-   * @return {string} The kanbn index path
+   * @return {Promise<string>} The kanbn index path
    */
   async getIndexPath() {
     return path.join(await this.getMainFolder(), await this.getIndexFileName());
@@ -915,7 +915,7 @@ class Kanbn {
 
   /**
    * Get the task folder path
-   * @return {string} The kanbn task folder path
+   * @return {Promise<string>} The kanbn task folder path
    */
   async getTaskFolderPath() {
     return path.join(await this.getMainFolder(), await this.getTaskFolderName());
@@ -923,7 +923,7 @@ class Kanbn {
 
   /**
    * Get the archive folder path
-   * @return {string} The kanbn archive folder path
+   * @return {Promise<string>} The kanbn archive folder path
    */
   async getArchiveFolderPath() {
     return path.join(await this.getMainFolder(), await this.getArchiveFolderName());
@@ -1048,7 +1048,7 @@ class Kanbn {
 
   /**
    * Load the index file and parse it to an object
-   * @return {object} The index object
+   * @return {Promise<object>} The index object
    */
   async loadIndex() {
     let indexData = "";
@@ -1079,7 +1079,7 @@ class Kanbn {
   /**
    * Load a task file and parse it to an object
    * @param {string} taskId The task id
-   * @return {object} The task object
+   * @return {Promise<object>} The task object
    */
   async loadTask(taskId) {
     const taskPath = path.join(await this.getTaskFolderPath(), addFileExtension(taskId));
@@ -1096,7 +1096,7 @@ class Kanbn {
    * Load all tracked tasks and return an array of task objects
    * @param {object} index The index object
    * @param {?string} [columnName=null] The optional column name to filter tasks by
-   * @return {object[]} All tracked tasks
+   * @return {Promise<object[]>} All tracked tasks
    */
   async loadAllTrackedTasks(index, columnName = null) {
     const result = [];
@@ -1110,7 +1110,7 @@ class Kanbn {
   /**
    * Load a task file from the archive and parse it to an object
    * @param {string} taskId The task id
-   * @return {object} The task object
+   * @return {Promise<object>} The task object
    */
   async loadArchivedTask(taskId) {
     const taskPath = path.join(await this.getArchiveFolderPath(), addFileExtension(taskId));
@@ -1143,7 +1143,7 @@ class Kanbn {
 
   /**
    * Check if the current working directory has been initialised
-   * @return {boolean} True if the current working directory has been initialised, otherwise false
+   * @return {Promise<boolean>} True if the current working directory has been initialised, otherwise false
    */
   async initialised() {
     return await exists(await this.getIndexPath());
@@ -1229,7 +1229,7 @@ class Kanbn {
   /**
    * Get the column that a task is in or throw an error if the task doesn't exist or isn't indexed
    * @param {string} taskId The task id to find
-   * @return {string} The name of the column the task is in
+   * @return {Promise<string>} The name of the column the task is in
    */
   async findTaskColumn(taskId) {
     // Check if this folder has been initialised
@@ -1256,7 +1256,7 @@ class Kanbn {
    * Create a task file and add the task to the index
    * @param {object} taskData The task object
    * @param {string} columnName The name of the column to add the task to
-   * @return {string} The id of the task that was created
+   * @return {Promise<string>} The id of the task that was created
    */
   async createTask(taskData, columnName) {
     // Check if this folder has been initialised
@@ -1304,7 +1304,7 @@ class Kanbn {
    * Add an untracked task to the specified column in the index
    * @param {string} taskId The untracked task id
    * @param {string} columnName The column to add the task to
-   * @return {string} The id of the task that was added
+   * @return {Promise<string>} The id of the task that was added
    */
   async addUntrackedTaskToIndex(taskId, columnName) {
     // Check if this folder has been initialised
@@ -1346,7 +1346,7 @@ class Kanbn {
   /**
    * Get a list of tracked tasks (i.e. tasks that are listed in the index)
    * @param {?string} [columnName=null] The optional column name to filter tasks by
-   * @return {Set} A set of task ids
+   * @return {Promise<Set>} A set of task ids
    */
   async findTrackedTasks(columnName = null) {
     // Check if this folder has been initialised
@@ -1361,7 +1361,7 @@ class Kanbn {
 
   /**
    * Get a list of untracked tasks (i.e. markdown files in the tasks folder that aren't listed in the index)
-   * @return {Set} A set of untracked task ids
+   * @return {Promise<Set>} A set of untracked task ids
    */
   async findUntrackedTasks() {
     // Check if this folder has been initialised
@@ -1386,7 +1386,7 @@ class Kanbn {
    * @param {string} taskId The id of the task to update
    * @param {object} taskData The new task data
    * @param {?string} [columnName=null] The column name to move this task to, or null if not moving this task
-   * @return {string} The id of the task that was updated
+   * @return {Promise<string>} The id of the task that was updated
    */
   async updateTask(taskId, taskData, columnName = null) {
     // Check if this folder has been initialised
@@ -1446,7 +1446,7 @@ class Kanbn {
    * Change a task name, rename the task file and update the task id in the index
    * @param {string} taskId The id of the task to rename
    * @param {string} newTaskName The new task name
-   * @return {string} The new id of the task that was renamed
+   * @return {Promise<string>} The new id of the task that was renamed
    */
   async renameTask(taskId, newTaskName) {
     // Check if this folder has been initialised
@@ -1499,7 +1499,7 @@ class Kanbn {
    * @param {string} columnName The name of the column that the task will be moved to
    * @param {?number} [position=null] The position to move the task to within the target column
    * @param {boolean} [relative=false] Treat the position argument as relative instead of absolute
-   * @return {string} The id of the task that was moved
+   * @return {Promise<string>} The id of the task that was moved
    */
   async moveTask(taskId, columnName, position = null, relative = false) {
     // Check if this folder has been initialised
@@ -1553,7 +1553,7 @@ class Kanbn {
    * Remove a task from the index and optionally delete the task file as well
    * @param {string} taskId The id of the task to remove
    * @param {boolean} [removeFile=false] True if the task file should be removed
-   * @return {string} The id of the task that was deleted
+   * @return {Promise<string>} The id of the task that was deleted
    */
   async deleteTask(taskId, removeFile = false) {
     // Check if this folder has been initialised
@@ -1583,7 +1583,7 @@ class Kanbn {
    * Search for indexed tasks
    * @param {object} [filters={}] The filters to apply
    * @param {boolean} [quiet=false] Only return task ids if true, otherwise return full task details
-   * @return {object[]} A list of tasks that match the filters
+   * @return {Promise<object[]>} A list of tasks that match the filters
    */
   async search(filters = {}, quiet = false) {
     // Check if this folder has been initialised
@@ -1608,7 +1608,7 @@ class Kanbn {
    * @param {boolean} [due=false] Show information about overdue tasks and time remaining
    * @param {?string|?number} [sprint=null] The sprint name or number to show stats for, or null for current sprint
    * @param {?Date[]} [dates=null] The date(s) to show stats for, or null for no date filter
-   * @return {object|string[]} Project status information as an object, or an array of untracked task filenames
+   * @return {Promise<object|string[]>} Project status information as an object, or an array of untracked task filenames
    */
   async status(quiet = false, untracked = false, due = false, sprint = null, dates = null) {
     // Check if this folder has been initialised
@@ -1838,7 +1838,7 @@ class Kanbn {
   /**
    * Validate the index and task files
    * @param {boolean} [save=false] Re-save all files
-   * @return {boolean} True if everything validated, otherwise an array of parsing errors
+   * @return {Promise<boolean>} True if everything validated, otherwise an array of parsing errors
    */
   async validate(save = false) {
     // Check if this folder has been initialised
@@ -1934,7 +1934,7 @@ class Kanbn {
    * @param {string} name Sprint name
    * @param {string} description Sprint description
    * @param {Date} start Sprint start date
-   * @return {object} The sprint object
+   * @return {Promise<object>} The sprint object
    */
   async sprint(name, description, start) {
     // Check if this folder has been initialised
@@ -1978,7 +1978,7 @@ class Kanbn {
    * @param {?string} [assigned=null] The assigned user to filter for, or null for no assigned filter
    * @param {?string[]} [columns=null] The columns to filter for, or null for no column filter
    * @param {?string} [normalise=null] The date normalisation mode
-   * @return {object} Burndown chart data as an object
+   * @return {Promise<object>} Burndown chart data as an object
    */
   async burndown(sprints = null, dates = null, assigned = null, columns = null, normalise = null) {
     // Check if this folder has been initialised
@@ -2183,7 +2183,7 @@ class Kanbn {
    * @param {string} taskId The task id
    * @param {string} text The comment text
    * @param {string} author The comment author
-   * @return {string} The task id
+   * @return {Promise<string>} The task id
    */
   async comment(taskId, text, author) {
     // Check if this folder has been initialised
@@ -2224,7 +2224,7 @@ class Kanbn {
 
   /**
    * Return a list of archived tasks
-   * @return {string[]} A list of archived task ids
+   * @return {Promise<string[]>} A list of archived task ids
    */
   async listArchivedTasks() {
     // Check if this folder has been initialised
@@ -2246,7 +2246,7 @@ class Kanbn {
   /**
    * Move a task to the archive
    * @param {string} taskId The task id
-   * @return {string} The task id
+   * @return {Promise<string>} The task id
    */
   async archiveTask(taskId) {
     // Check if this folder has been initialised
@@ -2295,7 +2295,7 @@ class Kanbn {
    * Restore a task from the archive
    * @param {string} taskId The task id
    * @param {?string} [columnName=null] The column to restore the task to
-   * @return {string} The task id
+   * @return {Promise<string>} The task id
    */
   async restoreTask(taskId, columnName = null) {
     // Check if this folder has been initialised
