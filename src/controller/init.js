@@ -1,4 +1,5 @@
-const kanbn = require('../main');
+const kanbn_module = require('../main');
+const kanbn = new kanbn_module.Kanbn();
 const utility = require('../utility');
 const inquirer = require('inquirer');
 
