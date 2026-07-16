@@ -450,7 +450,7 @@ module.exports = async args => {
         taskData.description = answers.description;
       }
       if ('due' in answers) {
-        taskData.metadata.due = answers.due.toISOString();
+        taskData.metadata.due = answers.due;
       }
       if ('assigned' in answers) {
         taskData.metadata.assigned = answers.assigned;

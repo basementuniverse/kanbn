@@ -660,7 +660,7 @@ module.exports = async args => {
 
       // Due date
       if ('due' in answers) {
-        taskData.metadata.due = answers.due.toISOString();
+        taskData.metadata.due = answers.due;
       }
 
       // Remove assigned
