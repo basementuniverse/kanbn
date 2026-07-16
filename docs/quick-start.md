@@ -55,7 +55,7 @@ This will show a kanbn board, something like this:
 kanbn edit "my-new-task" -t "Large"
 ```
 
-This will add a "Huge" tag to the task and modify the task's updated date. If you're using the default settings, this will also affect the task's workload.
+This will add a "Large" tag to the task and modify the task's updated date. If you're using the default settings, this will also affect the task's workload.
 
 Run `kanbn edit --help` for more information on editing tasks.
 

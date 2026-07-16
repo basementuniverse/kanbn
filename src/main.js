@@ -786,7 +786,7 @@ class Kanbn {
   ROOT = process.cwd();
   CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
   CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
-  
+
   // Memoize config
   configMemo = null;
 
@@ -2366,4 +2366,9 @@ class Kanbn {
   }
 };
 
-module.exports.Kanbn = Kanbn
+// Preserve backward compatibility for existing callers that expect
+// require('./main') to expose the Kanbn API directly.
+const kanbn = new Kanbn();
+
+module.exports = kanbn;
+module.exports.Kanbn = Kanbn;
