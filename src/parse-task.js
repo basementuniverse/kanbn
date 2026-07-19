@@ -16,7 +16,7 @@ function compileDescription(data) {
     description.push(data.raw.content.replace(/[\r\n]{3}/g, '\n\n').trim());
   }
   for (let heading in data) {
-    if (['raw', 'Metadata', 'Sub-tasks', 'Relations', 'Comments'].indexOf(heading) !== -1) {
+    if (['raw', 'Metadata', 'Sub-tasks', 'Relations', 'History', 'Comments'].indexOf(heading) !== -1) {
       continue;
     }
     description.push(
@@ -166,6 +166,105 @@ function validateComments(comments) {
   }
 }
 
+/**
+ * Validate the history object converted from Markdown
+ * @param {object[]} history
+ */
+function validateHistoryFromMarkdown(history) {
+  const result = validate(history, {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        'type': { type: 'string' },
+        'date': {
+          oneOf: [
+            { type: 'string' },
+            { type: 'date' }
+          ]
+        },
+        'column': { type: 'string' },
+        'fromColumn': { type: 'string' },
+        'toColumn': { type: 'string' },
+        'author': { type: 'string' },
+        'fromProgress': { oneOf: [{ type: 'number' }, { type: 'string' }] },
+        'toProgress': { oneOf: [{ type: 'number' }, { type: 'string' }] }
+      }
+    }
+  });
+  if (result.errors.length) {
+    throw new Error(result.errors.map(error => `\n${error.property} ${error.message}`).join(''));
+  }
+}
+
+/**
+ * Validate the history object converted from JSON
+ * @param {object[]} history
+ */
+function validateHistoryFromJSON(history) {
+  const result = validate(history, {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        'type': { type: 'string' },
+        'date': { type: 'date' },
+        'column': { type: 'string' },
+        'fromColumn': { type: 'string' },
+        'toColumn': { type: 'string' },
+        'author': { type: 'string' },
+        'fromProgress': { type: 'number' },
+        'toProgress': { type: 'number' }
+      }
+    }
+  });
+  if (result.errors.length) {
+    throw new Error(result.errors.map(error => `\n${error.property} ${error.message}`).join(''));
+  }
+}
+
+/**
+ * Validate required fields in a history event
+ * @param {object} historyEvent
+ */
+function validateHistoryEvent(historyEvent) {
+  if (!historyEvent.type) {
+    throw new Error('history event is missing type');
+  }
+  if (!historyEvent.date) {
+    throw new Error(`history event "${historyEvent.type}" is missing date`);
+  }
+  switch (historyEvent.type) {
+    case 'created':
+      if (!historyEvent.column) {
+        throw new Error('created history event is missing column');
+      }
+      break;
+    case 'moved':
+      if (!historyEvent.fromColumn || !historyEvent.toColumn) {
+        throw new Error('moved history event is missing fromColumn or toColumn');
+      }
+      break;
+    case 'progress':
+      if (historyEvent.fromProgress === undefined || historyEvent.toProgress === undefined) {
+        throw new Error('progress history event is missing fromProgress or toProgress');
+      }
+      break;
+    case 'archived':
+      if (!historyEvent.fromColumn) {
+        throw new Error('archived history event is missing fromColumn');
+      }
+      break;
+    case 'restored':
+      if (!historyEvent.toColumn) {
+        throw new Error('restored history event is missing toColumn');
+      }
+      break;
+    default:
+      throw new Error(`unsupported history event type "${historyEvent.type}"`);
+  }
+}
+
 module.exports = {
 
   /**
@@ -174,7 +273,7 @@ module.exports = {
    * @return {object}
    */
   md2json(data) {
-    let id = '', name = '', description = '', metadata = {}, subTasks = [], relations = [], comments = [];
+    let id = '', name = '', description = '', metadata = {}, subTasks = [], relations = [], history = [], comments = [];
     try {
 
       // Check data type
@@ -349,6 +448,62 @@ module.exports = {
         delete task['Comments'];
       }
 
+      // Parse history
+      if ('History' in task) {
+        try {
+          const parsedHistory = marked.lexer(task['History'].content)[0].items;
+          for (let parsedHistoryEvent of parsedHistory) {
+            const historyEvent = {};
+            const parts = parsedHistoryEvent.text.split('\n');
+            for (let part of parts) {
+              const parsedPart = part.match(/^([A-Za-z][A-Za-z0-9]*):\s*(.*)$/);
+              if (!parsedPart) {
+                continue;
+              }
+              const key = parsedPart[1];
+              historyEvent[key] = parsedPart[2].trim();
+            }
+            history.push(historyEvent);
+          }
+        } catch (error) {
+          throw new Error('history must contain a list');
+        }
+        delete task['History'];
+
+        // Validate basic history structure before value coercion
+        validateHistoryFromMarkdown(history);
+
+        // Parse and validate event dates and numeric fields
+        history = history.map((historyEvent) => {
+          if (!(historyEvent.date instanceof Date)) {
+            const dateValue = chrono.parseDate(historyEvent.date);
+            if (dateValue === null) {
+              throw new Error(`unable to parse history event date for "${historyEvent.type || 'unknown'}"`);
+            }
+            historyEvent.date = dateValue;
+          }
+
+          if ('fromProgress' in historyEvent) {
+            const fromProgressValue = parseFloat(historyEvent.fromProgress);
+            if (isNaN(fromProgressValue)) {
+              throw new Error('history event fromProgress value is not numeric');
+            }
+            historyEvent.fromProgress = fromProgressValue;
+          }
+
+          if ('toProgress' in historyEvent) {
+            const toProgressValue = parseFloat(historyEvent.toProgress);
+            if (isNaN(toProgressValue)) {
+              throw new Error('history event toProgress value is not numeric');
+            }
+            historyEvent.toProgress = toProgressValue;
+          }
+
+          validateHistoryEvent(historyEvent);
+          return historyEvent;
+        });
+      }
+
       // Assemble description
       // const descriptionParts = [];
       description = compileDescription(task);
@@ -358,7 +513,11 @@ module.exports = {
     }
 
     // Assemble task object
-    return { id, name, description, metadata, subTasks, relations, comments };
+    const result = { id, name, description, metadata, subTasks, relations, comments };
+    if (history.length > 0) {
+      result.history = history;
+    }
+    return result;
   },
 
   /**
@@ -439,6 +598,41 @@ module.exports = {
               }
               commentOutput.push(...comment.text.split('\n'));
               return `- ${commentOutput.map((v, i) => i > 0 ? `  ${v}` : v).join('\n')}`;
+            }).join('\n')
+          );
+        }
+      }
+
+      // Add history if present
+      if ('history' in data && data.history !== null) {
+        validateHistoryFromJSON(data.history);
+        data.history.forEach(validateHistoryEvent);
+        if (data.history.length > 0) {
+          result.push(
+            '## History',
+            data.history.map((historyEvent) => {
+              const historyEventOutput = [];
+              historyEventOutput.push(`type: ${historyEvent.type}`);
+              historyEventOutput.push(`date: ${historyEvent.date.toISOString()}`);
+              if ('column' in historyEvent) {
+                historyEventOutput.push(`column: ${historyEvent.column}`);
+              }
+              if ('fromColumn' in historyEvent) {
+                historyEventOutput.push(`fromColumn: ${historyEvent.fromColumn}`);
+              }
+              if ('toColumn' in historyEvent) {
+                historyEventOutput.push(`toColumn: ${historyEvent.toColumn}`);
+              }
+              if ('fromProgress' in historyEvent) {
+                historyEventOutput.push(`fromProgress: ${historyEvent.fromProgress}`);
+              }
+              if ('toProgress' in historyEvent) {
+                historyEventOutput.push(`toProgress: ${historyEvent.toProgress}`);
+              }
+              if ('author' in historyEvent && historyEvent.author) {
+                historyEventOutput.push(`author: ${historyEvent.author}`);
+              }
+              return `- ${historyEventOutput.map((v, i) => i > 0 ? `  ${v}` : v).join('\n')}`;
             }).join('\n')
           );
         }

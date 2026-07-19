@@ -218,6 +218,23 @@ function setTaskMetadata(taskData, property, value) {
 }
 
 /**
+ * Append a structured history event to a task
+ * @param {object} taskData The task object
+ * @param {object} historyEvent The history event payload
+ * @return {object} The modified task object
+ */
+function appendTaskHistory(taskData, historyEvent) {
+  if (!('history' in taskData) || taskData.history === null) {
+    taskData.history = [];
+  }
+  taskData.history.push({
+    date: new Date(),
+    ...historyEvent
+  });
+  return taskData;
+}
+
+/**
  * Check if a task is completed
  * @param {object} index
  * @param {object} task
@@ -637,65 +654,203 @@ function taskWorkloadInPeriod(tasks, metadataProperty, start, end) {
 }
 
 /**
+ * Check if a column is configured as a started column
+ * @param {object} index
+ * @param {string|null} columnName
+ * @return {boolean}
+ */
+function startedColumn(index, columnName) {
+  return (
+    !!columnName &&
+    "startedColumns" in index.options &&
+    index.options.startedColumns.indexOf(columnName) !== -1
+  );
+}
+
+/**
+ * Check if a column is configured as a completed column
+ * @param {object} index
+ * @param {string|null} columnName
+ * @return {boolean}
+ */
+function completedColumn(index, columnName) {
+  return (
+    !!columnName &&
+    "completedColumns" in index.options &&
+    index.options.completedColumns.indexOf(columnName) !== -1
+  );
+}
+
+/**
+ * Build a task's state at a specific date from history events
+ * @param {object} task
+ * @param {Date} date
+ * @return {?object}
+ */
+function getTaskHistoryStateAtDate(task, date) {
+  if (!("history" in task) || !Array.isArray(task.history) || task.history.length === 0) {
+    return null;
+  }
+
+  const state = {
+    created: false,
+    archived: false,
+    column: null,
+  };
+  const history = [...task.history].sort((a, b) => a.date.getTime() - b.date.getTime());
+  history.forEach((historyEvent) => {
+    if (!historyEvent.date || historyEvent.date > date) {
+      return;
+    }
+    switch (historyEvent.type) {
+      case 'created':
+        state.created = true;
+        state.archived = false;
+        state.column = historyEvent.column || state.column;
+        break;
+      case 'moved':
+        state.column = historyEvent.toColumn || state.column;
+        break;
+      case 'archived':
+        state.archived = true;
+        break;
+      case 'restored':
+        state.archived = false;
+        state.column = historyEvent.toColumn || state.column;
+        break;
+      default:
+        break;
+    }
+  });
+  return state;
+}
+
+/**
+ * Get task progress at a specific date from history when available
+ * @param {object} task
+ * @param {Date} date
+ * @return {number}
+ */
+function getTaskProgressAtDate(task, date) {
+  if ("history" in task && Array.isArray(task.history) && task.history.length > 0) {
+    let progress = 0;
+    const history = [...task.history].sort((a, b) => a.date.getTime() - b.date.getTime());
+    history.forEach((historyEvent) => {
+      if (!historyEvent.date || historyEvent.date > date) {
+        return;
+      }
+      if (historyEvent.type === 'progress' && historyEvent.toProgress !== undefined) {
+        progress = historyEvent.toProgress;
+      }
+      if (historyEvent.type === 'created' && historyEvent.toProgress !== undefined) {
+        progress = historyEvent.toProgress;
+      }
+    });
+    return Math.max(0, Math.min(progress, 1));
+  }
+  if (task.completed && task.completed <= date) {
+    return 1;
+  }
+  const progress = "progress" in task.metadata ? task.metadata.progress : 0;
+  return Math.max(0, Math.min(progress, 1));
+}
+
+/**
+ * Get timeline dates for a task in a period. For history-enabled tasks this uses all history event dates,
+ * otherwise it falls back to created/started/completed dates.
+ * @param {object} task
+ * @param {Date} from
+ * @param {Date} to
+ * @return {Date[]}
+ */
+function getTaskTimelineDates(task, from, to) {
+  if ("history" in task && Array.isArray(task.history) && task.history.length > 0) {
+    return task.history
+      .map((historyEvent) => historyEvent.date)
+      .filter((date) => date && date >= from && date <= to);
+  }
+  return [task.created, task.started, task.completed].filter((date) => date && date >= from && date <= to);
+}
+
+/**
  * Get a list of tasks that were started before and/or completed after a date
+ * @param {object} index
  * @param {object[]} tasks
  * @param {Date} date
  * @return {object[]} A filtered list of tasks
  */
-function getActiveTasksAtDate(tasks, date) {
+function getActiveTasksAtDate(index, tasks, date) {
   return tasks.filter((task) => (
-    (task.started !== false && task.started <= date) &&
-    (task.completed === false || task.completed > date)
+    (() => {
+      const historyState = getTaskHistoryStateAtDate(task, date);
+      if (historyState !== null) {
+        return historyState.created && !historyState.archived && startedColumn(index, historyState.column) && !completedColumn(index, historyState.column);
+      }
+      return (task.started !== false && task.started <= date) &&
+        (task.completed === false || task.completed > date);
+    })()
   ));
 }
 
 /**
  * Calculate the total workload at a specific date
+ * @param {object} index
  * @param {object[]} tasks
  * @param {Date} date
  * @return {number} The total workload at the specified date
  */
-function getWorkloadAtDate(tasks, date) {
-  return getActiveTasksAtDate(tasks, date).reduce((a, task) => (a += task.workload), 0);
+function getWorkloadAtDate(index, tasks, date) {
+  return getActiveTasksAtDate(index, tasks, date).reduce((a, task) => {
+    const progress = getTaskProgressAtDate(task, date);
+    return a + task.workload * (1 - progress);
+  }, 0);
 }
 
 /**
  * Get the number of tasks that were active at a specific date
+ * @param {object} index
  * @param {object[]} tasks
  * @param {Date} date
  * @return {number} The total number of active tasks at the specified date
  */
-function countActiveTasksAtDate(tasks, date) {
-  return getActiveTasksAtDate(tasks, date).length;
+function countActiveTasksAtDate(index, tasks, date) {
+  return getActiveTasksAtDate(index, tasks, date).length;
 }
 
 /**
  * Get a list of tasks that were started or completed on a specific date
+ * @param {object} index
  * @param {object[]} tasks
  * @param {Date} date
  * @return {object[]} A list of event objects, with event type and task id
  */
-function getTaskEventsAtDate(tasks, date) {
-  return [
-    ...tasks
-      .filter((task) => (task.created ? task.created.getTime() : 0) === date.getTime())
-      .map((task) => ({
-        eventType: "created",
-        task
-      })),
-    ...tasks
-      .filter((task) => (task.started ? task.started.getTime() : 0) === date.getTime())
-      .map((task) => ({
-        eventType: "started",
-        task
-      })),
-    ...tasks
-      .filter((task) => (task.completed ? task.completed.getTime() : 0) === date.getTime())
-      .map((task) => ({
-        eventType: "completed",
-        task
-      })),
-  ];
+function getTaskEventsAtDate(index, tasks, date) {
+  return tasks
+    .map((task) => {
+      if ("history" in task && Array.isArray(task.history) && task.history.length > 0) {
+        return task.history
+          .filter((historyEvent) => historyEvent.date && historyEvent.date.getTime() === date.getTime())
+          .map((historyEvent) => ({
+            eventType: historyEvent.type,
+            task
+          }));
+      }
+      return [
+        (task.created ? task.created.getTime() : 0) === date.getTime() && {
+          eventType: "created",
+          task
+        },
+        (task.started ? task.started.getTime() : 0) === date.getTime() && {
+          eventType: "started",
+          task
+        },
+        (task.completed ? task.completed.getTime() : 0) === date.getTime() && {
+          eventType: "completed",
+          task
+        }
+      ].filter((event) => !!event);
+    })
+    .flat();
 }
 
 /**
@@ -1290,6 +1445,14 @@ class Kanbn {
     // Set the created date
     taskData = setTaskMetadata(taskData, "created", new Date());
 
+    // Add initial history event
+    taskData = appendTaskHistory(taskData, {
+      type: 'created',
+      column: columnName,
+      fromProgress: 0,
+      toProgress: getTaskMetadata(taskData, 'progress') || 0
+    });
+
     // Update task metadata dates
     taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
     await this.saveTask(taskPath, taskData);
@@ -1428,6 +1591,17 @@ class Kanbn {
     // Set the updated date
     taskData = setTaskMetadata(taskData, "updated", new Date());
 
+    // Add history for progress changes only
+    const originalProgress = getTaskMetadata(originalTaskData, 'progress') || 0;
+    const updatedProgress = getTaskMetadata(taskData, 'progress') || 0;
+    if (originalProgress !== updatedProgress) {
+      taskData = appendTaskHistory(taskData, {
+        type: 'progress',
+        fromProgress: originalProgress,
+        toProgress: updatedProgress
+      });
+    }
+
     // Save task
     await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
 
@@ -1524,16 +1698,27 @@ class Kanbn {
       throw new Error(`Column "${columnName}" doesn't exist`);
     }
 
+    // Find current column before mutating data
+    const currentColumnName = findTaskColumn(index, taskId);
+
     // Update the task's updated date
     let taskData = await this.loadTask(taskId);
     taskData = setTaskMetadata(taskData, "updated", new Date());
+
+    // Add history only when a task changes columns
+    if (currentColumnName !== columnName) {
+      taskData = appendTaskHistory(taskData, {
+        type: 'moved',
+        fromColumn: currentColumnName,
+        toColumn: columnName
+      });
+    }
 
     // Update task metadata dates
     taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
     await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
 
     // If we're moving the task to a new position, calculate the absolute position
-    const currentColumnName = findTaskColumn(index, taskId);
     const currentPosition = index.columns[currentColumnName].indexOf(taskId);
     if (position) {
       if (relative) {
@@ -1990,6 +2175,7 @@ class Kanbn {
     const index = await this.loadIndex();
     const tasks = [...(await this.loadAllTrackedTasks(index))]
       .map((task) => {
+        const taskColumn = findTaskColumn(index, task.id);
         const created = "created" in task.metadata ? task.metadata.created : new Date(0);
         return {
           ...task,
@@ -1997,19 +2183,19 @@ class Kanbn {
           started:
             "started" in task.metadata
               ? task.metadata.started
-              : "startedColumns" in index.options && index.options.startedColumns.indexOf(task.column) !== -1
+              : "startedColumns" in index.options && index.options.startedColumns.indexOf(taskColumn) !== -1
               ? created
               : false,
           completed:
             "completed" in task.metadata
               ? task.metadata.completed
-              : "completedColumns" in index.options && index.options.completedColumns.indexOf(task.column) !== -1
+              : "completedColumns" in index.options && index.options.completedColumns.indexOf(taskColumn) !== -1
               ? created
               : false,
           progress: taskProgress(index, task),
           assigned: "assigned" in task.metadata ? task.metadata.assigned : null,
           workload: taskWorkload(index, task),
-          column: findTaskColumn(index, task.id),
+          column: taskColumn,
         };
       })
       .filter(
@@ -2119,6 +2305,12 @@ class Kanbn {
 
       // Normalise task dates
       tasks.forEach((task) => {
+        if ("history" in task && Array.isArray(task.history) && task.history.length > 0) {
+          task.history = task.history.map((historyEvent) => ({
+            ...historyEvent,
+            date: historyEvent.date ? normaliseDate(historyEvent.date, normalise) : historyEvent.date
+          }));
+        }
         if (task.created) {
           task.created = normaliseDate(task.created, normalise);
         }
@@ -2136,42 +2328,25 @@ class Kanbn {
       s.dataPoints = [
         {
           x: s.from,
-          y: getWorkloadAtDate(tasks, s.from),
-          count: countActiveTasksAtDate(tasks, s.from),
-          tasks: getTaskEventsAtDate(tasks, s.from),
+          y: getWorkloadAtDate(index, tasks, s.from),
+          count: countActiveTasksAtDate(index, tasks, s.from),
+          tasks: getTaskEventsAtDate(index, tasks, s.from),
         },
         ...tasks
-          .filter((task) => {
-            let result = false;
-            if (task.created && task.created >= s.from && task.created <= s.to) {
-              result = true;
-            }
-            if (task.started && task.started >= s.from && task.started <= s.to) {
-              result = true;
-            }
-            if (task.completed && task.completed >= s.from && task.completed <= s.to) {
-              result = true;
-            }
-            return result;
-          })
-          .map((task) => [
-            task.created,
-            task.started,
-            task.completed
-          ])
+          .map((task) => getTaskTimelineDates(task, s.from, s.to))
           .flat()
           .filter((d) => d)
           .map((x) => ({
             x,
-            y: getWorkloadAtDate(tasks, x),
-            count: countActiveTasksAtDate(tasks, x),
-            tasks: getTaskEventsAtDate(tasks, x),
+            y: getWorkloadAtDate(index, tasks, x),
+            count: countActiveTasksAtDate(index, tasks, x),
+            tasks: getTaskEventsAtDate(index, tasks, x),
           })),
         {
           x: s.to,
-          y: getWorkloadAtDate(tasks, s.to),
-          count: countActiveTasksAtDate(tasks, s.to),
-          tasks: getTaskEventsAtDate(tasks, s.to),
+          y: getWorkloadAtDate(index, tasks, s.to),
+          count: countActiveTasksAtDate(index, tasks, s.to),
+          tasks: getTaskEventsAtDate(index, tasks, s.to),
         },
       ].sort((a, b) => a.x.getTime() - b.x.getTime());
     });
@@ -2280,7 +2455,14 @@ class Kanbn {
 
     // Save the column name in the task's metadata
     let taskData = await this.loadTask(taskId);
-    taskData = setTaskMetadata(taskData, "column", findTaskColumn(index, taskId));
+    const taskColumn = findTaskColumn(index, taskId);
+    taskData = setTaskMetadata(taskData, "column", taskColumn);
+
+    // Add history event
+    taskData = appendTaskHistory(taskData, {
+      type: 'archived',
+      fromColumn: taskColumn
+    });
 
     // Save the task inside the archive folder
     await this.saveTask(archivedTaskPath, taskData);
@@ -2339,6 +2521,12 @@ class Kanbn {
     let taskData = await this.loadArchivedTask(taskId);
     let actualColumnName = columnName || getTaskMetadata(taskData, "column") || columns[0];
     taskData = setTaskMetadata(taskData, "column", undefined);
+
+    // Add history event
+    taskData = appendTaskHistory(taskData, {
+      type: 'restored',
+      toColumn: actualColumnName
+    });
 
     // Update task metadata dates and save task
     taskData = updateColumnLinkedCustomFields(index, taskData, actualColumnName);

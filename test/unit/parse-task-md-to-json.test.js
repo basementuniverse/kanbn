@@ -90,6 +90,23 @@ const TEST_RELATION_5_JSON = {
   task: 'test-task-1',
   type: 'relation type with spaces'
 };
+const TEST_HISTORY_1_JSON = {
+  type: 'created',
+  date: new Date('2026-01-01T00:00:00.000Z'),
+  column: 'Backlog'
+};
+const TEST_HISTORY_2_JSON = {
+  type: 'moved',
+  date: new Date('2026-01-02T00:00:00.000Z'),
+  fromColumn: 'Backlog',
+  toColumn: 'In Progress'
+};
+const TEST_HISTORY_3_JSON = {
+  type: 'progress',
+  date: new Date('2026-01-03T00:00:00.000Z'),
+  fromProgress: 0.2,
+  toProgress: 0.6
+};
 
 const invalidCases = [
   {
@@ -214,6 +231,29 @@ test: 1
 Invalid metadata
 `,
     error: /invalid metadata content/
+  },
+  {
+    md: `
+# ${TEST_NAME}
+
+## History
+
+- type: moved
+  fromColumn: Backlog
+  toColumn: In Progress
+`,
+    error: /unable to parse history event date for "moved"/
+  },
+  {
+    md: `
+# ${TEST_NAME}
+
+## History
+
+- type: wibble
+  date: 2026-01-01T00:00:00.000Z
+`,
+    error: /unsupported history event type "wibble"/
   }
 ];
 
@@ -494,6 +534,39 @@ moreValidMetadata: test3
       subTasks: [],
       relations: [],
       comments: []
+    }
+  },
+  {
+    md: `
+# ${TEST_NAME}
+
+## History
+
+- type: created
+  date: 2026-01-01T00:00:00.000Z
+  column: Backlog
+- type: moved
+  date: 2026-01-02T00:00:00.000Z
+  fromColumn: Backlog
+  toColumn: In Progress
+- type: progress
+  date: 2026-01-03T00:00:00.000Z
+  fromProgress: 0.2
+  toProgress: 0.6
+`,
+    json: {
+      id: TEST_ID,
+      name: TEST_NAME,
+      description: '',
+      metadata: {},
+      subTasks: [],
+      relations: [],
+      comments: [],
+      history: [
+        TEST_HISTORY_1_JSON,
+        TEST_HISTORY_2_JSON,
+        TEST_HISTORY_3_JSON
+      ]
     }
   }
 ];

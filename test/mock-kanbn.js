@@ -24,11 +24,15 @@ const config = {
   initialised: false,
   mainFolderName: 'test',
   index: TEST_INDEX,
+  dateFormat: 'yyyy-mm-dd',
   task: TEST_TASK,
   taskExists: false,
   trackedTasks: [],
   untrackedTasks: [],
-  archivedTasks: []
+  archivedTasks: [],
+  burndownData: {
+    series: []
+  }
 };
 
 // Mock kanbn library
@@ -44,6 +48,19 @@ const kanbn = {
   },
   async getIndex() {
     return config.index;
+  },
+  getDateFormat() {
+    return config.dateFormat;
+  },
+  async burndown(sprints, dates, assigned, columns, normalise) {
+    config.output = {
+      sprints,
+      dates,
+      assigned,
+      columns,
+      normalise
+    };
+    return config.burndownData;
   },
   async findTrackedTasks() {
     return config.trackedTasks;

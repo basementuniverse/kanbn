@@ -114,6 +114,24 @@ QUnit.test('Move a task into a completed column should update the completed date
   assert.equal(task.metadata.completed.toISOString().substr(0, 9), currentDate.substr(0, 9));
 });
 
+QUnit.test('Move task to another column should append a moved history event', async assert => {
+  await kanbn.moveTask('task-1', 'Column 2');
+
+  const task = await kanbn.getTask('task-1');
+  const movedEvents = (task.history || []).filter((event) => event.type === 'moved');
+  assert.equal(movedEvents.length, 1);
+  assert.equal(movedEvents[0].fromColumn, 'Column 1');
+  assert.equal(movedEvents[0].toColumn, 'Column 2');
+});
+
+QUnit.test('Move task within the same column should not append a moved history event', async assert => {
+  await kanbn.moveTask('task-1', 'Column 1', 1);
+
+  const task = await kanbn.getTask('task-1');
+  const movedEvents = (task.history || []).filter((event) => event.type === 'moved');
+  assert.equal(movedEvents.length, 0);
+});
+
 QUnit.test('Move a task into a custom metadata-linked column (update date once)', async assert => {
   const BASE_PATH = await kanbn.getMainFolder();
   const TEST_DATE_1 = '2000-01-01T00:00:00.000Z';

@@ -138,3 +138,19 @@ QUnit.test('Move a task using the update method', async assert => {
   // Verify that the index was updated
   context.indexHasTask(assert, await kanbn.getMainFolder(), 'task-1', 'Column 2');
 });
+
+QUnit.test('Update task progress should append a progress history event', async assert => {
+  const task = await kanbn.getTask('task-1');
+  task.metadata.progress = 0;
+  await kanbn.updateTask('task-1', task);
+
+  const updatedTask = await kanbn.getTask('task-1');
+  updatedTask.metadata.progress = 0.5;
+  await kanbn.updateTask('task-1', updatedTask);
+
+  const finalTask = await kanbn.getTask('task-1');
+  const progressEvents = (finalTask.history || []).filter((event) => event.type === 'progress');
+  assert.equal(progressEvents.length, 1);
+  assert.equal(progressEvents[0].fromProgress, 0);
+  assert.equal(progressEvents[0].toProgress, 0.5);
+});

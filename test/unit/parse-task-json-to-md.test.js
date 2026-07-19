@@ -77,6 +77,20 @@ Some text...
 
 const CASE_6 = ``;
 
+const CASE_7 = `
+# Task Name
+
+## History
+
+- type: created
+  date: 2026-01-01T00:00:00.000Z
+  column: Backlog
+- type: moved
+  date: 2026-01-02T00:00:00.000Z
+  fromColumn: Backlog
+  toColumn: In Progress
+`;
+
 const validCases = [
   {
     data: {
@@ -152,6 +166,29 @@ const validCases = [
       relations: []
     },
     expected: CASE_4
+  },
+  {
+    data: {
+      name: 'Task Name',
+      description: '',
+      metadata: {},
+      subTasks: [],
+      relations: [],
+      history: [
+        {
+          type: 'created',
+          date: new Date('2026-01-01T00:00:00.000Z'),
+          column: 'Backlog'
+        },
+        {
+          type: 'moved',
+          date: new Date('2026-01-02T00:00:00.000Z'),
+          fromColumn: 'Backlog',
+          toColumn: 'In Progress'
+        }
+      ]
+    },
+    expected: CASE_7
   }
 ];
 

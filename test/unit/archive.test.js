@@ -92,3 +92,12 @@ QUnit.test('Archive a task', async assert => {
   context.archivedTaskFileExists(assert, BASE_PATH, 'task-1');
   context.taskFileExists(assert, BASE_PATH, 'task-1', false);
 });
+
+QUnit.test('Archive should append an archived history event', async assert => {
+  const archivedTaskId = await kanbn.archiveTask('task-1');
+  const archivedTask = await kanbn.loadArchivedTask(archivedTaskId);
+  const archivedEvents = (archivedTask.history || []).filter((event) => event.type === 'archived');
+
+  assert.equal(archivedEvents.length, 1);
+  assert.equal(archivedEvents[0].fromColumn, 'Column 1');
+});

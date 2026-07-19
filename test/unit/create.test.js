@@ -129,3 +129,14 @@ QUnit.test('Create task in a completed column should update the completed date',
   const task = await kanbn.getTask(TASK_ID);
   assert.equal(task.metadata.completed.toISOString(), task.metadata.created.toISOString());
 });
+
+QUnit.test('Create task should append a created history event', async assert => {
+  await kanbn.initialise();
+  const TASK_ID = await kanbn.createTask({ name: 'Test name' }, 'Backlog');
+
+  const task = await kanbn.getTask(TASK_ID);
+  assert.ok('history' in task);
+  assert.equal(task.history.length, 1);
+  assert.equal(task.history[0].type, 'created');
+  assert.equal(task.history[0].column, 'Backlog');
+});

@@ -166,3 +166,22 @@ QUnit.test('Restore task to specified column', async assert => {
   context.taskFileExists(assert, BASE_PATH, 'test-task-2');
   context.archivedTaskFileExists(assert, BASE_PATH, 'test-task-2', false);
 });
+
+QUnit.test('Restore should append a restored history event', async assert => {
+  mockFileSystem({
+    '.kanbn': {
+      'index.md': '# Test Project\n\n## Test Column 1',
+      'tasks': {},
+      'archive': {
+        'test-task-2.md': '# Test Task 2'
+      }
+    }
+  });
+
+  await kanbn.restoreTask('test-task-2', 'Test Column 1');
+  const restoredTask = await kanbn.getTask('test-task-2');
+  const restoredEvents = (restoredTask.history || []).filter((event) => event.type === 'restored');
+
+  assert.equal(restoredEvents.length, 1);
+  assert.equal(restoredEvents[0].toColumn, 'Test Column 1');
+});

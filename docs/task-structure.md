@@ -34,6 +34,26 @@ Task description...
 - author: Username
   date: 2021-03-31T07:47:05.775Z
   This is a comment...
+
+## History
+
+- type: created
+  date: 2021-03-18T02:08:42.293Z
+  column: Backlog
+- type: moved
+  date: 2021-03-21T04:58:38.653Z
+  fromColumn: Backlog
+  toColumn: In Progress
+- type: progress
+  date: 2021-03-22T09:30:00.000Z
+  fromProgress: 0.25
+  toProgress: 0.5
+- type: archived
+  date: 2021-03-31T07:47:05.775Z
+  fromColumn: In Progress
+- type: restored
+  date: 2021-04-01T10:00:00.000Z
+  toColumn: Backlog
 ```
 
 The task file can optionally begin with YAML front-matter containing task metadata.
@@ -107,3 +127,21 @@ This should be a list of links to other task files. The link text can optionally
 ## Comments
 
 An array of comments, where each comment has an `author` and `date` property, and some text.
+
+## History
+
+An optional array of structured lifecycle events used for richer timeline reporting (including burndown).
+
+Supported event types:
+
+- `created`: requires `date` and `column`
+- `moved`: requires `date`, `fromColumn`, `toColumn`
+- `progress`: requires `date`, `fromProgress`, `toProgress`
+- `archived`: requires `date`, `fromColumn`
+- `restored`: requires `date`, `toColumn`
+
+Notes:
+
+- History entries are stored in the reserved `## History` section as list items.
+- `date` should be an ISO timestamp.
+- Additional fields (for example `author`) are preserved if present.

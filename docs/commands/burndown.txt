@@ -5,6 +5,12 @@ Show a burndown chart between a date range, or for a particular sprint.
 If no dates or sprint identifiers are specified, show data for the current sprint.
 If no sprints are defined, show data from the earliest created date to the current date.
 
+Burndown data source:
+  When a task has a structured `History` section, burndown uses its lifecycle events (created, moved, progress,
+  archived, restored) to reconstruct task activity over time.
+  For older tasks without history, burndown falls back to metadata/date inference (created/started/completed +
+  startedColumns/completedColumns).
+
 Options:
   {b}kanbn burndown --json{b}
   {b}kanbn burndown -j{b}
@@ -31,5 +37,5 @@ Options:
 
   {b}kanbn burndown --normalise "days"|"hours"|"minutes"|"seconds"{b}
   {b}kanbn burndown --n "days"|"hours"|"minutes"|"seconds"{b}
-    Normalise dates. Task created, started and completed times will be rounded down to the nearest day, hour, minute or second. This may cause task events to be grouped together.
+    Normalise dates. Task event times (history events or legacy created/started/completed dates) will be rounded down to the nearest day, hour, minute or second. This may cause task events to be grouped together.
     If this option is set to a blank or unsupported value, the normalisation mode will be automatically selected based on the date range.
