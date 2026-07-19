@@ -1,0 +1,12 @@
+{b}kanbn gantt{b}
+{b}kanbn gt{b}
+
+Show a gantt chart for tracked tasks.
+
+Tasks are ordered using `depends-on` relations when present. The chart uses task dates, workload, and the optional
+`postponed` metadata field to estimate when work can start.
+
+Options:
+  {b}kanbn gantt --json{b}
+  {b}kanbn gantt -j{b}
+    Output raw data instead of rendering a chart. The data will be returned in JSON format.

@@ -65,6 +65,12 @@ function validateMetadataFromMarkdown(metadata) {
           { type: 'date'}
         ]
       },
+      'postponed': {
+        oneOf: [
+          { type: 'string' },
+          { type: 'date'}
+        ]
+      },
       'progress': {
         type: 'number'
       },
@@ -92,6 +98,7 @@ function validateMetadataFromJSON(metadata) {
       'started': { type: 'date'},
       'completed': { type: 'date'},
       'due': { type: 'date'},
+      'postponed': { type: 'date'},
       'progress': { type: 'number' },
       'tags': {
         type: 'array',
@@ -365,6 +372,13 @@ module.exports = {
           throw new Error('unable to parse due date');
         }
         metadata.due = dateValue;
+      }
+      if ('postponed' in metadata && !(metadata.postponed instanceof Date)) {
+        const dateValue = chrono.parseDate(metadata.postponed);
+        if (dateValue === null) {
+          throw new Error('unable to parse postponed date');
+        }
+        metadata.postponed = dateValue;
       }
 
       // Check progress value

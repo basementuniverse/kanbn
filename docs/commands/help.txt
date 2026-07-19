@@ -19,6 +19,7 @@ Where {b}<command>{b} is one of:
   {b}sort{b} {d}..........{d} Sort a column in the index
   {b}sprint{b} {d}........{d} Start a new sprint
   {b}burndown{b} {d}......{d} View a burndown chart
+  {b}gantt{b} {d}.........{d} View a gantt chart
   {b}validate{b} {d}......{d} Validate index and task files
   {b}archive{b} {d}.......{d} Archive a task
   {b}restore{b} {d}.......{d} Restore a task from the archive

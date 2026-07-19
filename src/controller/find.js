@@ -53,6 +53,11 @@ const searchFields = [
     type: 'date'
   },
   {
+    name: 'Postponed',
+    field: 'postponed',
+    type: 'date'
+  },
+  {
     name: 'Progress',
     field: 'progress',
     type: 'number'

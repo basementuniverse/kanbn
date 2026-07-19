@@ -32,6 +32,11 @@ const config = {
   archivedTasks: [],
   burndownData: {
     series: []
+  },
+  ganttData: {
+    from: new Date('2026-01-01T00:00:00.000Z'),
+    to: new Date('2026-01-02T00:00:00.000Z'),
+    tasks: []
   }
 };
 
@@ -61,6 +66,12 @@ const kanbn = {
       normalise
     };
     return config.burndownData;
+  },
+  async gantt() {
+    config.output = {
+      gantt: true
+    };
+    return config.ganttData;
   },
   async findTrackedTasks() {
     return config.trackedTasks;

@@ -23,6 +23,11 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
     'due' in taskData.metadata &&
     taskData.metadata.due != null
   );
+  const postponedDateExists = (
+    'metadata' in taskData &&
+    'postponed' in taskData.metadata &&
+    taskData.metadata.postponed != null
+  );
   const assignedExists = (
     'metadata' in taskData &&
     'assigned' in taskData.metadata &&
@@ -100,6 +105,46 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       default: dueDateExists ? taskData.metadata.due : new Date(),
       format: ['Y', '/', 'MM', '/', 'DD'],
       when: answers => answers.setDue || answers.editDue === 'edit'
+    },
+    {
+      type: 'expand',
+      name: 'editPostponed',
+      message: 'Edit or remove postponed date?',
+      default: 'none',
+      when: answers => postponedDateExists,
+      choices: [
+        {
+          key: 'e',
+          name: 'Edit',
+          value: 'edit'
+        },
+        {
+          key: 'r',
+          name: 'Remove',
+          value: 'remove'
+        },
+        new inquirer.Separator(),
+        {
+          key: 'n',
+          name: 'Do nothing',
+          value: 'none'
+        }
+      ]
+    },
+    {
+      type: 'confirm',
+      name: 'setPostponed',
+      message: 'Set a postponed date?',
+      default: false,
+      when: answers => !postponedDateExists
+    },
+    {
+      type: 'datepicker',
+      name: 'postponed',
+      message: 'Postponed date:',
+      default: postponedDateExists ? taskData.metadata.postponed : new Date(),
+      format: ['Y', '/', 'MM', '/', 'DD'],
+      when: answers => answers.setPostponed || answers.editPostponed === 'edit'
     },
     {
       type: 'expand',
@@ -430,6 +475,18 @@ module.exports = async args => {
     }
   }
 
+  // Postponed date
+  if (args.postponed) {
+    if (!('metadata' in taskData)) {
+      taskData.metadata = {};
+    }
+    taskData.metadata.postponed = chrono.parseDate(utility.strArg(args.postponed));
+    if (taskData.metadata.postponed === null) {
+      utility.error('Unable to parse postponed date');
+      return;
+    }
+  }
+
   // Progress
   if (args.progress) {
     if (!('metadata' in taskData)) {
@@ -661,6 +718,16 @@ module.exports = async args => {
       // Due date
       if ('due' in answers) {
         taskData.metadata.due = answers.due;
+      }
+
+      // Remove postponed date
+      if ('editPostponed' in answers && answers.editPostponed === 'remove') {
+        delete taskData.metadata.postponed;
+      }
+
+      // Postponed date
+      if ('postponed' in answers) {
+        taskData.metadata.postponed = answers.postponed;
       }
 
       // Remove assigned

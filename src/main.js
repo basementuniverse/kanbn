@@ -266,6 +266,7 @@ function sortColumnInIndex(index, tasks, columnName, sorters) {
     started: "started" in task.metadata ? task.metadata.started : "",
     completed: "completed" in task.metadata ? task.metadata.completed : "",
     due: "due" in task.metadata ? task.metadata.due : "",
+    postponed: "postponed" in task.metadata ? task.metadata.postponed : "",
     assigned: "assigned" in task.metadata ? task.metadata.assigned : "",
     countSubTasks: task.subTasks.length,
     subTasks: task.subTasks.map((subTask) => `[${subTask.completed ? "x" : ""}] ${subTask.text}`).join("\n"),
@@ -770,6 +771,199 @@ function getTaskTimelineDates(task, from, to) {
       .filter((date) => date && date >= from && date <= to);
   }
   return [task.created, task.started, task.completed].filter((date) => date && date >= from && date <= to);
+}
+
+/**
+ * Get the dependency ids for a task
+ * @param {object} task
+ * @return {string[]}
+ */
+function getTaskDependencyIds(task) {
+  if (!Array.isArray(task.relations)) {
+    return [];
+  }
+  return task.relations
+    .filter((relation) => relation && relation.type === 'depends-on' && relation.task)
+    .map((relation) => relation.task);
+}
+
+/**
+ * Get the earliest date in a list of dates
+ * @param {Date[]} dates
+ * @return {?Date}
+ */
+function minDate(dates) {
+  const filteredDates = dates.filter((date) => date instanceof Date);
+  if (filteredDates.length === 0) {
+    return null;
+  }
+  return new Date(Math.min(...filteredDates.map((date) => date.getTime())));
+}
+
+/**
+ * Get the latest date in a list of dates
+ * @param {Date[]} dates
+ * @return {?Date}
+ */
+function maxDate(dates) {
+  const filteredDates = dates.filter((date) => date instanceof Date);
+  if (filteredDates.length === 0) {
+    return null;
+  }
+  return new Date(Math.max(...filteredDates.map((date) => date.getTime())));
+}
+
+/**
+ * Set a date to the start of the day
+ * @param {Date} date
+ * @return {Date}
+ */
+function startOfDay(date) {
+  const result = new Date(date.getTime());
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+/**
+ * Set a date to the end of the day
+ * @param {Date} date
+ * @return {Date}
+ */
+function endOfDay(date) {
+  const result = new Date(date.getTime());
+  result.setHours(23, 59, 59, 999);
+  return result;
+}
+
+/**
+ * Get the task anchor date used for gantt ordering
+ * @param {object} task
+ * @return {Date}
+ */
+function getTaskGanttAnchor(task) {
+  return minDate([
+    task.metadata.postponed,
+    task.created,
+    task.started,
+    task.completed
+  ]) || new Date(0);
+}
+
+/**
+ * Build gantt schedule data from tracked tasks
+ * @param {object} index
+ * @param {object[]} tasks
+ * @return {object}
+ */
+function buildGanttSchedule(index, tasks) {
+  const taskById = new Map(tasks.map((task) => [task.id, task]));
+  const dependencyMap = new Map();
+  const dependentsMap = new Map();
+  const indegree = new Map();
+
+  tasks.forEach((task) => {
+    const dependencies = getTaskDependencyIds(task);
+    dependencyMap.set(task.id, dependencies);
+    indegree.set(task.id, dependencies.length);
+    dependencies.forEach((dependencyId) => {
+      if (!taskById.has(dependencyId)) {
+        throw new Error(`Task "${task.id}" depends on missing task "${dependencyId}"`);
+      }
+      if (!dependentsMap.has(dependencyId)) {
+        dependentsMap.set(dependencyId, []);
+      }
+      dependentsMap.get(dependencyId).push(task.id);
+    });
+  });
+
+  const queue = tasks
+    .filter((task) => indegree.get(task.id) === 0)
+    .slice()
+    .sort((a, b) => compareValues(getTaskGanttAnchor(a), getTaskGanttAnchor(b)) || compareValues(a.id, b.id));
+  const orderedTasks = [];
+
+  while (queue.length > 0) {
+    const nextTask = queue.shift();
+    orderedTasks.push(nextTask);
+
+    for (let dependentId of dependentsMap.get(nextTask.id) || []) {
+      indegree.set(dependentId, indegree.get(dependentId) - 1);
+      if (indegree.get(dependentId) === 0) {
+        queue.push(taskById.get(dependentId));
+        queue.sort((a, b) => compareValues(getTaskGanttAnchor(a), getTaskGanttAnchor(b)) || compareValues(a.id, b.id));
+      }
+    }
+  }
+
+  if (orderedTasks.length !== tasks.length) {
+    throw new Error('dependency cycle detected');
+  }
+
+  const scheduledTasks = [];
+  const scheduleById = new Map();
+  for (let task of orderedTasks) {
+    const dependencies = dependencyMap.get(task.id) || [];
+    const dependencyEnd = maxDate(dependencies.map((dependencyId) => scheduleById.get(dependencyId).end));
+    const taskBaseDate = maxDate([
+      task.created,
+      task.started,
+      task.metadata.postponed,
+    ]);
+    const scheduleAnchor = maxDate([
+      taskBaseDate,
+      dependencyEnd
+    ]) || new Date(0);
+    const duration = task.completed instanceof Date && task.started instanceof Date
+      ? Math.max(DAY, task.completed.getTime() - task.started.getTime())
+      : Math.max(DAY, Math.ceil(Math.max(1, task.workload)) * DAY);
+    let start = new Date(scheduleAnchor.getTime());
+    let end = task.completed instanceof Date ? new Date(task.completed.getTime()) : new Date(start.getTime() + duration);
+    if (end.getTime() < start.getTime()) {
+      end = new Date(start.getTime() + duration);
+    }
+
+    const scheduledTask = {
+      ...task,
+      dependencies,
+      start,
+      end,
+      blocked: dependencyEnd !== null && taskBaseDate !== null && dependencyEnd.getTime() > taskBaseDate.getTime()
+    };
+    scheduleById.set(task.id, scheduledTask);
+    scheduledTasks.push(scheduledTask);
+  }
+
+  const from = startOfDay(minDate(scheduledTasks.map((task) => task.start)) || new Date());
+  const to = endOfDay(maxDate(scheduledTasks.map((task) => task.end)) || new Date());
+
+  return {
+    from,
+    to,
+    tasks: scheduledTasks
+  };
+}
+
+/**
+ * Render a gantt bar for a scheduled task
+ * @param {object} task
+ * @param {Date} from
+ * @param {Date} to
+ * @return {string}
+ */
+function renderGanttBar(task, from, to) {
+  const result = [];
+  for (let date = new Date(from.getTime()); date <= to; date = new Date(date.getTime() + DAY)) {
+    if (date < task.start || date > task.end) {
+      result.push(' ');
+    } else if (task.completed instanceof Date) {
+      result.push('█');
+    } else if (task.started instanceof Date) {
+      result.push('▓');
+    } else {
+      result.push('░');
+    }
+  }
+  return result.join('');
 }
 
 /**
@@ -2351,6 +2545,37 @@ class Kanbn {
       ].sort((a, b) => a.x.getTime() - b.x.getTime());
     });
     return { series };
+  }
+
+  /**
+   * Output gantt chart data
+   * @return {Promise<object>} Gantt chart data as an object
+   */
+  async gantt() {
+    // Check if this folder has been initialised
+    if (!(await this.initialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+
+    // Get index and tasks
+    const index = await this.loadIndex();
+    const tasks = [...(await this.loadAllTrackedTasks(index))]
+      .map((task) => {
+        const taskColumn = findTaskColumn(index, task.id);
+        const created = "created" in task.metadata ? task.metadata.created : new Date(0);
+        return {
+          ...task,
+          created,
+          started: "started" in task.metadata ? task.metadata.started : false,
+          completed: "completed" in task.metadata ? task.metadata.completed : false,
+          postponed: "postponed" in task.metadata ? task.metadata.postponed : false,
+          workload: taskWorkload(index, task),
+          progress: taskProgress(index, task),
+          column: taskColumn,
+        };
+      });
+
+    return buildGanttSchedule(index, tasks);
   }
 
   /**

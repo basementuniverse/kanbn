@@ -13,6 +13,7 @@ progress: 0.5
 started: 2021-03-21T04:58:38.653Z
 completed: 2021-03-21T04:58:38.653Z
 due: 2021-03-21T04:58:38.653Z
+postponed: 2021-03-20T04:58:38.653Z
 ---
 
 # Task Name
@@ -116,6 +117,11 @@ The date and time that the task was completed.
 
 The date and time that the task is due to be completed.
 
+### `postponed`
+
+The date and time after which the task should be scheduled. Gantt chart rendering uses this value as an explicit
+start-floor when present.
+
 ## Sub-tasks
 
 This should be a list of strings. Each string can optionally start with `[ ]` (incomplete) or `[x]` (completed).
@@ -123,6 +129,9 @@ This should be a list of strings. Each string can optionally start with `[ ]` (i
 ## Relations
 
 This should be a list of links to other task files. The link text can optionally begin with a relation type.
+
+The `depends-on` relation type is reserved for gantt scheduling. It means the current task should not start until the
+linked task has finished.
 
 ## Comments
 

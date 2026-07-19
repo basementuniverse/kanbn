@@ -1,0 +1,17 @@
+{
+  "name": "View Gantt Chart",
+  "commands": [
+    "gantt",
+    "gt"
+  ],
+  "args": {
+    "boolean": [
+      "json"
+    ],
+    "alias": {
+      "json": ["j"]
+    }
+  },
+  "controller": "./src/controller/gantt",
+  "help": "./docs/commands/gantt.txt"
+}

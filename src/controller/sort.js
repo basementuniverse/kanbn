@@ -123,6 +123,14 @@ const sorterFields = [
     filterable: false
   },
   {
+    name: 'Postponed date',
+    field: 'postponed',
+    options: [
+      '--postponed'
+    ],
+    filterable: false
+  },
+  {
     name: 'Completed date',
     field: 'completed',
     options: [
