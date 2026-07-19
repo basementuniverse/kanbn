@@ -5,8 +5,32 @@ Show a gantt chart for tracked tasks.
 
 Tasks are ordered using `depends-on` relations when present. The chart uses task dates, workload, and the optional
 `postponed` metadata field to estimate when work can start.
+The rendered chart includes:
+  • A unified date axis at the bottom for easy time reference
+  • A vertical "now" line marking the current date (if within the chart range)
+  • Dependency arrows (└─→) showing which tasks depend on others
+  • Task bars with progress indicators: █ (completed), ▓ (in progress), ░ (not started)
+  • A blocked indicator (⧗) showing tasks delayed by dependencies
 
 Options:
   {b}kanbn gantt --json{b}
   {b}kanbn gantt -j{b}
     Output raw data instead of rendering a chart. The data will be returned in JSON format.
+
+  {b}kanbn gantt --assigned "user"{b}
+  {b}kanbn gantt -a "user"{b}
+    Filter for tasks that are assigned to a particular user.
+
+  {b}kanbn gantt --column "column"{b}
+  {b}kanbn gantt -c "column"{b}
+    Filter for tasks in a particular column. This option can be repeated to include multiple columns.
+
+  {b}kanbn gantt --date "date"{b}
+  {b}kanbn gantt -d "date"{b}
+    Filter for tasks created within a specified date range.
+    If only one date is provided, show tasks created from this date up to the present date.
+    If more than one date is provided, show tasks created between the earliest and latest date.
+
+  {b}kanbn gantt --now "date"{b}
+  {b}kanbn gantt -n "date"{b}
+    Mock the current date used for the "now" line and single-date range filtering.

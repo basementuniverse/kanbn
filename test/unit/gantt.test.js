@@ -48,7 +48,7 @@ QUnit.test('Gantt should respect dependency order and postponed dates', async as
           subTasks: [],
           relations: [
             {
-              type: 'depends-on',
+              type: 'depends on',
               task: 'task-a'
             }
           ],
@@ -66,7 +66,7 @@ QUnit.test('Gantt should respect dependency order and postponed dates', async as
   assert.ok(result.tasks[1].start >= result.tasks[0].end);
 });
 
-QUnit.test('Gantt should reject dependency cycles', async assert => {
+QUnit.test('Gantt should handle dependency cycles without throwing', async assert => {
   mockFileSystem({
     '.kanbn': {
       'index.md': parseIndex.json2md({
@@ -112,10 +112,101 @@ QUnit.test('Gantt should reject dependency cycles', async assert => {
     }
   });
 
-  await assert.throwsAsync(
-    async () => {
-      await kanbn.gantt();
-    },
-    /dependency cycle detected/
-  );
+  const result = await kanbn.gantt();
+
+  assert.equal(result.tasks.length, 2);
+  assert.deepEqual(result.tasks.map(task => task.id).sort(), ['task-a', 'task-b']);
+  assert.ok(result.tasks.every(task => task.start instanceof Date));
+});
+
+QUnit.test('Gantt should treat blocks relation as an inverse dependency', async assert => {
+  mockFileSystem({
+    '.kanbn': {
+      'index.md': parseIndex.json2md({
+        name: 'test',
+        description: '',
+        options: {},
+        columns: {
+          Backlog: ['task-a', 'task-b']
+        }
+      }),
+      tasks: {
+        'task-a.md': parseTask.json2md({
+          name: 'task a',
+          description: '',
+          metadata: {
+            created: new Date('2026-01-01T00:00:00.000Z')
+          },
+          subTasks: [],
+          relations: [
+            {
+              type: 'blocks',
+              task: 'task-b'
+            }
+          ],
+          comments: []
+        }),
+        'task-b.md': parseTask.json2md({
+          name: 'task b',
+          description: '',
+          metadata: {
+            created: new Date('2026-01-02T00:00:00.000Z')
+          },
+          subTasks: [],
+          relations: [],
+          comments: []
+        })
+      }
+    }
+  });
+
+  const result = await kanbn.gantt();
+  const taskA = result.tasks.find(task => task.id === 'task-a');
+  const taskB = result.tasks.find(task => task.id === 'task-b');
+
+  assert.ok(taskA.start <= taskB.start);
+  assert.deepEqual(taskB.dependencies, ['task-a']);
+});
+
+QUnit.test('Gantt single-date filter should use mocked now date', async assert => {
+  mockFileSystem({
+    '.kanbn': {
+      'index.md': parseIndex.json2md({
+        name: 'test',
+        description: '',
+        options: {},
+        columns: {
+          Backlog: ['task-a', 'task-b']
+        }
+      }),
+      tasks: {
+        'task-a.md': parseTask.json2md({
+          name: 'task a',
+          description: '',
+          metadata: {
+            created: new Date('2026-01-10T00:00:00.000Z')
+          },
+          subTasks: [],
+          relations: [],
+          comments: []
+        }),
+        'task-b.md': parseTask.json2md({
+          name: 'task b',
+          description: '',
+          metadata: {
+            created: new Date('2026-02-10T00:00:00.000Z')
+          },
+          subTasks: [],
+          relations: [],
+          comments: []
+        })
+      }
+    }
+  });
+
+  const fromDate = new Date('2026-01-01T00:00:00.000Z');
+  const mockedNow = new Date('2026-01-31T00:00:00.000Z');
+  const result = await kanbn.gantt(null, null, [fromDate], mockedNow);
+
+  assert.deepEqual(result.tasks.map(task => task.id), ['task-a']);
 });

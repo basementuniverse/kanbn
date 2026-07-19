@@ -1,11 +1,11 @@
 ---
-created: 2026-04-28T10:00:00.000Z
-updated: 2026-05-10T10:00:00.000Z
+created: 2026-07-12T10:00:00.000Z
+updated: 2026-07-13T10:00:00.000Z
 tags:
   - Backend
   - Medium
 progress: 0.1
-due: 2026-06-19T10:00:00.000Z
+due: 2026-07-14T10:00:00.000Z
 ---
 
 # Design Team Invite Expiry Flow
@@ -24,10 +24,10 @@ This is still in discovery and scoped as a future increment.
 
 ## Relations
 
-- [depends on build-customer-health-score-model](build-customer-health-score-model.md)
+- [depends on implement-project-creation-wizard](implement-project-creation-wizard.md)
 
 ## History
 
 - type: created
-  date: 2026-04-28T10:00:00.000Z
+  date: 2026-07-15T10:00:00.000Z
   column: Backlog

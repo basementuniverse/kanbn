@@ -5,6 +5,61 @@ const term = require('terminal-kit').terminal;
 const chrono = require('chrono-node');
 const formatDate = require('dateformat');
 
+const getLabelPlacements = (from, to, width, dateFormat, maxLabels) => {
+  for (let count = maxLabels; count >= 1; count--) {
+    const placements = [];
+    let previousEnd = -1;
+
+    for (let i = 0; i < count; i++) {
+      const ratio = count === 1 ? 0 : i / (count - 1);
+      const position = Math.round(ratio * (width - 1));
+      const value = new Date(from.getTime() + Math.round((to.getTime() - from.getTime()) * ratio));
+      const label = formatDate(value, dateFormat);
+
+      let start = position - Math.floor(label.length / 2);
+      if (start < 0) {
+        start = 0;
+      }
+      if (start + label.length > width) {
+        start = Math.max(0, width - label.length);
+      }
+
+      const end = start + label.length - 1;
+      if (i > 0 && start <= previousEnd + 1) {
+        placements.length = 0;
+        break;
+      }
+
+      placements.push({ position, start, label, end });
+      previousEnd = end;
+    }
+
+    if (placements.length) {
+      return placements;
+    }
+  }
+
+  return [];
+};
+
+const renderXAxisLabels = (from, to, width, dateFormat, leftPadding) => {
+  const sampleLabel = formatDate(from, dateFormat);
+  const maxLabels = Math.max(1, Math.floor((width + 2) / (sampleLabel.length + 2)));
+  const placements = getLabelPlacements(from, to, width, dateFormat, maxLabels);
+
+  const ticks = Array(width).fill(' ');
+  const labels = Array(width).fill(' ');
+
+  for (const placement of placements) {
+    ticks[placement.position] = '|';
+    for (let i = 0; i < placement.label.length; i++) {
+      labels[placement.start + i] = placement.label[i];
+    }
+  }
+
+  return `${leftPadding}${ticks.join('')}\n${leftPadding}${labels.join('')}`;
+};
+
 module.exports = async args => {
 
   // Make sure kanbn has been initialised
@@ -72,18 +127,23 @@ module.exports = async args => {
 
       // Render chart
       const PADDING = '     ';
-      const width = term.width - (PADDING.length + 1);
+      const width = Math.max(1, term.width - (PADDING.length + 1));
 
       const plots = [];
-      for (s of data.series) {
-        const plot = [], delta = Math.floor((s.to.getTime() - s.from.getTime()) / width);
+      for (const s of data.series) {
+        const plot = [];
+        const span = Math.max(1, s.to.getTime() - s.from.getTime());
+        const delta = width > 1 ? span / (width - 1) : 0;
         for (let i = 0; i < width; i++) {
-          plot.push((s.dataPoints.find(d => d.x >= new Date(s.from.getTime() + i * delta)) || s.dataPoints[0]).y);
+          const x = new Date(s.from.getTime() + Math.round(i * delta));
+          plot.push((s.dataPoints.find(d => d.x >= x) || s.dataPoints[0]).y);
         }
         plots.push(plot);
       }
+
+      const referenceSeries = data.series[0];
       const dateFormat = kanbn.getDateFormat(index);
-      console.log(`${formatDate(s.from, dateFormat)} to ${formatDate(s.to, dateFormat)}:`);
+      console.log(`${formatDate(referenceSeries.from, dateFormat)} to ${formatDate(referenceSeries.to, dateFormat)}:`);
       console.log(asciichart.plot(
         plots,
         {
@@ -98,6 +158,13 @@ module.exports = async args => {
             asciichart.red
           ]
         }
+      ));
+      console.log(renderXAxisLabels(
+        referenceSeries.from,
+        referenceSeries.to,
+        width,
+        dateFormat,
+        ' '.repeat(PADDING.length + 1)
       ));
     }
   })

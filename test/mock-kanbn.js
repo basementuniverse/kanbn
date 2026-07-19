@@ -67,9 +67,13 @@ const kanbn = {
     };
     return config.burndownData;
   },
-  async gantt() {
+  async gantt(assigned, columns, dates, now) {
     config.output = {
-      gantt: true
+      gantt: true,
+      assigned,
+      columns,
+      dates,
+      now
     };
     return config.ganttData;
   },

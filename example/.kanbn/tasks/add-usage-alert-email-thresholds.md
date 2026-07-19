@@ -1,12 +1,12 @@
 ---
-created: 2026-05-10T10:00:00.000Z
-updated: 2026-05-22T10:00:00.000Z
+created: 2026-07-03T10:00:00.000Z
+updated: 2026-07-04T10:00:00.000Z
 tags:
   - Growth
   - Small
 assigned: Noah
 progress: 0
-due: 2026-06-21T10:00:00.000Z
+due: 2026-07-05T10:00:00.000Z
 ---
 
 # Add Usage Alert Email Thresholds
@@ -23,16 +23,13 @@ This has a clear scope and is ready to be picked up next.
 - [ ] Document edge-cases and rollout notes for support.
 - [ ] Add final QA checklist items before release.
 
-## Relations
-
-- [depends on build-invoice-download-endpoint](build-invoice-download-endpoint.md)
 
 ## History
 
 - type: created
-  date: 2026-05-10T10:00:00.000Z
+  date: 2026-07-06T10:00:00.000Z
   column: Backlog
 - type: moved
-  date: 2026-05-16T10:00:00.000Z
+  date: 2026-07-07T10:00:00.000Z
   fromColumn: Backlog
   toColumn: Todo

@@ -774,17 +774,15 @@ function getTaskTimelineDates(task, from, to) {
 }
 
 /**
- * Get the dependency ids for a task
- * @param {object} task
- * @return {string[]}
+ * Normalise relation type text to kebab-case
+ * @param {string} relationType
+ * @return {string}
  */
-function getTaskDependencyIds(task) {
-  if (!Array.isArray(task.relations)) {
-    return [];
-  }
-  return task.relations
-    .filter((relation) => relation && relation.type === 'depends-on' && relation.task)
-    .map((relation) => relation.task);
+function normaliseRelationType(relationType) {
+  return String(relationType || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-');
 }
 
 /**
@@ -850,29 +848,97 @@ function getTaskGanttAnchor(task) {
 }
 
 /**
+ * Find one concrete dependency cycle in the graph, if present
+ * @param {Map<string, Set<string>>} dependencyMap
+ * @return {string[]}
+ */
+function findDependencyCycle(dependencyMap) {
+  const visiting = new Set();
+  const visited = new Set();
+  const stack = [];
+  let cycleTaskIds = [];
+
+  const visit = (taskId) => {
+    if (cycleTaskIds.length) {
+      return;
+    }
+
+    visiting.add(taskId);
+    stack.push(taskId);
+
+    for (let dependencyId of dependencyMap.get(taskId) || []) {
+      if (!visited.has(dependencyId) && !visiting.has(dependencyId)) {
+        visit(dependencyId);
+        if (cycleTaskIds.length) {
+          return;
+        }
+      } else if (visiting.has(dependencyId)) {
+        const cycleStartIndex = stack.indexOf(dependencyId);
+        cycleTaskIds = stack.slice(cycleStartIndex).concat(dependencyId);
+        return;
+      }
+    }
+
+    stack.pop();
+    visiting.delete(taskId);
+    visited.add(taskId);
+  };
+
+  for (let taskId of dependencyMap.keys()) {
+    if (!visited.has(taskId)) {
+      visit(taskId);
+      if (cycleTaskIds.length) {
+        break;
+      }
+    }
+  }
+
+  return cycleTaskIds;
+}
+
+/**
  * Build gantt schedule data from tracked tasks
  * @param {object} index
  * @param {object[]} tasks
+ * @param {Date} now
  * @return {object}
  */
-function buildGanttSchedule(index, tasks) {
+function buildGanttSchedule(index, tasks, now) {
   const taskById = new Map(tasks.map((task) => [task.id, task]));
-  const dependencyMap = new Map();
+  const dependencyMap = new Map(tasks.map((task) => [task.id, new Set()]));
   const dependentsMap = new Map();
-  const indegree = new Map();
+  const indegree = new Map(tasks.map((task) => [task.id, 0]));
+
+  const addDependencyEdge = (dependencyId, dependentId) => {
+    if (!taskById.has(dependencyId)) {
+      throw new Error(`Task "${dependentId}" depends on missing task "${dependencyId}"`);
+    }
+
+    const dependencies = dependencyMap.get(dependentId);
+    if (dependencies.has(dependencyId)) {
+      return;
+    }
+
+    dependencies.add(dependencyId);
+    indegree.set(dependentId, indegree.get(dependentId) + 1);
+    if (!dependentsMap.has(dependencyId)) {
+      dependentsMap.set(dependencyId, []);
+    }
+    dependentsMap.get(dependencyId).push(dependentId);
+  };
 
   tasks.forEach((task) => {
-    const dependencies = getTaskDependencyIds(task);
-    dependencyMap.set(task.id, dependencies);
-    indegree.set(task.id, dependencies.length);
-    dependencies.forEach((dependencyId) => {
-      if (!taskById.has(dependencyId)) {
-        throw new Error(`Task "${task.id}" depends on missing task "${dependencyId}"`);
+    (Array.isArray(task.relations) ? task.relations : []).forEach((relation) => {
+      if (!relation || !relation.task) {
+        return;
       }
-      if (!dependentsMap.has(dependencyId)) {
-        dependentsMap.set(dependencyId, []);
+
+      const relationType = normaliseRelationType(relation.type);
+      if (relationType === 'depends-on') {
+        addDependencyEdge(relation.task, task.id);
+      } else if (relationType === 'blocks') {
+        addDependencyEdge(task.id, relation.task);
       }
-      dependentsMap.get(dependencyId).push(task.id);
     });
   });
 
@@ -895,15 +961,31 @@ function buildGanttSchedule(index, tasks) {
     }
   }
 
+  let dependencyCycleDetected = false;
+  let cycleFallbackTaskIds = [];
+  let dependencyCycleTaskIds = [];
   if (orderedTasks.length !== tasks.length) {
-    throw new Error('dependency cycle detected');
+    dependencyCycleDetected = true;
+    dependencyCycleTaskIds = findDependencyCycle(dependencyMap);
+    const orderedTaskIds = new Set(orderedTasks.map((task) => task.id));
+    const remainingTasks = tasks
+      .filter((task) => !orderedTaskIds.has(task.id))
+      .slice()
+      .sort((a, b) => compareValues(getTaskGanttAnchor(a), getTaskGanttAnchor(b)) || compareValues(a.id, b.id));
+    cycleFallbackTaskIds = remainingTasks.map((task) => task.id);
+    orderedTasks.push(...remainingTasks);
   }
 
   const scheduledTasks = [];
   const scheduleById = new Map();
   for (let task of orderedTasks) {
-    const dependencies = dependencyMap.get(task.id) || [];
-    const dependencyEnd = maxDate(dependencies.map((dependencyId) => scheduleById.get(dependencyId).end));
+    const dependencies = [...(dependencyMap.get(task.id) || [])];
+    const dependencyEnd = maxDate(
+      dependencies
+        .map((dependencyId) => scheduleById.get(dependencyId))
+        .filter((scheduledDependency) => scheduledDependency)
+        .map((scheduledDependency) => scheduledDependency.end)
+    );
     const taskBaseDate = maxDate([
       task.created,
       task.started,
@@ -933,12 +1015,15 @@ function buildGanttSchedule(index, tasks) {
     scheduledTasks.push(scheduledTask);
   }
 
-  const from = startOfDay(minDate(scheduledTasks.map((task) => task.start)) || new Date());
-  const to = endOfDay(maxDate(scheduledTasks.map((task) => task.end)) || new Date());
+  const from = startOfDay(minDate(scheduledTasks.map((task) => task.start)) || now);
+  const to = endOfDay(maxDate(scheduledTasks.map((task) => task.end)) || now);
 
   return {
     from,
     to,
+    dependencyCycleDetected,
+    dependencyCycleTaskIds,
+    cycleFallbackTaskIds,
     tasks: scheduledTasks
   };
 }
@@ -2549,13 +2634,19 @@ class Kanbn {
 
   /**
    * Output gantt chart data
+   * @param {?string} [assigned=null] The assigned user to filter for, or null for no assigned filter
+   * @param {?string[]} [columns=null] The columns to filter for, or null for no column filter
+  * @param {?Date[]} [dates=null] The dates to filter for (tasks created within range), or null for no date filter
+  * @param {?Date} [now=null] Optional date to treat as the current time
    * @return {Promise<object>} Gantt chart data as an object
    */
-  async gantt() {
+  async gantt(assigned = null, columns = null, dates = null, now = null) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
       throw new Error("Not initialised in this folder");
     }
+
+    const effectiveNow = now instanceof Date ? now : new Date();
 
     // Get index and tasks
     const index = await this.loadIndex();
@@ -2572,10 +2663,32 @@ class Kanbn {
           workload: taskWorkload(index, task),
           progress: taskProgress(index, task),
           column: taskColumn,
+          assignedUser: "assigned" in task.metadata ? task.metadata.assigned : null,
         };
-      });
+      })
+      .filter(
+        (task) => {
+          // Filter by assigned user
+          if (assigned !== null && task.assignedUser !== assigned) {
+            return false;
+          }
+          // Filter by columns
+          if (columns !== null && !columns.includes(task.column)) {
+            return false;
+          }
+          // Filter by date range
+          if (dates !== null && dates.length > 0) {
+            const from = Math.min(...dates);
+            const to = dates.length === 1 ? effectiveNow.getTime() : Math.max(...dates);
+            if (task.created.getTime() < from || task.created.getTime() > to) {
+              return false;
+            }
+          }
+          return true;
+        }
+      );
 
-    return buildGanttSchedule(index, tasks);
+    return buildGanttSchedule(index, tasks, effectiveNow);
   }
 
   /**

@@ -8,8 +8,18 @@
     "boolean": [
       "json"
     ],
+    "string": [
+      "assigned",
+      "column",
+      "date",
+      "now"
+    ],
     "alias": {
-      "json": ["j"]
+      "json": ["j"],
+      "assigned": ["a"],
+      "column": ["c"],
+      "date": ["d"],
+      "now": ["n"]
     }
   },
   "controller": "./src/controller/gantt",

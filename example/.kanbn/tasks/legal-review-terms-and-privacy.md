@@ -1,11 +1,11 @@
 ---
-created: 2026-03-05T10:00:00.000Z
-updated: 2026-03-14T10:00:00.000Z
+created: 2026-07-02T10:00:00.000Z
+updated: 2026-07-03T10:00:00.000Z
 tags:
   - Platform
   - Medium
 progress: 0
-due: 2026-04-15T10:00:00.000Z
+due: 2026-07-04T10:00:00.000Z
 ---
 
 # Legal Review Terms and Privacy
@@ -22,12 +22,9 @@ This is still in discovery and scoped as a future increment.
 - [ ] Document edge-cases and rollout notes for support.
 - [ ] Add final QA checklist items before release.
 
-## Relations
-
-- [depends on define-product-pricing-strategy](define-product-pricing-strategy.md)
 
 ## History
 
 - type: created
-  date: 2026-03-05T10:00:00.000Z
+  date: 2026-07-05T10:00:00.000Z
   column: Backlog
