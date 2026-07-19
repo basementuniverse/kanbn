@@ -34,6 +34,7 @@ Where <command> is one of:
   sort .......... Sort a column in the index
   sprint ........ Start a new sprint
   burndown ...... View a burndown chart
+  gantt ......... Generate and view a Gantt chart
   validate ...... Validate index and task files
   archive ....... Archive a task
   restore ....... Restore a task from the archive
