@@ -37,6 +37,10 @@ const config = {
     from: new Date('2026-01-01T00:00:00.000Z'),
     to: new Date('2026-01-02T00:00:00.000Z'),
     tasks: []
+  },
+  historyData: {
+    periods: [],
+    events: []
   }
 };
 
@@ -76,6 +80,16 @@ const kanbn = {
       now
     };
     return config.ganttData;
+  },
+  async history(sprints, dates, assigned, taskIds) {
+    config.output = {
+      history: true,
+      sprints,
+      dates,
+      assigned,
+      taskIds
+    };
+    return config.historyData;
   },
   async findTrackedTasks() {
     return config.trackedTasks;

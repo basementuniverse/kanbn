@@ -4,13 +4,13 @@ startedColumns:
 completedColumns:
   - Done
 sprints:
-  - start: 2026-05-06T09:00:00.000Z
+  - start: 2026-07-01T09:00:00.000Z
     name: Foundation Sprint
     description: Baseline product and infrastructure work.
-  - start: 2026-06-10T09:00:00.000Z
+  - start: 2026-07-08T09:00:00.000Z
     name: Workflow Sprint
     description: Core team workflow and onboarding features.
-  - start: 2026-07-08T09:00:00.000Z
+  - start: 2026-07-15T09:00:00.000Z
     name: Stabilisation Sprint
     description: Reliability and release readiness improvements.
 taskWorkloadTags:

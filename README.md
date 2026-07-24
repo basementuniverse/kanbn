@@ -39,6 +39,7 @@ Where <command> is one of:
   archive ....... Archive a task
   restore ....... Restore a task from the archive
   remove-all .... Remove the kanbn board and all tasks
+  history ....... Show task history
 
 For more help with commands, try:
 

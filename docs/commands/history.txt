@@ -1,0 +1,29 @@
+{b}kanbn history{b}
+{b}kanbn hi{b}
+
+Show a chronological listing of task events.
+
+Options:
+  {b}kanbn history --json{b}
+  {b}kanbn history -j{b}
+    Output raw history data in JSON format.
+
+  {b}kanbn history --sprint N|"name"{b}
+  {b}kanbn history -p N|"name"{b}
+    Filter history to one or more sprints.
+    This option can be repeated to include multiple sprints.
+
+  {b}kanbn history --date "date"{b}
+  {b}kanbn history -d "date"{b}
+    Filter history by date.
+    If one date is provided, show history from this date up to the present date.
+    If two or more dates are provided, show history from the earliest to latest date.
+
+  {b}kanbn history --assigned "user"{b}
+  {b}kanbn history -a "user"{b}
+    Filter for tasks assigned to a specific user.
+
+  {b}kanbn history --task "task-id"{b}
+  {b}kanbn history -t "task-id"{b}
+    Filter for one or more task ids.
+    This option can be repeated.

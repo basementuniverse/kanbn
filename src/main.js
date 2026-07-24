@@ -2520,7 +2520,7 @@ class Kanbn {
         if (indexSprints === null) {
           throw new Error(`No sprints defined`);
         } else {
-          for (sprint of sprints) {
+          for (let sprint of sprints) {
             let sprintIndex = null;
 
             // Select sprint by number (1-based index)
@@ -2630,6 +2630,138 @@ class Kanbn {
       ].sort((a, b) => a.x.getTime() - b.x.getTime());
     });
     return { series };
+  }
+
+  /**
+   * Get a chronological list of task events from metadata dates and structured task history
+   * @param {?string[]} [sprints=null] The sprint names or numbers to include, or null for no sprint filter
+   * @param {?Date[]} [dates=null] One or more dates to define a range filter, or null for no date filter
+   * @param {?string} [assigned=null] The assigned user to filter for, or null for no assigned filter
+   * @param {?string[]} [taskIds=null] One or more task ids to filter for, or null for no task id filter
+   * @return {Promise<object>} A list of chronological task history events
+   */
+  async history(sprints = null, dates = null, assigned = null, taskIds = null) {
+    // Check if this folder has been initialised
+    if (!(await this.initialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+
+    const index = await this.loadIndex();
+    const selectedTaskIds = taskIds === null
+      ? null
+      : new Set(taskIds.map((taskId) => removeFileExtension(taskId)));
+
+    // Build date filter periods from sprints and/or dates
+    const periods = [];
+    const indexSprints = "sprints" in index.options && index.options.sprints.length ? index.options.sprints : null;
+    if (sprints !== null) {
+      if (indexSprints === null) {
+        throw new Error("No sprints defined");
+      }
+      for (let sprint of sprints) {
+        let sprintIndex = null;
+
+        // Select sprint by number (1-based index)
+        if (typeof sprint === "number") {
+          if (sprint < 1 || sprint > indexSprints.length) {
+            throw new Error(`Sprint ${sprint} does not exist`);
+          }
+          sprintIndex = sprint - 1;
+
+          // Or select sprint by name
+        } else if (typeof sprint === "string") {
+          sprintIndex = indexSprints.findIndex((s) => s.name === sprint);
+          if (sprintIndex === -1) {
+            throw new Error(`No sprint found with name "${sprint}"`);
+          }
+        }
+
+        if (sprintIndex === null) {
+          throw new Error(`Invalid sprint "${sprint}"`);
+        }
+
+        periods.push({
+          type: "sprint",
+          label: indexSprints[sprintIndex].name,
+          from: new Date(indexSprints[sprintIndex].start),
+          to: sprintIndex < indexSprints.length - 1
+            ? new Date(indexSprints[sprintIndex + 1].start)
+            : new Date(),
+        });
+      }
+    }
+
+    if (dates !== null) {
+      periods.push({
+        type: "date",
+        from: new Date(Math.min(...dates)),
+        to: dates.length === 1 ? new Date() : new Date(Math.max(...dates)),
+      });
+    }
+
+    const includeEventDate = (date) => {
+      if (!(date instanceof Date) || isNaN(date.getTime())) {
+        return false;
+      }
+      if (periods.length === 0) {
+        return true;
+      }
+      return periods.some((period) => date >= period.from && date <= period.to);
+    };
+
+    const buildBaseTask = (task) => ({
+      id: task.id,
+      name: task.name,
+      assigned: getTaskMetadata(task, "assigned") || null,
+      column: findTaskColumn(index, task.id),
+    });
+
+    const tasks = await this.loadAllTrackedTasks(index);
+    let events = tasks
+      .filter((task) => {
+        const assignedUser = getTaskMetadata(task, "assigned") || null;
+        return (
+          (assigned === null || assignedUser === assigned) &&
+          (selectedTaskIds === null || selectedTaskIds.has(task.id))
+        );
+      })
+      .map((task) => {
+        const taskBase = buildBaseTask(task);
+
+        const metadataEvents = Object.entries(task.metadata)
+          .filter(([, value]) => value instanceof Date)
+          .map(([field, value]) => ({
+            date: value,
+            source: "metadata",
+            eventType: field,
+            task: taskBase,
+            event: {
+              field,
+              value,
+            },
+          }));
+
+        const historyEvents = ("history" in task && Array.isArray(task.history) ? task.history : [])
+          .filter((historyEvent) => historyEvent.date instanceof Date)
+          .map((historyEvent) => {
+            const event = { ...historyEvent };
+            delete event.date;
+            return {
+              date: historyEvent.date,
+              source: "history",
+              eventType: historyEvent.type,
+              task: taskBase,
+              event,
+            };
+          });
+
+        return [...metadataEvents, ...historyEvents];
+      })
+      .flat()
+      .filter((event) => includeEventDate(event.date));
+
+    events.sort((a, b) => compareValues(a.date, b.date) || compareValues(a.task.id, b.task.id));
+    return { periods, events };
   }
 
   /**
