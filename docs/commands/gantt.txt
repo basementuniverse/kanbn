@@ -3,14 +3,10 @@
 
 Show a gantt chart for tracked tasks.
 
-Tasks are ordered using `depends-on` relations when present. The chart uses task dates, workload, and the optional
-`postponed` metadata field to estimate when work can start.
+Tasks are ordered using `depends-on` relations when present. The chart prioritizes optional `plannedStart`/`plannedFinish` metadata when arranging bars, then falls back through `started`/`completed` dates, and finally uses workload-based best-effort scheduling when no timeline dates are available.
 The rendered chart includes:
-  • A unified date axis at the bottom for easy time reference
-  • A vertical "now" line marking the current date (if within the chart range)
-  • Dependency arrows (└─→) showing which tasks depend on others
-  • Task bars with progress indicators: █ (completed), ▓ (in progress), ░ (not started)
-  • A blocked indicator (⧗) showing tasks delayed by dependencies
+  Dependency arrows (└─→) showing which tasks depend on others
+  A blocked indicator (⧗) showing tasks delayed by dependencies
 
 Options:
   {b}kanbn gantt --json{b}

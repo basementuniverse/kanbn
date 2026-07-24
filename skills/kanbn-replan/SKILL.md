@@ -27,7 +27,7 @@ Use this skill when the user wants to:
 - move overdue work forward to a realistic schedule
 - reschedule unfinished tasks after a long interruption
 - spread work out to reduce overload
-- refresh `started`, `due`, and `postponed` dates for incomplete tasks
+- refresh `started`, `plannedStart`, `plannedFinish`, and `due` dates for incomplete tasks
 - inspect Gantt output and derive a revised schedule from it
 
 ## Workflow
@@ -38,7 +38,7 @@ Gather the current planning context before making edits:
 
 - current date
 - tracked tasks and their columns
-- task metadata relevant to scheduling (`started`, `due`, `postponed`, `progress`, workload tags)
+- task metadata relevant to scheduling (`started`, `plannedStart`, `plannedFinish`, `due`, `progress`, workload tags)
 - dependency relations
 - the current Gantt layout
 
@@ -64,7 +64,8 @@ Use the gantt data and dependency order to decide new dates.
 General rules:
 
 - dependency order wins over wishful dates
-- `postponed` should be the earliest start floor when present
+- `plannedStart` should be the earliest preferred start floor when present
+- `plannedFinish` should be the preferred finish target when present
 - `started` should reflect when work actually begins or resumes
 - `due` should reflect the target finish date for the current schedule
 - if a task would otherwise overlap too much with adjacent work, shift it later rather than ignoring the overload

@@ -65,7 +65,13 @@ function validateMetadataFromMarkdown(metadata) {
           { type: 'date'}
         ]
       },
-      'postponed': {
+      'plannedStart': {
+        oneOf: [
+          { type: 'string' },
+          { type: 'date'}
+        ]
+      },
+      'plannedFinish': {
         oneOf: [
           { type: 'string' },
           { type: 'date'}
@@ -98,7 +104,8 @@ function validateMetadataFromJSON(metadata) {
       'started': { type: 'date'},
       'completed': { type: 'date'},
       'due': { type: 'date'},
-      'postponed': { type: 'date'},
+      'plannedStart': { type: 'date'},
+      'plannedFinish': { type: 'date'},
       'progress': { type: 'number' },
       'tags': {
         type: 'array',
@@ -373,12 +380,19 @@ module.exports = {
         }
         metadata.due = dateValue;
       }
-      if ('postponed' in metadata && !(metadata.postponed instanceof Date)) {
-        const dateValue = chrono.parseDate(metadata.postponed);
+      if ('plannedStart' in metadata && !(metadata.plannedStart instanceof Date)) {
+        const dateValue = chrono.parseDate(metadata.plannedStart);
         if (dateValue === null) {
-          throw new Error('unable to parse postponed date');
+          throw new Error('unable to parse plannedStart date');
         }
-        metadata.postponed = dateValue;
+        metadata.plannedStart = dateValue;
+      }
+      if ('plannedFinish' in metadata && !(metadata.plannedFinish instanceof Date)) {
+        const dateValue = chrono.parseDate(metadata.plannedFinish);
+        if (dateValue === null) {
+          throw new Error('unable to parse plannedFinish date');
+        }
+        metadata.plannedFinish = dateValue;
       }
 
       // Check progress value

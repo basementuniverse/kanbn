@@ -13,7 +13,8 @@ progress: 0.5
 started: 2021-03-21T04:58:38.653Z
 completed: 2021-03-21T04:58:38.653Z
 due: 2021-03-21T04:58:38.653Z
-postponed: 2021-03-20T04:58:38.653Z
+plannedStart: 2021-03-20T04:58:38.653Z
+plannedFinish: 2021-03-24T04:58:38.653Z
 ---
 
 # Task Name
@@ -117,10 +118,13 @@ The date and time that the task was completed.
 
 The date and time that the task is due to be completed.
 
-### `postponed`
+### `plannedStart`
 
-The date and time after which the task should be scheduled. Gantt chart rendering uses this value as an explicit
-start-floor when present.
+An optional date and time used as a preferred start point for gantt scheduling.
+
+### `plannedFinish`
+
+An optional date and time used as a preferred finish point for gantt scheduling.
 
 ## Sub-tasks
 

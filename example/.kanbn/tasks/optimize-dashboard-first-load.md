@@ -8,7 +8,7 @@ assigned: Ava
 progress: 0.4
 started: 2026-07-06T10:00:00.000Z
 due: 2026-07-07T10:00:00.000Z
-postponed: 2026-07-22T10:00:00.000Z
+plannedStart: 2026-07-22T10:00:00.000Z
 ---
 
 # Optimize Dashboard First Load

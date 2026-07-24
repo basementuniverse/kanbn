@@ -19,6 +19,8 @@
       "relation",
       "remove-relation",
       "due",
+      "plannedStart",
+      "plannedFinish",
       "progress"
     ],
     "alias": {

@@ -266,7 +266,8 @@ function sortColumnInIndex(index, tasks, columnName, sorters) {
     started: "started" in task.metadata ? task.metadata.started : "",
     completed: "completed" in task.metadata ? task.metadata.completed : "",
     due: "due" in task.metadata ? task.metadata.due : "",
-    postponed: "postponed" in task.metadata ? task.metadata.postponed : "",
+    plannedStart: "plannedStart" in task.metadata ? task.metadata.plannedStart : "",
+    plannedFinish: "plannedFinish" in task.metadata ? task.metadata.plannedFinish : "",
     assigned: "assigned" in task.metadata ? task.metadata.assigned : "",
     countSubTasks: task.subTasks.length,
     subTasks: task.subTasks.map((subTask) => `[${subTask.completed ? "x" : ""}] ${subTask.text}`).join("\n"),
@@ -840,9 +841,10 @@ function endOfDay(date) {
  */
 function getTaskGanttAnchor(task) {
   return minDate([
-    task.metadata.postponed,
+    task.metadata.plannedStart,
     task.created,
     task.started,
+    task.metadata.plannedFinish,
     task.completed
   ]) || new Date(0);
 }
@@ -986,20 +988,47 @@ function buildGanttSchedule(index, tasks, now) {
         .filter((scheduledDependency) => scheduledDependency)
         .map((scheduledDependency) => scheduledDependency.end)
     );
-    const taskBaseDate = maxDate([
-      task.created,
-      task.started,
-      task.metadata.postponed,
-    ]);
+    const hasPlannedStart = task.metadata.plannedStart instanceof Date;
+    const hasPlannedFinish = task.metadata.plannedFinish instanceof Date;
+    const hasStarted = task.started instanceof Date;
+    const hasCompleted = task.completed instanceof Date;
+
+    const duration = hasPlannedStart && hasPlannedFinish
+      ? Math.max(DAY, task.metadata.plannedFinish.getTime() - task.metadata.plannedStart.getTime())
+      : hasStarted && hasCompleted
+        ? Math.max(DAY, task.completed.getTime() - task.started.getTime())
+        : Math.max(DAY, Math.ceil(Math.max(1, task.workload)) * DAY);
+
+    const preferredStart = hasPlannedStart
+      ? task.metadata.plannedStart
+      : hasStarted
+        ? task.started
+        : task.created;
+    const finishHint = hasPlannedFinish
+      ? task.metadata.plannedFinish
+      : hasCompleted
+        ? task.completed
+        : null;
+
+    const derivedStartFromFinish = finishHint instanceof Date
+      ? new Date(finishHint.getTime() - duration)
+      : null;
+    const taskBaseDate = hasPlannedStart || hasStarted
+      ? preferredStart
+      : (derivedStartFromFinish || preferredStart);
+
     const scheduleAnchor = maxDate([
       taskBaseDate,
       dependencyEnd
     ]) || new Date(0);
-    const duration = task.completed instanceof Date && task.started instanceof Date
-      ? Math.max(DAY, task.completed.getTime() - task.started.getTime())
-      : Math.max(DAY, Math.ceil(Math.max(1, task.workload)) * DAY);
+
     let start = new Date(scheduleAnchor.getTime());
-    let end = task.completed instanceof Date ? new Date(task.completed.getTime()) : new Date(start.getTime() + duration);
+    let end = hasPlannedFinish
+      ? new Date(task.metadata.plannedFinish.getTime())
+      : hasCompleted
+        ? new Date(task.completed.getTime())
+        : new Date(start.getTime() + duration);
+
     if (end.getTime() < start.getTime()) {
       end = new Date(start.getTime() + duration);
     }
@@ -1009,7 +1038,7 @@ function buildGanttSchedule(index, tasks, now) {
       dependencies,
       start,
       end,
-      blocked: dependencyEnd !== null && taskBaseDate !== null && dependencyEnd.getTime() > taskBaseDate.getTime()
+      blocked: dependencyEnd !== null && preferredStart instanceof Date && dependencyEnd.getTime() > preferredStart.getTime()
     };
     scheduleById.set(task.id, scheduledTask);
     scheduledTasks.push(scheduledTask);
@@ -2791,7 +2820,8 @@ class Kanbn {
           created,
           started: "started" in task.metadata ? task.metadata.started : false,
           completed: "completed" in task.metadata ? task.metadata.completed : false,
-          postponed: "postponed" in task.metadata ? task.metadata.postponed : false,
+          plannedStart: "plannedStart" in task.metadata ? task.metadata.plannedStart : false,
+          plannedFinish: "plannedFinish" in task.metadata ? task.metadata.plannedFinish : false,
           workload: taskWorkload(index, task),
           progress: taskProgress(index, task),
           column: taskColumn,

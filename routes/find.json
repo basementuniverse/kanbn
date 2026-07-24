@@ -28,6 +28,8 @@
       "started",
       "completed",
       "due",
+      "plannedStart",
+      "plannedFinish",
       "workload",
       "progress",
       "assigned"

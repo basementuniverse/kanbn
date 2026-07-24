@@ -1,11 +1,13 @@
 ---
 created: 2026-07-05T10:00:00.000Z
-updated: 2026-07-06T10:00:00.000Z
+updated: 2026-07-24T22:28:06.841Z
 tags:
   - Platform
   - Medium
 progress: 0
 due: 2026-07-07T10:00:00.000Z
+plannedStart: 2026-07-06T14:05:13.527Z
+plannedFinish: 2026-07-11T11:20:37.323Z
 ---
 
 # Build Invoice Download Endpoint

@@ -53,8 +53,13 @@ const searchFields = [
     type: 'date'
   },
   {
-    name: 'Postponed',
-    field: 'postponed',
+    name: 'Planned start',
+    field: 'plannedStart',
+    type: 'date'
+  },
+  {
+    name: 'Planned finish',
+    field: 'plannedFinish',
     type: 'date'
   },
   {
@@ -369,7 +374,7 @@ module.exports = async args => {
     }
   }
   if ('workload' in filters){
-    if (!convertNumericFilters(filters, 'workoad')) {
+    if (!convertNumericFilters(filters, 'workload')) {
       utility.error('Workload filter value must be numeric');
       return;
     }
@@ -409,6 +414,18 @@ module.exports = async args => {
   if ('due' in filters) {
     if (!convertDateFilters(filters, 'due')) {
       utility.error('Unable to parse due date');
+      return;
+    }
+  }
+  if ('plannedStart' in filters) {
+    if (!convertDateFilters(filters, 'plannedStart')) {
+      utility.error('Unable to parse plannedStart date');
+      return;
+    }
+  }
+  if ('plannedFinish' in filters) {
+    if (!convertDateFilters(filters, 'plannedFinish')) {
+      utility.error('Unable to parse plannedFinish date');
       return;
     }
   }

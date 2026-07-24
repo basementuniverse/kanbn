@@ -12,10 +12,10 @@ QUnit.module('gantt tests', {
   }
 });
 
-QUnit.test('Gantt should respect dependency order and postponed dates', async assert => {
+QUnit.test('Gantt should respect dependency order and plannedStart dates', async assert => {
   const createdA = new Date('2026-01-01T00:00:00.000Z');
   const createdB = new Date('2026-01-02T00:00:00.000Z');
-  const postponedB = new Date('2026-01-10T00:00:00.000Z');
+  const plannedStartB = new Date('2026-01-10T00:00:00.000Z');
 
   mockFileSystem({
     '.kanbn': {
@@ -43,7 +43,7 @@ QUnit.test('Gantt should respect dependency order and postponed dates', async as
           description: '',
           metadata: {
             created: createdB,
-            postponed: postponedB
+            plannedStart: plannedStartB
           },
           subTasks: [],
           relations: [
@@ -62,7 +62,7 @@ QUnit.test('Gantt should respect dependency order and postponed dates', async as
 
   assert.deepEqual(result.tasks.map(task => task.id), ['task-a', 'task-b']);
   assert.equal(result.tasks[1].dependencies[0], 'task-a');
-  assert.equal(result.tasks[1].start.toISOString(), postponedB.toISOString());
+  assert.equal(result.tasks[1].start.toISOString(), plannedStartB.toISOString());
   assert.ok(result.tasks[1].start >= result.tasks[0].end);
 });
 

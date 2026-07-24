@@ -23,10 +23,15 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
     'due' in taskData.metadata &&
     taskData.metadata.due != null
   );
-  const postponedDateExists = (
+  const plannedStartDateExists = (
     'metadata' in taskData &&
-    'postponed' in taskData.metadata &&
-    taskData.metadata.postponed != null
+    'plannedStart' in taskData.metadata &&
+    taskData.metadata.plannedStart != null
+  );
+  const plannedFinishDateExists = (
+    'metadata' in taskData &&
+    'plannedFinish' in taskData.metadata &&
+    taskData.metadata.plannedFinish != null
   );
   const assignedExists = (
     'metadata' in taskData &&
@@ -108,10 +113,10 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
     },
     {
       type: 'expand',
-      name: 'editPostponed',
-      message: 'Edit or remove postponed date?',
+      name: 'editPlannedStart',
+      message: 'Edit or remove planned start date?',
       default: 'none',
-      when: answers => postponedDateExists,
+      when: answers => plannedStartDateExists,
       choices: [
         {
           key: 'e',
@@ -133,18 +138,58 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
     },
     {
       type: 'confirm',
-      name: 'setPostponed',
-      message: 'Set a postponed date?',
+      name: 'setPlannedStart',
+      message: 'Set a planned start date?',
       default: false,
-      when: answers => !postponedDateExists
+      when: answers => !plannedStartDateExists
     },
     {
       type: 'datepicker',
-      name: 'postponed',
-      message: 'Postponed date:',
-      default: postponedDateExists ? taskData.metadata.postponed : new Date(),
+      name: 'plannedStart',
+      message: 'Planned start date:',
+      default: plannedStartDateExists ? taskData.metadata.plannedStart : new Date(),
       format: ['Y', '/', 'MM', '/', 'DD'],
-      when: answers => answers.setPostponed || answers.editPostponed === 'edit'
+      when: answers => answers.setPlannedStart || answers.editPlannedStart === 'edit'
+    },
+    {
+      type: 'expand',
+      name: 'editPlannedFinish',
+      message: 'Edit or remove planned finish date?',
+      default: 'none',
+      when: answers => plannedFinishDateExists,
+      choices: [
+        {
+          key: 'e',
+          name: 'Edit',
+          value: 'edit'
+        },
+        {
+          key: 'r',
+          name: 'Remove',
+          value: 'remove'
+        },
+        new inquirer.Separator(),
+        {
+          key: 'n',
+          name: 'Do nothing',
+          value: 'none'
+        }
+      ]
+    },
+    {
+      type: 'confirm',
+      name: 'setPlannedFinish',
+      message: 'Set a planned finish date?',
+      default: false,
+      when: answers => !plannedFinishDateExists
+    },
+    {
+      type: 'datepicker',
+      name: 'plannedFinish',
+      message: 'Planned finish date:',
+      default: plannedFinishDateExists ? taskData.metadata.plannedFinish : new Date(),
+      format: ['Y', '/', 'MM', '/', 'DD'],
+      when: answers => answers.setPlannedFinish || answers.editPlannedFinish === 'edit'
     },
     {
       type: 'expand',
@@ -475,14 +520,26 @@ module.exports = async args => {
     }
   }
 
-  // Postponed date
-  if (args.postponed) {
+  // Planned start date
+  if (args.plannedStart) {
     if (!('metadata' in taskData)) {
       taskData.metadata = {};
     }
-    taskData.metadata.postponed = chrono.parseDate(utility.strArg(args.postponed));
-    if (taskData.metadata.postponed === null) {
-      utility.error('Unable to parse postponed date');
+    taskData.metadata.plannedStart = chrono.parseDate(utility.strArg(args.plannedStart));
+    if (taskData.metadata.plannedStart === null) {
+      utility.error('Unable to parse plannedStart date');
+      return;
+    }
+  }
+
+  // Planned finish date
+  if (args.plannedFinish) {
+    if (!('metadata' in taskData)) {
+      taskData.metadata = {};
+    }
+    taskData.metadata.plannedFinish = chrono.parseDate(utility.strArg(args.plannedFinish));
+    if (taskData.metadata.plannedFinish === null) {
+      utility.error('Unable to parse plannedFinish date');
       return;
     }
   }
@@ -720,14 +777,24 @@ module.exports = async args => {
         taskData.metadata.due = answers.due;
       }
 
-      // Remove postponed date
-      if ('editPostponed' in answers && answers.editPostponed === 'remove') {
-        delete taskData.metadata.postponed;
+      // Remove planned start date
+      if ('editPlannedStart' in answers && answers.editPlannedStart === 'remove') {
+        delete taskData.metadata.plannedStart;
       }
 
-      // Postponed date
-      if ('postponed' in answers) {
-        taskData.metadata.postponed = answers.postponed;
+      // Planned start date
+      if ('plannedStart' in answers) {
+        taskData.metadata.plannedStart = answers.plannedStart;
+      }
+
+      // Remove planned finish date
+      if ('editPlannedFinish' in answers && answers.editPlannedFinish === 'remove') {
+        delete taskData.metadata.plannedFinish;
+      }
+
+      // Planned finish date
+      if ('plannedFinish' in answers) {
+        taskData.metadata.plannedFinish = answers.plannedFinish;
       }
 
       // Remove assigned

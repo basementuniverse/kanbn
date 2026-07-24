@@ -16,6 +16,8 @@
       "tag",
       "relation",
       "due",
+      "plannedStart",
+      "plannedFinish",
       "progress"
     ],
     "alias": {
