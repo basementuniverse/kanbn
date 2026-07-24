@@ -363,10 +363,9 @@ module.exports = async args => {
       });
 
       // Render x-axis
-      console.log('');
       const [ticks, labels] = renderXAxisLabels(data.from, data.to, barWidth, dateFormat);
-      console.log(`  ${''.padEnd(maxNameWidth)} │${renderTickRow(ticks, nowPosition)}│`);
-      console.log(`  ${''.padEnd(maxNameWidth)} │${labels}│`);
+      console.log(`  ${''.padEnd(maxNameWidth)}  ${renderTickRow(ticks, nowPosition)}`);
+      console.log(`  ${''.padEnd(maxNameWidth)}  ${labels}`);
     }
   })
   .catch(error => {
