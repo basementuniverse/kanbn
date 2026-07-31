@@ -146,3 +146,33 @@ QUnit.test('Gantt should render dependency arrows inline without dependency labe
 	assert.notOk(/└─→ task-1/.test(rendered));
 	assert.notOk(/\n\s+└─→ /.test(rendered));
 });
+
+QUnit.test('Gantt should render ellipsis stubs for filtered dependency endpoints', async assert => {
+	const output = [];
+	captureConsole.startIntercept(process.stdout, s => {
+		output.push(s);
+	});
+
+	mockConfig.ganttData = {
+		from: new Date('2026-01-01T00:00:00.000Z'),
+		to: new Date('2026-01-03T00:00:00.000Z'),
+		tasks: [
+			{
+				id: 'task-1',
+				name: 'Task 1',
+				start: new Date('2026-01-01T00:00:00.000Z'),
+				end: new Date('2026-01-02T00:00:00.000Z'),
+				dependencies: [],
+				externalIncomingDependencies: ['task-hidden-a'],
+				externalOutgoingDependents: ['task-hidden-b']
+			}
+		]
+	};
+
+	await mockArgv(['gantt'], kanbn);
+
+	captureConsole.stopIntercept(process.stdout);
+	const rendered = output.join('');
+	assert.ok(rendered.includes('…'));
+	assert.ok(rendered.includes('→'));
+});

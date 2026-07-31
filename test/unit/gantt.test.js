@@ -210,3 +210,105 @@ QUnit.test('Gantt single-date filter should use mocked now date', async assert =
 
   assert.deepEqual(result.tasks.map(task => task.id), ['task-a']);
 });
+
+QUnit.test('Gantt should not throw when depends-on relation points to a filtered task', async assert => {
+  mockFileSystem({
+    '.kanbn': {
+      'index.md': parseIndex.json2md({
+        name: 'test',
+        description: '',
+        options: {},
+        columns: {
+          Backlog: ['task-a', 'task-b']
+        }
+      }),
+      tasks: {
+        'task-a.md': parseTask.json2md({
+          name: 'task a',
+          description: '',
+          metadata: {
+            created: new Date('2026-01-01T00:00:00.000Z')
+          },
+          subTasks: [],
+          relations: [],
+          comments: []
+        }),
+        'task-b.md': parseTask.json2md({
+          name: 'task b',
+          description: '',
+          metadata: {
+            created: new Date('2026-02-01T00:00:00.000Z')
+          },
+          subTasks: [],
+          relations: [
+            {
+              type: 'depends-on',
+              task: 'task-a'
+            }
+          ],
+          comments: []
+        })
+      }
+    }
+  });
+
+  const result = await kanbn.gantt(null, null, [
+    new Date('2026-02-01T00:00:00.000Z'),
+    new Date('2026-02-28T00:00:00.000Z')
+  ]);
+
+  assert.deepEqual(result.tasks.map(task => task.id), ['task-b']);
+  assert.deepEqual(result.tasks[0].dependencies, []);
+  assert.deepEqual(result.tasks[0].externalIncomingDependencies, ['task-a']);
+});
+
+QUnit.test('Gantt should not throw when blocks relation points to a filtered task', async assert => {
+  mockFileSystem({
+    '.kanbn': {
+      'index.md': parseIndex.json2md({
+        name: 'test',
+        description: '',
+        options: {},
+        columns: {
+          Backlog: ['task-a', 'task-b']
+        }
+      }),
+      tasks: {
+        'task-a.md': parseTask.json2md({
+          name: 'task a',
+          description: '',
+          metadata: {
+            created: new Date('2026-02-01T00:00:00.000Z')
+          },
+          subTasks: [],
+          relations: [
+            {
+              type: 'blocks',
+              task: 'task-b'
+            }
+          ],
+          comments: []
+        }),
+        'task-b.md': parseTask.json2md({
+          name: 'task b',
+          description: '',
+          metadata: {
+            created: new Date('2026-01-01T00:00:00.000Z')
+          },
+          subTasks: [],
+          relations: [],
+          comments: []
+        })
+      }
+    }
+  });
+
+  const result = await kanbn.gantt(null, null, [
+    new Date('2026-02-01T00:00:00.000Z'),
+    new Date('2026-02-28T00:00:00.000Z')
+  ]);
+
+  assert.deepEqual(result.tasks.map(task => task.id), ['task-a']);
+  assert.deepEqual(result.tasks[0].dependencies, []);
+  assert.deepEqual(result.tasks[0].externalOutgoingDependents, ['task-b']);
+});

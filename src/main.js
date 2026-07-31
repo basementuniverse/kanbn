@@ -905,14 +905,26 @@ function findDependencyCycle(dependencyMap) {
  * @param {Date} now
  * @return {object}
  */
-function buildGanttSchedule(index, tasks, now) {
+function buildGanttSchedule(index, tasks, now, trackedTaskIds = new Set()) {
   const taskById = new Map(tasks.map((task) => [task.id, task]));
   const dependencyMap = new Map(tasks.map((task) => [task.id, new Set()]));
   const dependentsMap = new Map();
   const indegree = new Map(tasks.map((task) => [task.id, 0]));
+  const externalIncomingDependenciesMap = new Map(tasks.map((task) => [task.id, new Set()]));
+  const externalOutgoingDependentsMap = new Map(tasks.map((task) => [task.id, new Set()]));
+
+  const taskExistsInBoard = (taskId) => trackedTaskIds.has(taskId);
 
   const addDependencyEdge = (dependencyId, dependentId) => {
+    if (!taskById.has(dependentId)) {
+      throw new Error(`Task "${dependentId}" depends on missing task "${dependencyId}"`);
+    }
+
     if (!taskById.has(dependencyId)) {
+      if (taskExistsInBoard(dependencyId)) {
+        externalIncomingDependenciesMap.get(dependentId).add(dependencyId);
+        return;
+      }
       throw new Error(`Task "${dependentId}" depends on missing task "${dependencyId}"`);
     }
 
@@ -939,7 +951,13 @@ function buildGanttSchedule(index, tasks, now) {
       if (relationType === 'depends-on') {
         addDependencyEdge(relation.task, task.id);
       } else if (relationType === 'blocks') {
-        addDependencyEdge(task.id, relation.task);
+        if (taskById.has(relation.task)) {
+          addDependencyEdge(task.id, relation.task);
+        } else if (taskExistsInBoard(relation.task)) {
+          externalOutgoingDependentsMap.get(task.id).add(relation.task);
+        } else {
+          throw new Error(`Task "${task.id}" blocks missing task "${relation.task}"`);
+        }
       }
     });
   });
@@ -1036,6 +1054,8 @@ function buildGanttSchedule(index, tasks, now) {
     const scheduledTask = {
       ...task,
       dependencies,
+      externalIncomingDependencies: [...(externalIncomingDependenciesMap.get(task.id) || [])],
+      externalOutgoingDependents: [...(externalOutgoingDependentsMap.get(task.id) || [])],
       start,
       end,
       blocked: dependencyEnd !== null && preferredStart instanceof Date && dependencyEnd.getTime() > preferredStart.getTime()
@@ -2850,7 +2870,8 @@ class Kanbn {
         }
       );
 
-    return buildGanttSchedule(index, tasks, effectiveNow);
+    const trackedTaskIds = getTrackedTaskIds(index);
+    return buildGanttSchedule(index, tasks, effectiveNow, trackedTaskIds);
   }
 
   /**

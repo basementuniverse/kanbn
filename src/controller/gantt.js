@@ -64,7 +64,8 @@ function createChartCell() {
   return {
     bg: null,
     lineMask: 0,
-    arrowChar: null
+    arrowChar: null,
+    markerChar: null
   };
 }
 
@@ -121,6 +122,38 @@ function routeDependency(grid, sourceRow, sourceCol, targetRow, targetCol) {
   grid[targetRow][targetCol].arrowChar = targetCol >= routeCol ? '→' : '←';
 }
 
+function setMarker(cell, markerChar) {
+  if (!cell.arrowChar && !cell.markerChar) {
+    cell.markerChar = markerChar;
+  }
+}
+
+function routeIncomingExternalDependency(grid, row, targetCol) {
+  const arrowCol = Math.max(0, targetCol);
+  grid[row][arrowCol].arrowChar = '→';
+
+  if (arrowCol > 0) {
+    addMask(grid[row][arrowCol], DIR_LEFT);
+    addMask(grid[row][arrowCol - 1], DIR_RIGHT);
+  }
+  if (arrowCol > 1) {
+    setMarker(grid[row][arrowCol - 2], '…');
+  }
+}
+
+function routeOutgoingExternalDependency(grid, row, sourceCol, width) {
+  const arrowCol = Math.min(width - 1, sourceCol);
+  grid[row][arrowCol].arrowChar = '→';
+
+  if (arrowCol < width - 1) {
+    addMask(grid[row][arrowCol], DIR_RIGHT);
+    addMask(grid[row][arrowCol + 1], DIR_LEFT);
+  }
+  if (arrowCol < width - 2) {
+    setMarker(grid[row][arrowCol + 2], '…');
+  }
+}
+
 function buildDependencyOverlay(tasks, barGeometries, width) {
   const grid = createChartGrid(tasks.length, width);
   const taskRowMap = new Map(tasks.map((task, index) => [task.id, index]));
@@ -140,6 +173,14 @@ function buildDependencyOverlay(tasks, barGeometries, width) {
         barGeometries[targetRow].start
       );
     });
+
+    if (Array.isArray(task.externalIncomingDependencies) && task.externalIncomingDependencies.length > 0) {
+      routeIncomingExternalDependency(grid, targetRow, barGeometries[targetRow].start);
+    }
+
+    if (Array.isArray(task.externalOutgoingDependents) && task.externalOutgoingDependents.length > 0) {
+      routeOutgoingExternalDependency(grid, targetRow, barGeometries[targetRow].end, width);
+    }
   });
 
   return grid;
@@ -163,6 +204,10 @@ function renderChartRow(gridRow, barGeometry, barBackground, nowPosition) {
     const lineChar = LINE_CHARS[cell.lineMask] || null;
     if (lineChar) {
       return styleCell(lineChar, ANSI_FG_LINE, bg);
+    }
+
+    if (cell.markerChar) {
+      return styleCell(cell.markerChar, ANSI_FG_LINE, bg);
     }
 
     if (nowPosition === column) {
