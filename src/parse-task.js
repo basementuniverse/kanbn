@@ -239,6 +239,11 @@ function validateHistoryFromJSON(history) {
 
 /**
  * Validate required fields in a history event
+ *
+ * An event with an unrecognised type is left alone rather than rejected: a task file written by a
+ * newer version of kanbn may contain event types this version doesn't know about, and refusing to
+ * parse the whole task would make the file unreadable. Unknown events are preserved on write and
+ * ignored when history is replayed.
  * @param {object} historyEvent
  */
 function validateHistoryEvent(historyEvent) {
@@ -275,9 +280,23 @@ function validateHistoryEvent(historyEvent) {
       }
       break;
     default:
-      throw new Error(`unsupported history event type "${historyEvent.type}"`);
+      break;
   }
 }
+
+/**
+ * History event keys that this version understands, in the order they should be written
+ */
+const KNOWN_HISTORY_EVENT_KEYS = [
+  'type',
+  'date',
+  'column',
+  'fromColumn',
+  'toColumn',
+  'fromProgress',
+  'toProgress',
+  'author'
+];
 
 module.exports = {
 
@@ -659,6 +678,14 @@ module.exports = {
               }
               if ('author' in historyEvent && historyEvent.author) {
                 historyEventOutput.push(`author: ${historyEvent.author}`);
+              }
+
+              // Write back any keys this version doesn't recognise, so that a file written by a
+              // newer version of kanbn survives a read/write cycle here without losing data
+              for (const key of Object.keys(historyEvent)) {
+                if (KNOWN_HISTORY_EVENT_KEYS.indexOf(key) === -1 && historyEvent[key] !== undefined) {
+                  historyEventOutput.push(`${key}: ${historyEvent[key]}`);
+                }
               }
               return `- ${historyEventOutput.map((v, i) => i > 0 ? `  ${v}` : v).join('\n')}`;
             }).join('\n')

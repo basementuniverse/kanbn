@@ -16,13 +16,16 @@ QUnit.module('burndown tests', {
   }
 });
 
-QUnit.test('Burndown should use history events to track reopened work', async assert => {
+QUnit.test('Burndown should treat reopened work as active', async assert => {
   const created = new Date('2026-01-01T00:00:00.000Z');
   const started = new Date('2026-01-02T00:00:00.000Z');
   const completed = new Date('2026-01-03T00:00:00.000Z');
   const reopened = new Date('2026-01-04T00:00:00.000Z');
   const end = new Date('2026-01-05T00:00:00.000Z');
 
+  // A task that was completed and then reopened: the completed date has been cleared (kanbn edit
+  // --unset completed), so only the started date remains. The history still records the moves in
+  // and out of Done, but burndown works from the dates rather than from those columns
   mockFileSystem({
     '.kanbn': {
       'index.md': parseIndex.json2md({
@@ -43,7 +46,9 @@ QUnit.test('Burndown should use history events to track reopened work', async as
           name: 'Task 1',
           description: '',
           metadata: {
-            tags: ['Small']
+            tags: ['Small'],
+            created,
+            started
           },
           subTasks: [],
           relations: [],
@@ -80,16 +85,62 @@ QUnit.test('Burndown should use history events to track reopened work', async as
   const result = await kanbn.burndown(null, [created, end], null, null, 'seconds');
   const series = result.series[0];
 
-  assert.equal(findDataPoint(series, created).y, 0, 'task is not active when created in backlog');
-  assert.equal(findDataPoint(series, started).y, 2, 'task becomes active when moved to started column');
-  assert.equal(findDataPoint(series, completed).y, 0, 'task is inactive when moved to completed column');
-  assert.equal(findDataPoint(series, reopened).y, 2, 'task becomes active again when reopened');
+  assert.equal(findDataPoint(series, created).y, 0, 'task is not active before its started date');
+  assert.equal(findDataPoint(series, started).y, 2, 'task becomes active on its started date');
+
+  // The task passed through Done between these two dates, but it has no completed date, so the work
+  // is still outstanding and stays counted
+  assert.equal(findDataPoint(series, completed).y, 2, 'work with no completed date stays outstanding');
+  assert.equal(findDataPoint(series, reopened).y, 2, 'reopened work is still counted');
 
   const reopenEvents = findDataPoint(series, reopened).tasks;
-  assert.equal(reopenEvents[0].eventType, 'moved');
+  assert.equal(reopenEvents[0].eventType, 'moved', 'history events still annotate the chart');
 });
 
-QUnit.test('Burndown should fallback to legacy metadata dates when history is absent', async assert => {
+QUnit.test('Burndown should ignore columns when a task has no dates', async assert => {
+  const created = new Date('2026-03-01T00:00:00.000Z');
+  const end = new Date('2026-03-05T00:00:00.000Z');
+
+  // The task sits in a started column but has never been given a started date, so there is nothing
+  // to say when the work began. It used to be counted as active from its created date
+  mockFileSystem({
+    '.kanbn': {
+      'index.md': parseIndex.json2md({
+        name: 'test',
+        description: '',
+        options: {
+          startedColumns: ['In Progress'],
+          completedColumns: ['Done']
+        },
+        columns: {
+          Backlog: [],
+          'In Progress': ['task-1'],
+          Done: []
+        }
+      }),
+      tasks: {
+        'task-1.md': parseTask.json2md({
+          name: 'Task 1',
+          description: '',
+          metadata: {
+            tags: ['Small'],
+            created
+          },
+          subTasks: [],
+          relations: []
+        })
+      }
+    }
+  });
+
+  const result = await kanbn.burndown(null, [created, end], null, null, 'seconds');
+  const series = result.series[0];
+
+  assert.equal(findDataPoint(series, created).y, 0, 'a task with no started date is never active');
+  assert.equal(findDataPoint(series, end).y, 0, 'the column it sits in does not make it active');
+});
+
+QUnit.test('Burndown should derive activity from metadata dates', async assert => {
   const created = new Date('2026-01-01T00:00:00.000Z');
   const started = new Date('2026-01-02T00:00:00.000Z');
   const completed = new Date('2026-01-03T00:00:00.000Z');
@@ -161,7 +212,9 @@ QUnit.test('Burndown should reduce remaining workload when progress events occur
           name: 'Task 1',
           description: '',
           metadata: {
-            tags: ['Small']
+            tags: ['Small'],
+            created,
+            started
           },
           subTasks: [],
           relations: [],

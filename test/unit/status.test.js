@@ -292,7 +292,7 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
     },
     completedTasks: 3,
     totalWorkload: 22,
-    totalRemainingWorkload: 6,
+    totalRemainingWorkload: 21,
     columnWorkloads: {
       'Column 1': {
         workload: 2,
@@ -304,7 +304,7 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       },
       'Column 3': {
         workload: 15,
-        remainingWorkload: 0
+        remainingWorkload: 15
       }
     },
     taskWorkloads: {
@@ -322,15 +322,15 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       },
       'task-3': {
         workload: 5,
-        progress: 1,
-        remainingWorkload: 0,
-        completed: true
+        progress: 0,
+        remainingWorkload: 5,
+        completed: false
       },
       'task-4': {
         workload: 8,
-        progress: 1,
-        remainingWorkload: 0,
-        completed: true
+        progress: 0,
+        remainingWorkload: 8,
+        completed: false
       },
       'task-5': {
         workload: 1,
@@ -340,21 +340,21 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       },
       'task-6': {
         workload: 2,
-        progress: 1,
-        remainingWorkload: 0,
-        completed: true
+        progress: 0,
+        remainingWorkload: 2,
+        completed: false
       }
     },
     assigned: {
       'User 1': {
         total: 4,
         workload: 9,
-        remainingWorkload: 6
+        remainingWorkload: 8
       },
       'User 2': {
         total: 2,
         workload: 13,
-        remainingWorkload: 0
+        remainingWorkload: 13
       }
     },
     dueTasks: [
@@ -397,26 +397,26 @@ QUnit.test('Status non-quiet with due data should show due tasks information', a
       {
         task: 'task-3',
         workload: 5,
-        progress: 1,
-        remainingWorkload: 0,
-        completed: true,
+        progress: 0,
+        remainingWorkload: 5,
+        completed: false,
         completedDate: null,
         dueDate: new Date('2000-01-01T22:30:00.000Z'),
-        overdue: false,
+        overdue: true,
         dueDelta: 5400000,
-        dueMessage: 'Completed 1 hour, 30 minutes overdue'
+        dueMessage: '1 hour, 30 minutes overdue'
       },
       {
         task: 'task-6',
         workload: 2,
-        progress: 1,
-        remainingWorkload: 0,
-        completed: true,
+        progress: 0,
+        remainingWorkload: 2,
+        completed: false,
         completedDate: null,
         dueDate: new Date('2000-01-02T02:00:00.000Z'),
         overdue: false,
         dueDelta: -7200000,
-        dueMessage: 'Completed 2 hours remaining'
+        dueMessage: '2 hours remaining'
       }
     ],
   });

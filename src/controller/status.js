@@ -57,6 +57,18 @@ module.exports = async args => {
       console.log(args.json ? JSON.stringify(output, null, 2) : yaml.stringify(output, 4, 2));
     }
   })
+  .then(async () => {
+
+    // Only load tasks for the hint when it would actually be shown
+    if (args.json || args.quiet) {
+      return;
+    }
+    const index = await kanbn.getIndex();
+    if (!kanbn.isVerbose(index)) {
+      return;
+    }
+    utility.showDateDriftHint(await kanbn.findDateDrift());
+  })
   .catch(error => {
     utility.error(error);
   });

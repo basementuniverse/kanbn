@@ -421,14 +421,30 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
 }
 
 /**
+ * Metadata fields that can be cleared with --unset, in addition to any custom fields defined in
+ * the index options
+ */
+const UNSETTABLE_FIELDS = [
+  'started',
+  'completed',
+  'due',
+  'plannedStart',
+  'plannedFinish',
+  'assigned',
+  'progress',
+  'tags'
+];
+
+/**
  * Update a task
  * @param {string} taskId
  * @param {object} taskData
  * @param {?string} columnName
+ * @param {string[]} [unsetFields=[]]
  */
-function updateTask(taskId, taskData, columnName) {
+function updateTask(taskId, taskData, columnName, unsetFields = []) {
   kanbn
-  .updateTask(taskId, taskData, columnName)
+  .updateTask(taskId, taskData, columnName, unsetFields)
   .then(taskId => {
     console.log(`Updated task "${taskId}"`);
   })
@@ -754,6 +770,43 @@ module.exports = async args => {
     }
   }
 
+  // Unset metadata fields
+  const unsetFields = [];
+  if (args.unset) {
+    const customFieldNames = 'customFields' in index.options
+      ? index.options.customFields.map(customField => customField.name)
+      : [];
+    const unsettableFields = [...UNSETTABLE_FIELDS, ...customFieldNames];
+
+    // Arguments that set the value of a metadata field, so that setting and unsetting the same
+    // field in one command can be rejected instead of silently resolving one way or the other
+    const settingArgs = {
+      due: args.due,
+      plannedStart: args.plannedStart,
+      plannedFinish: args.plannedFinish,
+      progress: args.progress,
+      assigned: args.assigned,
+      tags: args.tag,
+      ...Object.fromEntries(customFieldNames.map(name => [name, args[name]]))
+    };
+
+    for (let field of utility.arrayArg(args.unset)) {
+      if (unsettableFields.indexOf(field) === -1) {
+        utility.error(
+          `Cannot unset "${field}"\nAvailable fields: ${unsettableFields.join(', ')}`
+        );
+        return;
+      }
+      if (settingArgs[field] !== undefined) {
+        utility.error(`Cannot set and unset "${field}" in the same command`);
+        return;
+      }
+      if (unsetFields.indexOf(field) === -1) {
+        unsetFields.push(field);
+      }
+    }
+  }
+
   // Update task interactively
   if (args.interactive) {
     interactive(taskData, taskIds, columnName, columnNames)
@@ -878,7 +931,7 @@ module.exports = async args => {
 
       // Update task
       columnName = answers.column !== currentColumnName ? answers.column : null;
-      updateTask(taskId, taskData, columnName);
+      updateTask(taskId, taskData, columnName, unsetFields);
     })
     .catch(error => {
       utility.error(error);
@@ -887,6 +940,6 @@ module.exports = async args => {
   // Otherwise edit task non-interactively
   } else {
     columnName = columnName !== currentColumnName ? columnName : null;
-    updateTask(taskId, taskData, columnName);
+    updateTask(taskId, taskData, columnName, unsetFields);
   }
 };

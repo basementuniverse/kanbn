@@ -32,6 +32,27 @@ QUnit.test('paramCase() should convert strings to param-case', async assert => {
   assert.equal(utility.paramCase('я надеюсь, что это сработает'), 'я-надеюсь-что-это-сработает');
 });
 
+QUnit.test('paramCase() should lowercase trailing and non-ascii capitals', async assert => {
+
+  // A trailing single capital isn't followed by another character, so the word-boundary
+  // replacement never matched it
+  assert.equal(utility.paramCase('Task A'), 'task-a');
+  assert.equal(utility.paramCase('Plan B'), 'plan-b');
+  assert.equal(utility.paramCase('A B C'), 'a-b-c');
+  assert.equal(utility.paramCase('X'), 'x');
+
+  // Capital runs of two or more were already handled
+  assert.equal(utility.paramCase('Fix CI'), 'fix-ci');
+  assert.equal(utility.paramCase('ABC def'), 'abc-def');
+
+  // Non-ascii capitals aren't matched by [A-Z]
+  assert.equal(utility.paramCase('Ünïcodé Tåsk'), 'ünïcodé-tåsk');
+  assert.equal(utility.paramCase('Ärger Über'), 'ärger-über');
+
+  // Board slugs are generated with this function, so they must be lowercase throughout
+  assert.equal(utility.paramCase('Design Board A'), 'design-board-a');
+});
+
 QUnit.test('strArg() should convert arguments into strings', async assert => {
   assert.equal(utility.strArg('test'), 'test');
   assert.equal(utility.strArg(['test']), 'test');

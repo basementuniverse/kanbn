@@ -60,6 +60,18 @@ Options:
       "blocks my-task-1"
       "duplicates my-task-2"
 
+  {b}kanbn edit "task-id" --unset "field"{b}
+    Remove a metadata field from a task. This option can be repeated to remove several fields.
+    Available fields: started, completed, due, plannedStart, plannedFinish, assigned, progress, tags,
+    plus any custom fields declared in the customFields project option.
+    Examples:
+      {b}kanbn edit "task-id" --unset completed{b}
+        Reopen a completed task by clearing its completed date.
+      {b}kanbn edit "task-id" --unset started --unset completed{b}
+        Clear both dates.
+    A field cannot be set and unset in the same command. If a task is moved into a started or
+    completed column by the same command, the unset is applied afterwards, so it wins.
+
   {b}kanbn edit --<custom field name> <value>{b}
     Add or modify a custom metadata field.
     The custom field must be declared in the customFields project option.

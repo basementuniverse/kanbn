@@ -6,11 +6,13 @@
   "args": {
     "boolean": [
       "json",
-      "save"
+      "save",
+      "fix"
     ],
     "alias": {
       "json": ["j"],
-      "save": ["s"]
+      "save": ["s"],
+      "fix": ["f"]
     }
   },
   "controller": "./src/controller/validate",

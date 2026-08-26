@@ -32,6 +32,12 @@ module.exports = async args => {
   // Show the board
   board
   .show(index, tasks, args.view, args.json)
+  .then(() => {
+    utility.showDateDriftHint(
+      kanbn.getDateDrift(index, tasks),
+      !args.json && kanbn.isVerbose(index)
+    );
+  })
   .catch(error => {
     utility.error(error);
   });

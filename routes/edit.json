@@ -21,7 +21,8 @@
       "due",
       "plannedStart",
       "plannedFinish",
-      "progress"
+      "progress",
+      "unset"
     ],
     "alias": {
       "interactive": ["i"],

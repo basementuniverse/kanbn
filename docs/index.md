@@ -11,7 +11,8 @@ To get started quickly, check out the [Quick Start](quick-start.md) guide.
 - [Task Structure](task-structure.md) — task files, metadata, sub-tasks, relations, comments and history
 - [Views](views.md) — custom board layouts, columns and lanes
 - [Filtering and Sorting](filtering-and-sorting.md) — the filter and sorter model shared by `find`, `sort` and views
-- [Advanced Configuration](advanced-configuration.md) — separate config files and custom folder locations
+- [Advanced Configuration](advanced-configuration.md)
+- [Migrating to 2.0.0](migration-2.0.md) — separate config files and custom folder locations
 
 ## Examples
 

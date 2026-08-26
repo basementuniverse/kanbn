@@ -2,9 +2,21 @@
 
 Validate kanbn index file and all task files, and report any formatting errors.
 
+If the files are valid, this also reports tasks whose started/completed dates don't match the column
+they're in - which usually means the task was moved by hand or by a merge, rather than through kanbn.
+
 Options:
   {b}kanbn validate --save{b}
     Re-save the index and task files. This will ensure that all index column sorting settings are applied and that all tasks are formatted correctly.
+
+  {b}kanbn validate --fix{b}
+  {b}kanbn validate -f{b}
+    Fill in missing started and completed dates for tasks that are sitting in a started or completed
+    column without one. Each date is taken from the task's history where the move was recorded,
+    falling back to the task's updated date and then its created date.
+    Tasks that have a completed date while sitting outside a completed column are reported but never
+    changed, because the date records something that actually happened. Use
+    {b}kanbn edit "task-id" --unset completed{b} to clear one deliberately.
 
   {b}kanbn validate --json{b}
   {b}kanbn validate -j{b}

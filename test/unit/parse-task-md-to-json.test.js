@@ -243,17 +243,6 @@ Invalid metadata
   toColumn: In Progress
 `,
     error: /unable to parse history event date for "moved"/
-  },
-  {
-    md: `
-# ${TEST_NAME}
-
-## History
-
-- type: wibble
-  date: 2026-01-01T00:00:00.000Z
-`,
-    error: /unsupported history event type "wibble"/
   }
 ];
 
@@ -566,6 +555,34 @@ moreValidMetadata: test3
         TEST_HISTORY_1_JSON,
         TEST_HISTORY_2_JSON,
         TEST_HISTORY_3_JSON
+      ]
+    }
+  },
+
+  // An unrecognised event type is kept rather than rejected, so that a task file written by a newer
+  // version of kanbn stays readable. It used to throw "unsupported history event type"
+  {
+    md: `
+# ${TEST_NAME}
+
+## History
+
+- type: wibble
+  date: 2026-01-01T00:00:00.000Z
+`,
+    json: {
+      id: TEST_ID,
+      name: TEST_NAME,
+      description: '',
+      metadata: {},
+      subTasks: [],
+      relations: [],
+      comments: [],
+      history: [
+        {
+          type: 'wibble',
+          date: new Date('2026-01-01T00:00:00.000Z')
+        }
       ]
     }
   }

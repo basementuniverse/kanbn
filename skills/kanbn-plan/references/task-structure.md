@@ -106,6 +106,8 @@ Usually omit:
 
 Add metadata only when the user supplied it or when the board already relies on it.
 
+The one exception is a task you place in a started or completed column. Kanbn decides whether a task has started or been completed from its `started` and `completed` dates, not from the column it is in, so a task placed in `In Progress` or `Done` without those dates will be reported as drifted and will be missing from burndown charts. If you place a task in one of those columns because the user told you the work is already underway or finished, write the matching date. If you don't know when it happened, leave the task in a column that doesn't imply state.
+
 Good uses of metadata:
 
 - `tags` for epics, teams, domains, or sizing labels

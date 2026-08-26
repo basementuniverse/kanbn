@@ -103,7 +103,32 @@ A list of column names. When a task is created in or dragged into one of these c
 
 ### `completedColumns`
 
-A list of column names. When a task is created in or dragged into one of these columns, the task's `completed` date will be set to the current time. If the task already has a `completed` date, this date will be updated.
+A list of column names. When a task is created in or dragged into one of these columns, the task's `completed` date will be set to the current time, unless the task already has a `completed` date.
+
+Note that these columns control when the date is *written*. They don't decide whether a task counts as complete - that comes from the date itself. See [Task state](#task-state) below.
+
+### `startedField`
+
+The name of the metadata field that holds a task's started date. Defaults to `started`.
+
+### `completedField`
+
+The name of the metadata field that holds a task's completed date. Defaults to `completed`.
+
+Pointing these at custom date fields lets a board track its own started/completed state without touching the shared `started` and `completed` fields:
+
+```yaml
+completedField: designSignedOffAt
+completedColumns:
+  - Signed Off
+customFields:
+  - name: designSignedOffAt
+    type: date
+```
+
+### `verbose`
+
+Set to `false` to suppress hints and notices printed alongside normal output, such as the reminder shown when tasks have dates that don't match their column. Defaults to `true`. Hints are never shown when using `--json`.
 
 ### `sprints`
 
@@ -213,3 +238,18 @@ Here's an example of how this could be used:
     - Testing
   ```
 * When a task is moved into the `Testing` column and the task doesn't already have a `testedAt` value in its metadata, this value will be automatically populated with the current date/time.
+
+## Task state
+
+Whether a task has started or been completed is decided by its metadata dates, and nothing else:
+
+* a task has started if its `started` field is set (or whichever field `startedField` names);
+* a task is complete if its `completed` field is set (or whichever field `completedField` names).
+
+The column a task sits in doesn't make it started or complete. Columns listed in `startedColumns` and `completedColumns` cause those dates to be *written* when a task is moved through the CLI or the VSCode extension, but the dates are what everything else reads: `kanbn status`, `kanbn find`, progress, burndown charts and gantt charts.
+
+This matters when a task is moved **outside** of kanbn - by editing the index file by hand, or through a git merge. No date is written in that case, so the task keeps whatever state its metadata already described. `kanbn validate` reports tasks whose dates and columns disagree, and `kanbn validate --fix` fills in the missing dates, taking them from the task's history where possible.
+
+To clear a date - for example to reopen a task that was completed - use `kanbn edit "task-id" --unset completed`.
+
+_Note: before version 2.0.0, a task sitting in a completed column counted as complete even with no `completed` date. See [Migrating to 2.0.0](migration-2.0.md)._

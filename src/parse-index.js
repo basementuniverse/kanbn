@@ -24,6 +24,9 @@ function validateOptions(options) {
         type: 'array',
         items: { type: 'string' }
       },
+      'startedField': { type: 'string' },
+      'completedField': { type: 'string' },
+      'verbose': { type: 'boolean' },
       'sprints': {
         type: 'array',
         items: {

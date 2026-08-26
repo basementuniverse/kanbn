@@ -38,6 +38,7 @@ Short project summary and planning assumptions.
 - After the description, each level-2 heading defines a column.
 - Each column should contain a markdown list of task links.
 - Each task link should point to `tasks/<task-id>.md`.
+- A task placed in a column listed in `startedColumns` or `completedColumns` should carry the matching `started` / `completed` date in its metadata. Kanbn reads task state from those dates, not from the column.
 - The link text should be the task id, not the human-readable title.
 
 ## Recommended Defaults

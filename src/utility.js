@@ -20,6 +20,26 @@ module.exports = (() => {
     },
 
     /**
+     * Show a hint about tasks whose dates don't match the column they're in. Hints are suppressed
+     * for machine-readable output and when the board sets verbose to false
+     * @param {object[]} drift Drift entries from kanbn.getDateDrift()
+     * @param {boolean} show False to suppress the hint
+     */
+    showDateDriftHint(drift, show = true) {
+      if (!show || !drift.length) {
+        return;
+      }
+      const fixable = drift.filter(d => d.fixable).length;
+      const summary =
+        `${drift.length} ${drift.length === 1 ? 'task has' : 'tasks have'} dates that don't match ` +
+        `${drift.length === 1 ? 'its' : 'their'} column`;
+      console.log(this.replaceTags(
+        `\n{d}${summary}${fixable ? ' - run{d} {b}kanbn validate --fix{b}' : '{d}'}` +
+        (fixable ? ` {d}to fill in the missing ${fixable === 1 ? 'date' : 'dates'}{d}` : '')
+      ));
+    },
+
+    /**
      * Convert a string to simplified paramcase, e.g:
      *  PascalCase -> pascalcase
      *  Test Word -> test-word
@@ -34,7 +54,12 @@ module.exports = (() => {
         )
         .split(/[\s!?.,@:;|\\/"'`£$%\^&*{}[\]()<>~#+\-=_¬]+/g)
         .join('-')
-        .replace(/(^-|-$)/g, '');
+        .replace(/(^-|-$)/g, '')
+        // The word-boundary replacement above only matches an uppercase run that is followed by
+        // another character, so a trailing capital ("Task A" -> "task-A") and any non-ASCII capital
+        // ("Ünïcodé" -> "Ünïcodé") would otherwise survive. Board slugs use this function, so ids
+        // must be lowercase throughout.
+        .toLowerCase();
     },
 
     /**

@@ -30,6 +30,12 @@ const DEFAULT_TASK_WORKLOAD_TAGS = {
   Huge: 8,
 };
 const DEFAULT_DATE_FORMAT = "d mmm yy, H:MM";
+
+// Metadata fields that hold a task's started and completed dates. Boards can override these with the
+// startedField and completedField options, so that a task shared between several boards can carry
+// separate started/completed state for each of them
+const DEFAULT_STARTED_FIELD = "started";
+const DEFAULT_COMPLETED_FIELD = "completed";
 const DEFAULT_TASK_TEMPLATE = "^+^_${overdue ? '^R' : ''}${name}^: ${created ? ('\\n^-^/' + created) : ''}";
 
 /**
@@ -240,12 +246,28 @@ function appendTaskHistory(taskData, historyEvent) {
  * @param {object} task
  * @return {boolean} True if the task is in a completed column or has a completed date
  */
+/**
+ * Get the name of the metadata field that holds a task's started date for this board. Boards can
+ * point this at a custom date field so that several boards can track their own started/completed
+ * state against the same shared task file
+ * @param {object} index The index object
+ * @return {string} The metadata field name
+ */
+function getStartedField(index) {
+  return ("startedField" in index.options && index.options.startedField) || DEFAULT_STARTED_FIELD;
+}
+
+/**
+ * Get the name of the metadata field that holds a task's completed date for this board
+ * @param {object} index The index object
+ * @return {string} The metadata field name
+ */
+function getCompletedField(index) {
+  return ("completedField" in index.options && index.options.completedField) || DEFAULT_COMPLETED_FIELD;
+}
+
 function taskCompleted(index, task) {
-  return (
-    "completed" in task.metadata ||
-    ("completedColumns" in index.options &&
-      index.options.completedColumns.indexOf(findTaskColumn(index, task.id)) !== -1)
-  );
+  return getCompletedField(index) in task.metadata;
 }
 
 /**
@@ -702,75 +724,31 @@ function taskWorkloadInPeriod(tasks, metadataProperty, start, end) {
 }
 
 /**
- * Check if a column is configured as a started column
- * @param {object} index
- * @param {string|null} columnName
- * @return {boolean}
- */
-function startedColumn(index, columnName) {
-  return (
-    !!columnName &&
-    "startedColumns" in index.options &&
-    index.options.startedColumns.indexOf(columnName) !== -1
-  );
-}
-
-/**
- * Check if a column is configured as a completed column
- * @param {object} index
- * @param {string|null} columnName
- * @return {boolean}
- */
-function completedColumn(index, columnName) {
-  return (
-    !!columnName &&
-    "completedColumns" in index.options &&
-    index.options.completedColumns.indexOf(columnName) !== -1
-  );
-}
-
-/**
- * Build a task's state at a specific date from history events
+ * Find the date at which a task most recently entered one of the specified columns, using its
+ * history. Returns null if the task has no history, or none of its events mention those columns
  * @param {object} task
- * @param {Date} date
- * @return {?object}
+ * @param {string[]} columnNames
+ * @return {?Date}
  */
-function getTaskHistoryStateAtDate(task, date) {
+function findColumnEntryDate(task, columnNames) {
   if (!("history" in task) || !Array.isArray(task.history) || task.history.length === 0) {
     return null;
   }
-
-  const state = {
-    created: false,
-    archived: false,
-    column: null,
-  };
-  const history = [...task.history].sort((a, b) => a.date.getTime() - b.date.getTime());
-  history.forEach((historyEvent) => {
-    if (!historyEvent.date || historyEvent.date > date) {
-      return;
+  let result = null;
+  for (const historyEvent of [...task.history].sort((a, b) => a.date.getTime() - b.date.getTime())) {
+    if (!historyEvent.date) {
+      continue;
     }
-    switch (historyEvent.type) {
-      case 'created':
-        state.created = true;
-        state.archived = false;
-        state.column = historyEvent.column || state.column;
-        break;
-      case 'moved':
-        state.column = historyEvent.toColumn || state.column;
-        break;
-      case 'archived':
-        state.archived = true;
-        break;
-      case 'restored':
-        state.archived = false;
-        state.column = historyEvent.toColumn || state.column;
-        break;
-      default:
-        break;
+    const enteredColumn = historyEvent.type === "moved"
+      ? historyEvent.toColumn
+      : (historyEvent.type === "created" || historyEvent.type === "restored")
+        ? (historyEvent.column || historyEvent.toColumn)
+        : null;
+    if (enteredColumn && columnNames.indexOf(enteredColumn) !== -1) {
+      result = historyEvent.date;
     }
-  });
-  return state;
+  }
+  return result;
 }
 
 /**
@@ -1148,6 +1126,11 @@ function renderGanttBar(task, from, to) {
 
 /**
  * Get a list of tasks that were started before and/or completed after a date
+ *
+ * A task is active from its started date until its completed date. This used to be derived by
+ * replaying the task's history to work out which column it was in at the time and comparing that
+ * column against the index options, which meant a task's activity depended on column names rather
+ * than on the dates recorded against it
  * @param {object} index
  * @param {object[]} tasks
  * @param {Date} date
@@ -1155,14 +1138,8 @@ function renderGanttBar(task, from, to) {
  */
 function getActiveTasksAtDate(index, tasks, date) {
   return tasks.filter((task) => (
-    (() => {
-      const historyState = getTaskHistoryStateAtDate(task, date);
-      if (historyState !== null) {
-        return historyState.created && !historyState.archived && startedColumn(index, historyState.column) && !completedColumn(index, historyState.column);
-      }
-      return (task.started !== false && task.started <= date) &&
-        (task.completed === false || task.completed > date);
-    })()
+    (task.started !== false && task.started <= date) &&
+    (task.completed === false || task.completed > date)
   ));
 }
 
@@ -1259,9 +1236,15 @@ function normaliseDate(date, resolution = 'minutes') {
  * @return {object} The updated task data
  */
 function updateColumnLinkedCustomFields(index, taskData, columnName) {
-  // Update built-in column-linked metadata properties first (started and completed dates)
-  taskData = updateColumnLinkedCustomField(index, taskData, columnName, "completed", "once");
-  taskData = updateColumnLinkedCustomField(index, taskData, columnName, "started", "once");
+  // Update built-in column-linked metadata properties first (started and completed dates). The
+  // columns are always listed in startedColumns/completedColumns, but the field that gets written
+  // can be pointed elsewhere with startedField/completedField
+  taskData = updateColumnLinkedCustomField(
+    index, taskData, columnName, getCompletedField(index), "once", "completedColumns"
+  );
+  taskData = updateColumnLinkedCustomField(
+    index, taskData, columnName, getStartedField(index), "once", "startedColumns"
+  );
 
   // Update column-linked custom fields
   if ("customFields" in index.options) {
@@ -1291,9 +1274,13 @@ function updateColumnLinkedCustomFields(index, taskData, columnName) {
  * @param {string} columnName
  * @param {string} fieldName
  * @param {string} [updateCriteria='none']
+ * @param {?string} [columnListName=null] The option holding the linked column names, or null to use
+ * the `${fieldName}Columns` convention
  */
-function updateColumnLinkedCustomField(index, taskData, columnName, fieldName, updateCriteria = "none") {
-  const columnList = `${fieldName}Columns`;
+function updateColumnLinkedCustomField(
+  index, taskData, columnName, fieldName, updateCriteria = "none", columnListName = null
+) {
+  const columnList = columnListName || `${fieldName}Columns`;
   if (columnList in index.options && index.options[columnList].indexOf(columnName) !== -1) {
     switch (updateCriteria) {
       case "always":
@@ -1477,7 +1464,7 @@ class Kanbn {
    * @return {Promise<task>} The task
    */
   async getTask(taskId) {
-    this.taskExists(taskId);
+    await this.taskExists(taskId);
     return this.loadTask(taskId);
   }
 
@@ -1502,7 +1489,8 @@ class Kanbn {
 
       // A task is overdue if it's due date is in the past and the task is not in a completed column
       // or doesn't have a completed dates
-      const completedDate = "completed" in task.metadata ? task.metadata.completed : null;
+      const completedField = getCompletedField(index);
+      const completedDate = completedField in task.metadata ? task.metadata[completedField] : null;
 
       // Get task due delta - this is the difference between now and the due date, or if the task is completed
       // this is the difference between the completed and due dates
@@ -1923,9 +1911,10 @@ class Kanbn {
    * @param {string} taskId The id of the task to update
    * @param {object} taskData The new task data
    * @param {?string} [columnName=null] The column name to move this task to, or null if not moving this task
+   * @param {string[]} [unsetFields=[]] Metadata field names to remove from the task
    * @return {Promise<string>} The id of the task that was updated
    */
-  async updateTask(taskId, taskData, columnName = null) {
+  async updateTask(taskId, taskData, columnName = null, unsetFields = []) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
       throw new Error("Not initialised in this folder");
@@ -1986,6 +1975,19 @@ class Kanbn {
       // Otherwise save the index
     } else {
       await this.saveIndex(index);
+    }
+
+    // Remove any explicitly unset metadata fields last. This has to happen after the move, because
+    // moving into a started or completed column stamps the linked date fields - an explicit unset
+    // from the user should win over that automatic stamp
+    if (unsetFields.length) {
+      const finalTaskData = await this.loadTask(taskId);
+      if ("metadata" in finalTaskData) {
+        for (const field of unsetFields) {
+          delete finalTaskData.metadata[field];
+        }
+      }
+      await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), finalTaskData);
     }
     return taskId;
   }
@@ -2178,6 +2180,8 @@ class Kanbn {
     // Get index and column names
     const index = await this.loadIndex();
     const columnNames = Object.keys(index.columns);
+    const startedField = getStartedField(index);
+    const completedField = getCompletedField(index);
 
     // Prepare output
     const result = {
@@ -2342,8 +2346,8 @@ class Kanbn {
 
         // Add task workload information for the sprint
         result.sprint.created = taskWorkloadInPeriod(tasks, "created", sprintStartDate, sprintEndDate);
-        result.sprint.started = taskWorkloadInPeriod(tasks, "started", sprintStartDate, sprintEndDate);
-        result.sprint.completed = taskWorkloadInPeriod(tasks, "completed", sprintStartDate, sprintEndDate);
+        result.sprint.started = taskWorkloadInPeriod(tasks, startedField, sprintStartDate, sprintEndDate);
+        result.sprint.completed = taskWorkloadInPeriod(tasks, completedField, sprintStartDate, sprintEndDate);
         result.sprint.due = taskWorkloadInPeriod(tasks, "due", sprintStartDate, sprintEndDate);
 
         // Add custom date property workload information for the sprint
@@ -2377,8 +2381,8 @@ class Kanbn {
           result.period.end = periodEnd = new Date(Math.max(...dates));
         }
         result.period.created = taskWorkloadInPeriod(tasks, "created", periodStart, periodEnd);
-        result.period.started = taskWorkloadInPeriod(tasks, "started", periodStart, periodEnd);
-        result.period.completed = taskWorkloadInPeriod(tasks, "completed", periodStart, periodEnd);
+        result.period.started = taskWorkloadInPeriod(tasks, startedField, periodStart, periodEnd);
+        result.period.completed = taskWorkloadInPeriod(tasks, completedField, periodStart, periodEnd);
         result.period.due = taskWorkloadInPeriod(tasks, "due", periodStart, periodEnd);
 
         // Add custom date property workload information for the selected date range
@@ -2450,6 +2454,122 @@ class Kanbn {
       return errors;
     }
     return true;
+  }
+
+  /**
+   * Find tasks whose started/completed dates disagree with the column they're in
+   *
+   * Task state comes from metadata dates only, so a task moved between columns by hand (by editing
+   * the index file, or through a merge) won't have had its dates updated. This reports both
+   * directions: a task sitting in a started or completed column with no date, and a task carrying a
+   * completed date while sitting somewhere else
+   * @return {Promise<object[]>} A list of drift entries
+   */
+  async findDateDrift() {
+    // Check if this folder has been initialised
+    if (!(await this.initialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+    const index = await this.loadIndex();
+    const tasks = [];
+    for (const taskId of getTrackedTaskIds(index)) {
+      try {
+        tasks.push(await this.loadTask(taskId));
+      } catch (error) {
+        // Unreadable tasks are reported by validate(), not here
+      }
+    }
+    return this.getDateDrift(index, tasks);
+  }
+
+  /**
+   * Find date drift in a list of tasks that have already been loaded
+   * @param {object} index The index object
+   * @param {object[]} tasks Loaded task objects
+   * @return {object[]} A list of drift entries
+   */
+  getDateDrift(index, tasks) {
+    const startedField = getStartedField(index);
+    const completedField = getCompletedField(index);
+    const startedColumns = "startedColumns" in index.options ? index.options.startedColumns : [];
+    const completedColumns = "completedColumns" in index.options ? index.options.completedColumns : [];
+    const drift = [];
+
+    for (const task of tasks) {
+      const column = findTaskColumn(index, task.id);
+
+      // A task in a started or completed column with no date to say when that happened. The date is
+      // usually recoverable from history, so these can be backfilled
+      for (const [field, columns] of [[completedField, completedColumns], [startedField, startedColumns]]) {
+        if (columns.indexOf(column) === -1 || field in task.metadata) {
+          continue;
+        }
+        const historyDate = findColumnEntryDate(task, columns);
+        const date = historyDate
+          || ("updated" in task.metadata ? task.metadata.updated : null)
+          || ("created" in task.metadata ? task.metadata.created : null);
+        drift.push({
+          task: task.id,
+          column,
+          field,
+          issue: "missing",
+          message: `task is in column "${column}" but has no ${field} date`,
+          fixable: date !== null,
+          date,
+          source: date === null
+            ? null
+            : historyDate
+              ? "history"
+              : "updated" in task.metadata && task.metadata.updated === date
+                ? "updated"
+                : "created"
+        });
+      }
+
+      // A task carrying a completed date while sitting outside the completed columns. This is left
+      // alone: the date records something that really happened, and removing it would lose it
+      if (
+        completedColumns.length > 0 &&
+        completedField in task.metadata &&
+        completedColumns.indexOf(column) === -1
+      ) {
+        drift.push({
+          task: task.id,
+          column,
+          field: completedField,
+          issue: "unexpected",
+          message: `task has a ${completedField} date but is in column "${column}"`,
+          fixable: false,
+          date: null,
+          source: null
+        });
+      }
+    }
+    return drift;
+  }
+
+  /**
+   * Check whether hints and notices should be shown for this board
+   * @param {object} index The index object
+   * @return {boolean} True if hints should be shown
+   */
+  isVerbose(index) {
+    return !("verbose" in index.options) || index.options.verbose !== false;
+  }
+
+  /**
+   * Backfill missing started/completed dates for tasks that are in a started or completed column
+   * @return {Promise<object[]>} The drift entries that were fixed
+   */
+  async fixDateDrift() {
+    const fixed = [];
+    for (const item of (await this.findDateDrift()).filter((d) => d.fixable && d.issue === "missing")) {
+      const task = await this.loadTask(item.task);
+      setTaskMetadata(task, item.field, item.date);
+      await this.saveTask(getTaskPath(await this.getTaskFolderPath(), item.task), task);
+      fixed.push(item);
+    }
+    return fixed;
   }
 
   /**
@@ -2547,6 +2667,8 @@ class Kanbn {
 
     // Get index and tasks
     const index = await this.loadIndex();
+    const startedField = getStartedField(index);
+    const completedField = getCompletedField(index);
     const tasks = [...(await this.loadAllTrackedTasks(index))]
       .map((task) => {
         const taskColumn = findTaskColumn(index, task.id);
@@ -2554,18 +2676,12 @@ class Kanbn {
         return {
           ...task,
           created,
-          started:
-            "started" in task.metadata
-              ? task.metadata.started
-              : "startedColumns" in index.options && index.options.startedColumns.indexOf(taskColumn) !== -1
-              ? created
-              : false,
-          completed:
-            "completed" in task.metadata
-              ? task.metadata.completed
-              : "completedColumns" in index.options && index.options.completedColumns.indexOf(taskColumn) !== -1
-              ? created
-              : false,
+
+          // A task's started and completed dates come from its metadata only. They used to fall back
+          // to the task's created date whenever it sat in a started or completed column, which
+          // invented timings that had nothing to do with when the work actually happened
+          started: startedField in task.metadata ? task.metadata[startedField] : false,
+          completed: completedField in task.metadata ? task.metadata[completedField] : false,
           progress: taskProgress(index, task),
           assigned: "assigned" in task.metadata ? task.metadata.assigned : null,
           workload: taskWorkload(index, task),
@@ -2599,8 +2715,8 @@ class Kanbn {
                 .map((t) =>
                   [
                     "created" in t.metadata && t.metadata.created,
-                    "started" in t.metadata && t.metadata.started,
-                    "completed" in t.metadata && (t.metadata.completed || new Date(8640000000000000))
+                    startedField in t.metadata && t.metadata[startedField],
+                    completedField in t.metadata && (t.metadata[completedField] || new Date(8640000000000000))
                   ].filter((d) => d)
                 )
                 .flat()
@@ -2877,6 +2993,8 @@ class Kanbn {
 
     // Get index and tasks
     const index = await this.loadIndex();
+    const startedField = getStartedField(index);
+    const completedField = getCompletedField(index);
     const tasks = [...(await this.loadAllTrackedTasks(index))]
       .map((task) => {
         const taskColumn = findTaskColumn(index, task.id);
@@ -2884,8 +3002,8 @@ class Kanbn {
         return {
           ...task,
           created,
-          started: "started" in task.metadata ? task.metadata.started : false,
-          completed: "completed" in task.metadata ? task.metadata.completed : false,
+          started: startedField in task.metadata ? task.metadata[startedField] : false,
+          completed: completedField in task.metadata ? task.metadata[completedField] : false,
           plannedStart: "plannedStart" in task.metadata ? task.metadata.plannedStart : false,
           plannedFinish: "plannedFinish" in task.metadata ? task.metadata.plannedFinish : false,
           workload: taskWorkload(index, task),
