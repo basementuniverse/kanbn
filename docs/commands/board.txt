@@ -6,8 +6,10 @@ Show the kanbn board.
 Options:
   {b}kanbn board --view "view"{b}
   {b}kanbn board -v "view"{b}
-    Show the specified board view.
+    Show the specified board view. Views are defined in the "views" project option and can re-arrange, filter, sort and group tasks without moving them between columns.
+    See docs/views.md for the view format and worked examples.
 
   {b}kanbn board --json{b}
   {b}kanbn board -j{b}
     Output raw data instead of rendering the board. The data will be returned in JSON format.
+    This is the quickest way to check what a view's filters actually match.

@@ -24,6 +24,7 @@ Where {b}<command>{b} is one of:
   {b}archive{b} {d}.......{d} Archive a task
   {b}restore{b} {d}.......{d} Restore a task from the archive
   {b}remove-all{b} {d}....{d} Remove the kanbn board and all tasks
+  {b}history{b} {d}.......{d} Show task history
 
 For more help with commands, try:
 

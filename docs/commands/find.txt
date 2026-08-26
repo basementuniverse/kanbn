@@ -4,10 +4,20 @@
 Search all tasks in the index and show search results. If no filters are specified, this command will list all tracked tasks.
 
 String search terms are treated as case-insensitive regular expressions.
+Date filters match a single day, or a range if the option is repeated.
+Numeric filters match a single value, or a range if the option is repeated.
 
 Only tasks that match all of the filters will be returned.
 
+Filters ignore hidden columns - use --column to exclude them.
+
+See docs/filtering-and-sorting.md for a full description of the filter model.
+
 Options:
+  {b}kanbn find --interactive{b}
+  {b}kanbn find -i{b}
+    Build search filters interactively.
+
   {b}kanbn find --quiet{b}
   {b}kanbn find -q{b}
     Only show task ids in the output.
@@ -15,6 +25,9 @@ Options:
   {b}kanbn find --json{b}
   {b}kanbn find -j{b}
     Output results in JSON format. If used with the --quiet option, this will return an array of task ids.
+
+  {b}kanbn find --id "search term"{b}
+    Find tasks that have an id containing "search term".
 
   {b}kanbn find --name "search term"{b}
   {b}kanbn find -n "search term"{b}
@@ -54,8 +67,26 @@ Options:
     This option can be repeated - if multiple dates are specified, find tasks that are due between the earliest and latest dates.
     The date can be in (almost) any format.
 
+  {b}kanbn find --plannedStart "date"{b}
+    Find tasks that have a planned start date that matches the specified date. The time part of the date will be ignored, unless searching between multiple dates.
+    This option can be repeated - if multiple dates are specified, find tasks with a planned start date between the earliest and latest dates.
+    The date can be in (almost) any format.
+
+  {b}kanbn find --plannedFinish "date"{b}
+    Find tasks that have a planned finish date that matches the specified date. The time part of the date will be ignored, unless searching between multiple dates.
+    This option can be repeated - if multiple dates are specified, find tasks with a planned finish date between the earliest and latest dates.
+    The date can be in (almost) any format.
+
   {b}kanbn find --assigned "name"{b}
-    Find tasks assigned to a specific user.
+    Find tasks assigned to a specific user. Use "^$" to find unassigned tasks.
+
+  {b}kanbn find --workload N{b}
+    Find tasks with a specific calculated workload.
+    If multiple values are specified, find tasks with a workload between the lowest and highest inputs.
+
+  {b}kanbn find --progress N{b}
+    Find tasks with a specific progress value (between 0 and 1).
+    If multiple values are specified, find tasks with progress between the lowest and highest inputs.
 
   {b}kanbn find --sub-task "search term"{b}
   {b}kanbn find -s "search term"{b}
@@ -90,6 +121,19 @@ Options:
 
   {b}kanbn find --<custom field name> "search term"|N|date{b}
     Find tasks with a custom metadata field that matches the search filter.
+    The custom field must be declared in the customFields project option.
     If the custom field is a string and multiple filters are specified, find tasks with a value that matches one of the inputs.
     If the custom field is numeric and multiple filters are specified, find tasks with a value between the lowest and highest inputs.
     If the custom field is a date and multiple filters are specified, find tasks with a value between the earliest and latest dates.
+    If the custom field is a boolean, use {b}--<custom field name>{b} to match true and {b}--no-<custom field name>{b} to match false.
+
+Examples:
+  {b}kanbn find --column Todo --column "In Progress" --assigned "^Ana$"{b}
+    Find tasks assigned to exactly "Ana" that are in either the "Todo" or "In Progress" column.
+
+  {b}kanbn find --tag "(^|\n)Bug($|\n)" --due "1 July 2026" --due "31 July 2026"{b}
+    Find tasks with the exact tag "Bug" that are due in July 2026.
+    Tags are matched against a newline-separated list, so anchoring on line breaks matches a whole tag.
+
+  {b}kanbn find --count-sub-tasks 1 --count-sub-tasks 99 --progress 0 -q{b}
+    List the ids of tasks that have sub-tasks but no progress yet.

@@ -9,14 +9,16 @@ If the filter regular expression has numbered capturing groups, the value of the
 If the filter regular expression has named capturing groups, the value of all named groups will be concatenated.
 If there are multiple matches, their values will be concatenated.
 
+See docs/filtering-and-sorting.md for a full description of the sorting model.
+
 Options:
   {b}kanbn sort --interactive{b}
   {b}kanbn sort -i{b}
     Sort a column interactively.
 
   {b}kanbn sort --save{b}
-    Save the column sort settings in the index file. This means that any tasks added to the column will be automatically sorted.
-    If this option is not set, any saved sorting settings for the specified column will be removed.
+    Save the column sort settings in the index file (as a columnSorting option). This means that any tasks added to the column will be automatically sorted.
+    If this option is not set, the column is sorted once and any saved sorting settings for the specified column will be removed.
 
   {b}kanbn sort --ascending{b}
   {b}kanbn sort -a{b}
@@ -53,8 +55,17 @@ Options:
   {b}kanbn sort -e{b}
     Sort tasks by due date.
 
+  {b}kanbn sort --plannedStart{b}
+    Sort tasks by planned start date.
+
+  {b}kanbn sort --plannedFinish{b}
+    Sort tasks by planned finish date.
+
   {b}kanbn sort --assigned{b}
     Sort tasks by assigned user name.
+
+  {b}kanbn sort --progress{b}
+    Sort tasks by progress.
 
   {b}kanbn sort --sub-task "filter"{b}
   {b}kanbn sort -s "filter"{b}

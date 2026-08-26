@@ -6,10 +6,8 @@ If no dates or sprint identifiers are specified, show data for the current sprin
 If no sprints are defined, show data from the earliest created date to the current date.
 
 Burndown data source:
-  When a task has a structured `History` section, burndown uses its lifecycle events (created, moved, progress,
-  archived, restored) to reconstruct task activity over time.
-  For older tasks without history, burndown falls back to metadata/date inference (created/started/completed +
-  startedColumns/completedColumns).
+  When a task has a structured `History` section, burndown uses its lifecycle events (created, moved, progress, archived, restored) to reconstruct task activity over time.
+  For older tasks without history, burndown falls back to metadata/date inference (created/started/completed + startedColumns/completedColumns).
 
 Options:
   {b}kanbn burndown --json{b}

@@ -4,6 +4,8 @@ A CLI kanban board application.
 
 Documentation can be found [here](./docs/index.md).
 
+Ready-to-run example boards live in [`example`](./example) - a [basic board](./example/basic), one demonstrating [views and lanes](./example/views), and one demonstrating [advanced configuration](./example/advanced).
+
 ## Installation
 
 ```

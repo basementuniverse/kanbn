@@ -249,16 +249,13 @@ function taskCompleted(index, task) {
 }
 
 /**
- * Sort a column in the index
+ * Flatten a task's metadata and computed values into a single object that can be used for sorting
  * @param {object} index The index object
- * @param {object[]} tasks The tasks in the index
- * @param {string} columnName The column to sort
- * @param {object[]} sorters A list of sorter objects
- * @return {object} The modified index object
+ * @param {object} task The task object
+ * @return {object} An object containing all sortable task fields
  */
-function sortColumnInIndex(index, tasks, columnName, sorters) {
-  // Get a list of tasks in the target column and add computed fields
-  tasks = tasks.map((task) => ({
+function taskSortFields(index, task) {
+  return {
     ...task,
     ...task.metadata,
     created: "created" in task.metadata ? task.metadata.created : "",
@@ -279,10 +276,38 @@ function sortColumnInIndex(index, tasks, columnName, sorters) {
     comments: task.comments.map((comment) => `${comment.author} ${comment.text}`).join("\n"),
     workload: taskWorkload(index, task),
     progress: taskProgress(index, task),
-  }));
+  };
+}
 
-  // Sort the list of tasks
-  tasks = sortTasks(tasks, sorters);
+/**
+ * Sort a list of tasks without modifying them, using each task's flattened sort fields
+ * @param {object} index The index object
+ * @param {object[]} tasks
+ * @param {object[]} sorters
+ * @return {object[]} The sorted tasks
+ */
+function sortTasksWithFields(index, tasks, sorters) {
+  if (!sorters.length) {
+    return tasks;
+  }
+  return sortTasks(
+    tasks.map((task) => ({ task, fields: taskSortFields(index, task) })),
+    sorters,
+    (entry, field) => entry.fields[field]
+  ).map((entry) => entry.task);
+}
+
+/**
+ * Sort a column in the index
+ * @param {object} index The index object
+ * @param {object[]} tasks The tasks in the index
+ * @param {string} columnName The column to sort
+ * @param {object[]} sorters A list of sorter objects
+ * @return {object} The modified index object
+ */
+function sortColumnInIndex(index, tasks, columnName, sorters) {
+  // Sort the tasks in the target column using their flattened sort fields
+  tasks = sortTasksWithFields(index, tasks, sorters);
 
   // Save the list of tasks back to the index
   index.columns[columnName] = tasks.map((task) => task.id);
@@ -293,14 +318,16 @@ function sortColumnInIndex(index, tasks, columnName, sorters) {
  * Sort a list of tasks
  * @param {object[]} tasks
  * @param {object[]} sorters
+ * @param {?function} [getField=null] An optional accessor used to read a sort field from a task
  * @return {object[]} The sorted tasks
  */
-function sortTasks(tasks, sorters) {
+function sortTasks(tasks, sorters, getField = null) {
+  const readField = getField || ((task, field) => task[field]);
   tasks.sort((a, b) => {
     let compareA, compareB;
     for (let sorter of sorters) {
-      compareA = a[sorter.field];
-      compareB = b[sorter.field];
+      compareA = readField(a, sorter.field);
+      compareB = readField(b, sorter.field);
       if (sorter.filter) {
         compareA = sortFilter(compareA, sorter.filter);
         compareB = sortFilter(compareB, sorter.filter);
@@ -436,6 +463,22 @@ function filterTasks(index, tasks, filters) {
       result = false;
     }
 
+    // Planned start date
+    if (
+      "plannedStart" in filters &&
+      (!("plannedStart" in task.metadata) || !dateFilter(filters.plannedStart, task.metadata.plannedStart))
+    ) {
+      result = false;
+    }
+
+    // Planned finish date
+    if (
+      "plannedFinish" in filters &&
+      (!("plannedFinish" in task.metadata) || !dateFilter(filters.plannedFinish, task.metadata.plannedFinish))
+    ) {
+      result = false;
+    }
+
     // Workload
     if ("workload" in filters && !numberFilter(filters.workload, taskWorkload(index, task))) {
       result = false;
@@ -471,12 +514,15 @@ function filterTasks(index, tasks, filters) {
     }
 
     // Tag
-    if ("tag" in filters && !stringFilter(filters.tag, task.metadata.tags.join("\n"))) {
+    if ("tag" in filters && !stringFilter(filters.tag, ("tags" in task.metadata ? task.metadata.tags : []).join("\n"))) {
       result = false;
     }
 
     // Count tags
-    if ("count-tags" in filters && !numberFilter(filters["count-tags"], task.tags.length)) {
+    if (
+      "count-tags" in filters &&
+      !numberFilter(filters["count-tags"], ("tags" in task.metadata ? task.metadata.tags : []).length)
+    ) {
       result = false;
     }
 
@@ -1498,7 +1544,7 @@ class Kanbn {
    * @return {object[]} A filtered and sorted list of tasks
    */
   filterAndSortTasks(index, tasks, filters, sorters) {
-    return sortTasks(filterTasks(index, tasks, filters), sorters);
+    return sortTasksWithFields(index, filterTasks(index, tasks, filters), sorters);
   }
 
   /**

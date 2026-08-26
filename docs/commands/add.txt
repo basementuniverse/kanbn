@@ -24,6 +24,15 @@ Options:
   {b}kanbn add -e "date"{b}
     Create a new task and set the due date. The date can be in (almost) any format.
 
+  {b}kanbn add --plannedStart "date"{b}
+    Create a new task and set the planned start date used for gantt scheduling. The date can be in (almost) any format.
+
+  {b}kanbn add --plannedFinish "date"{b}
+    Create a new task and set the planned finish date used for gantt scheduling. The date can be in (almost) any format.
+
+  {b}kanbn add --progress N{b}
+    Create a new task and set its progress. This should be a number between 0 (not started) and 1 (complete).
+
   {b}kanbn add --assigned "name"{b}
   {b}kanbn add -a "name"{b}
     Create a new task and set the assigned user name. If this option is left blank, the current git username will be used.
@@ -45,6 +54,7 @@ Options:
 
   {b}kanbn add --<custom field name> <value>{b}
     Create a new task with a custom metadata field.
+    The custom field must be declared in the customFields project option.
 
   {b}kanbn add --untracked{b}
   {b}kanbn add -u{b}

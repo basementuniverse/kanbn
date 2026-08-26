@@ -24,6 +24,15 @@ Options:
   {b}kanbn edit "task-id" -e "date"{b}
     Modify a task due date. The date can be in (almost) any format.
 
+  {b}kanbn edit "task-id" --plannedStart "date"{b}
+    Modify the planned start date used for gantt scheduling. The date can be in (almost) any format.
+
+  {b}kanbn edit "task-id" --plannedFinish "date"{b}
+    Modify the planned finish date used for gantt scheduling. The date can be in (almost) any format.
+
+  {b}kanbn edit "task-id" --progress N{b}
+    Modify a task's progress. This should be a number between 0 (not started) and 1 (complete).
+
   {b}kanbn edit "task-id" --assigned "name"{b}
     Modify a task assigned user name. If this option is left blank, the current git username will be used.
 
@@ -53,6 +62,7 @@ Options:
 
   {b}kanbn edit --<custom field name> <value>{b}
     Add or modify a custom metadata field.
+    The custom field must be declared in the customFields project option.
 
   {b}kanbn edit --remove-<custom field name>{b}
     Remove a custom metadata field.

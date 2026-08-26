@@ -5,7 +5,7 @@ Move an existing task to a different column or position. The task 'updated' date
 
 Options:
   {b}kanbn move "task-id" --interactive{b}
-  {b}kanbn move "task-id" -n{b}
+  {b}kanbn move "task-id" -i{b}
     Move a task interactively.
 
   {b}kanbn move "task-id" --column "column"{b}

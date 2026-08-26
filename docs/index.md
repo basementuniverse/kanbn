@@ -7,6 +7,29 @@ To get started quickly, check out the [Quick Start](quick-start.md) guide.
 ## Contents
 
 - [Quick Start](quick-start.md)
-- [Index Structure](index-structure.md)
-- [Task Structure](task-structure.md)
-- [Advanced Configuration](advanced-configuration.md)
+- [Index Structure](index-structure.md) — the board file and all project options
+- [Task Structure](task-structure.md) — task files, metadata, sub-tasks, relations, comments and history
+- [Views](views.md) — custom board layouts, columns and lanes
+- [Filtering and Sorting](filtering-and-sorting.md) — the filter and sorter model shared by `find`, `sort` and views
+- [Advanced Configuration](advanced-configuration.md) — separate config files and custom folder locations
+
+## Examples
+
+The [`example`](../example) directory contains ready-to-run boards:
+
+| Example | Demonstrates |
+| --- | --- |
+| [`example/basic`](../example/basic) | A typical board: columns, tags, workload, sprints |
+| [`example/views`](../example/views) | Views, lanes, filters and sorters |
+| [`example/advanced`](../example/advanced) | A `kanbn.yml` config file, custom fields, column sorting and a custom task template |
+
+Run any Kanbn command from inside one of those directories to try it out.
+
+## Command help
+
+Every command has built-in help:
+
+```bash
+kanbn help <command>
+kanbn <command> --help
+```

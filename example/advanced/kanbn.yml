@@ -1,0 +1,59 @@
+# All project options for this board live in this file instead of the index front matter.
+# Kanbn looks for `kanbn.json` or `kanbn.yml` in the root of the workspace.
+#
+# Note: Kanbn rewrites this file whenever it saves project options (for example
+# `kanbn sort --save`), which strips these comments.
+
+startedColumns:
+  - 'In Progress'
+  - Review
+completedColumns:
+  - Done
+
+# The Blocked column is hidden from the default board, but still tracked.
+# Any view that defines its own columns can still show it.
+hiddenColumns:
+  - Blocked
+
+defaultTaskWorkload: 2
+taskWorkloadTags:
+  Tiny: 1
+  Small: 2
+  Medium: 3
+  Large: 5
+  Huge: 8
+
+# Extra metadata fields. Once declared here they can be set with `kanbn add`
+# and `kanbn edit`, searched with `kanbn find`, sorted with `kanbn sort`,
+# filtered in views, and interpolated into taskTemplate.
+customFields:
+  - name: team
+    type: string
+  - name: storyPoints
+    type: number
+  - name: needsDesign
+    type: boolean
+  - name: reviewedAt
+    type: date
+    updateDate: once
+
+# `reviewedAt` is stamped the first time a task enters the Review column
+# (`updateDate: once`). Use `always` to re-stamp on every move.
+reviewedAtColumns:
+  - Review
+
+# The Backlog column is kept sorted in the index file itself, so the order
+# survives `kanbn add`, `kanbn move` and `kanbn validate --save`.
+columnSorting:
+  Backlog:
+    - field: workload
+      order: descending
+    - field: name
+      order: ascending
+
+dateFormat: yyyy-mm-dd
+
+# Custom fields (team, storyPoints, ...) can be interpolated here because they
+# are declared in customFields above. See docs/index-structure.md for the full
+# list of available variables.
+taskTemplate: "^+^_${overdue ? '^R' : ''}${name}^:${assigned ? ('\\n^-@' + assigned) : ''}${team ? ('\\n^-' + team) : ''}${storyPoints ? ('\\n^-' + storyPoints + 'pts') : ''}${due ? ('\\n^-due ' + due) : ''}"

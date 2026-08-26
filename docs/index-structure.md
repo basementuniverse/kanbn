@@ -67,23 +67,23 @@ taskTemplate: ""
 dateFormat: ""
 views:
   - name: My view 1
+    filters:
+      tag: Bug
     columns:
-      "Column 1":
-        - hidden: false
-          filters:
-            name: /test/
-            workload:
-              - 1
-              - 5
-          sorters:
-            - field: name
-              filter: ""
-              order: ascending
-    lanes:
-      - name: "Lane 1"
-        filter:
+      - name: Column 1
+        filters:
+          name: test
+          workload:
+            - 1
+            - 5
+        sorters:
           - field: name
             filter: ""
+            order: ascending
+    lanes:
+      - name: Lane 1
+        filters:
+          assigned: username
 customFields:
   - name: 'myCustomField'
     type: 'date'
@@ -94,6 +94,8 @@ customFields:
 ### `hiddenColumns`
 
 A list of column names. These columns will be hidden from the kanbn board.
+
+This only affects the default board layout. Tasks in hidden columns are still tracked, still show up in `kanbn find` and `kanbn status`, and are still shown by any [view](views.md) that defines its own `columns`.
 
 ### `startedColumns`
 
@@ -123,7 +125,9 @@ An associative array of column names and sorters. Each column can have an array 
 
 The `filter` property can be used to transform values before sorting.
 
-Run `kanbn sort --help` for more information.
+Columns listed here are re-sorted every time Kanbn writes the index, so the order survives `kanbn add`, `kanbn move` and `kanbn validate --save`.
+
+See [Filtering and Sorting](filtering-and-sorting.md#sorters), or run `kanbn sort --help`.
 
 ### `taskTemplate`
 
@@ -137,6 +141,7 @@ updated
 started
 completed
 due
+assigned
 tags
 subTasks
 relations
@@ -148,6 +153,8 @@ workload
 progress
 {...customFields}
 ```
+
+*Note: referencing a variable that isn't in the list above (or a custom field that isn't declared in `customFields`) will print "Unable to build task template" instead of rendering the board.*
 
 The default task template is `^+^_${overdue ? '^R' : ''}${name}^: ${created ? ('\\n^-^/' + created) : ''}`.
 
@@ -161,11 +168,13 @@ The date format to use for dates on the kanbn board and burndown chart views. Se
 
 ### `views`
 
-An array of views that can be used to customize how the kanbn board is displayed.
+An array of views that can be used to customize how the kanbn board is displayed. Select a view with `kanbn board --view "name"`.
 
-Each view should have a `name` property (run `kanbn board --view "name"` to specify which view to use), a list of columns and a list of lanes.
+Each view has a required `name`, an optional root `filters` object, an optional array of `columns` and an optional array of `lanes`. Each column has a required `name` and optional `filters` and `sorters`. Each lane has a required `name` and optional `filters`.
 
-Each column can be hidden, filtered or sorted. Each lane has a list of filters.
+If `columns` is omitted, the index columns are used (minus `hiddenColumns`). If `lanes` is omitted, a single lane containing all matching tasks is used.
+
+See [Views](views.md) for a full description and worked examples, and [Filtering and Sorting](filtering-and-sorting.md) for the filter and sorter formats.
 
 ### `customFields`
 

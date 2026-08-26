@@ -64,7 +64,7 @@ There should be a single level-1 heading at the top of the markdown body contain
 
 The task description should appear below the title. The description can be of any length and can contain markdown.
 
-The following level-2 headings are reserved for special purposes:
+The following level-2 headings are reserved for special purposes (`## Metadata`, `## Sub-tasks`, `## Relations`, `## Comments` and `## History`). Any other level-2 heading is treated as part of the description.
 
 ## Metadata
 
@@ -106,6 +106,8 @@ The name of the user this task is assigned to.
 
 The amount of progress for this task. This should be between 0 (not started) and 1 (complete).
 
+Progress is not derived from sub-tasks. If the task has no `progress` value it counts as 0, and a task that is considered complete always counts as 1 regardless of this value. A task is considered complete if it has a `completed` date or is in one of the [`completedColumns`](index-structure.md#completedcolumns).
+
 ### `started`
 
 The date and time that the task was started.
@@ -126,6 +128,14 @@ An optional date and time used as a preferred start point for gantt scheduling.
 
 An optional date and time used as a preferred finish point for gantt scheduling.
 
+### Custom fields
+
+Any other metadata field is preserved but otherwise ignored, unless it is declared in the [`customFields`](index-structure.md#customfields) project option. Declared custom fields can be set with `kanbn add` and `kanbn edit`, searched with `kanbn find`, sorted with `kanbn sort`, filtered in [views](views.md), and interpolated into the board's [`taskTemplate`](index-structure.md#tasktemplate).
+
+### Workload
+
+A task's workload is not stored in the file - it is calculated from the task's `tags`. It is the sum of the values of its [workload tags](index-structure.md#taskworkloadtags), or `defaultTaskWorkload` if it has none.
+
 ## Sub-tasks
 
 This should be a list of strings. Each string can optionally start with `[ ]` (incomplete) or `[x]` (completed).
@@ -134,8 +144,7 @@ This should be a list of strings. Each string can optionally start with `[ ]` (i
 
 This should be a list of links to other task files. The link text can optionally begin with a relation type.
 
-The `depends-on` relation type is reserved for gantt scheduling. It means the current task should not start until the
-linked task has finished.
+The `depends-on` relation type is reserved for gantt scheduling. It means the current task should not start until the linked task has finished.
 
 ## Comments
 

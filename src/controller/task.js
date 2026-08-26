@@ -13,7 +13,7 @@ function showTask(taskId, json = false) {
     .getTask(taskId)
     .then((task) => {
       if (json) {
-        console.log(task);
+        console.log(JSON.stringify(task, null, 2));
       } else {
         marked.setOptions({
           renderer: new markedTerminalRenderer(),

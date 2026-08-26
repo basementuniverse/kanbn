@@ -8,6 +8,8 @@ If any project options are added to the index file, then the next time Kanbn wri
 
 _Note: in future, it might be possible to split project options between the index and configuration files, but for now configuration must be saved inside only one of these files._
 
+_Note: Kanbn rewrites whichever file holds the project options every time it saves them (`kanbn add`, `kanbn move`, `kanbn sort --save`, `kanbn validate --save`, and so on). The YAML is regenerated, so formatting and comments in that file are not preserved._
+
 ## Configuring default locations
 
 By default, Kanbn will store everything inside the `.kanbn` directory inside your workspace. The index file will be called `index.md` and tasks will be stored inside `.kanbn/tasks/`.

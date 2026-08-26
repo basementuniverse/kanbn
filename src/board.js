@@ -35,6 +35,7 @@ module.exports = (() => {
       started: 'started' in task.metadata ? formatDate(task.metadata.started, dateFormat) : '',
       completed: 'completed' in task.metadata ? formatDate(task.metadata.completed, dateFormat) : '',
       due: 'due' in task.metadata ? formatDate(task.metadata.due, dateFormat) : '',
+      assigned: 'assigned' in task.metadata ? task.metadata.assigned : '',
       tags: 'tags' in task.metadata ? task.metadata.tags : [],
       subTasks: task.subTasks,
       relations: task.relations,
