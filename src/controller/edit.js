@@ -412,7 +412,7 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
           type: 'input',
           name: 'type',
           message: 'Relation type:',
-          default: answers => taskData.relations.find(relation => relation.task === answers.selectRelation).task,
+          default: answers => taskData.relations.find(relation => relation.task === answers.selectRelation).type,
           when: answers => answers.editRelation === 'edit'
         }
       ]
@@ -594,8 +594,8 @@ module.exports = async args => {
 
     // Check that the sub-tasks being removed currently exist
     for (let removedSubTask of removedSubTasks) {
-      if (taskData.subTasks.find(subTask => subTask.text === removedSubTask.text) === undefined) {
-        utility.error(`Sub-task "${removedSubTask.text}" doesn't exist`);
+      if (taskData.subTasks.find(subTask => subTask.text === removedSubTask) === undefined) {
+        utility.error(`Sub-task "${removedSubTask}" doesn't exist`);
         return;
       }
     }
@@ -649,7 +649,7 @@ module.exports = async args => {
     // Check that the tags being removed currently exist
     for (let removedTag of removedTags) {
       if (taskData.metadata.tags.indexOf(removedTag) === -1) {
-        utility.error(`Tag "${removedSubTask.text}" doesn't exist`);
+        utility.error(`Tag "${removedTag}" doesn't exist`);
         return;
       }
     }
@@ -668,8 +668,8 @@ module.exports = async args => {
 
     // Check that the relations being removed currently exist
     for (let removedRelation of removedRelations) {
-      if (taskData.relations.find(relation => relation.task === removedRelation.task) === undefined) {
-        utility.error(`Relation "${removedRelation.task}" doesn't exist`);
+      if (taskData.relations.find(relation => relation.task === removedRelation) === undefined) {
+        utility.error(`Relation "${removedRelation}" doesn't exist`);
         return;
       }
     }
@@ -863,7 +863,7 @@ module.exports = async args => {
       // Edit or remove sub-tasks
       if ('editSubTasks' in answers) {
         for (editSubTask of answers.editSubTasks) {
-          const i = taskData.subTasks.findIndex(subTask => subTask.task === editSubTask.selectSubTask);
+          const i = taskData.subTasks.findIndex(subTask => subTask.text === editSubTask.selectSubTask);
           if (i !== -1) {
             switch (editSubTask.editSubTask) {
               case 'remove':
@@ -890,7 +890,7 @@ module.exports = async args => {
       // Remove tags
       if ('removeTags' in answers && 'metadata' in taskData && 'tags' in taskData.metadata) {
         for (removeTag of answers.removeTags) {
-          const i = taskData.metadata.tags.indexOf(removeTag.name);
+          const i = taskData.metadata.tags.indexOf(removeTag.selectTag);
           if (i !== -1) {
             taskData.metadata.tags.splice(i, 1);
           }

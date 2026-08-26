@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
@@ -19,7 +19,7 @@ QUnit.module('renameTask tests', {
 
 QUnit.test('Rename task in uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.renameTask('task-1', 'task-3');
     },
@@ -28,7 +28,7 @@ QUnit.test('Rename task in uninitialised folder should throw "not initialised" e
 });
 
 QUnit.test('Rename non-existent task should throw "task file not found" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.renameTask('task-3', 'task-4');
     },
@@ -49,7 +49,7 @@ QUnit.test('Rename an untracked task should throw "task not indexed" error', asy
   });
 
   // Try to move an untracked task
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.renameTask('test-task', 'test-task-2');
     },
@@ -58,7 +58,7 @@ QUnit.test('Rename an untracked task should throw "task not indexed" error', asy
 });
 
 QUnit.test('Rename a task to a name that already exists should throw "task already exists" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.renameTask('task-1', 'task-2');
     },

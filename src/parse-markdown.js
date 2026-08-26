@@ -26,7 +26,9 @@ module.exports = function parseMarkdown(markdown) {
     parsed[headings[i].title] = {
       heading: headings[i].heading,
       content: markdown.slice(
-        headings[i].index + headings[i].heading.length + 1,
+        // The + 1 skips the newline that ends the heading line; the synthetic 'raw' entry for
+        // content before the first heading has no heading line, so it starts at index 0
+        headings[i].index + headings[i].heading.length + (headings[i].heading ? 1 : 0),
         i < headings.length - 1
           ? headings[i + 1].index
           : undefined

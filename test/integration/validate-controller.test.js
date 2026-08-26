@@ -1,1 +1,226 @@
-// TODO validate controller tests
+const mockRequire = require('mock-require');
+const mockArgv = require('mock-argv');
+const capture = require('../capture');
+const {
+  config: mockConfig,
+  kanbn: mockKanbn
+} = require('../mock-kanbn');
+
+let kanbn;
+
+QUnit.module('validate controller tests', {
+  before() {
+    require('../qunit-contains');
+    mockRequire('../../src/main', mockKanbn);
+    kanbn = require('../../index');
+  },
+  beforeEach() {
+    mockConfig.reset();
+    mockConfig.initialised = true;
+    mockConfig.output = null;
+    mockConfig.validateResult = true;
+    mockConfig.dateDrift = [];
+    mockConfig.fixedDateDrift = [];
+  }
+});
+
+QUnit.test('Validate in uninitialised folder should print an error', async assert => {
+  mockConfig.initialised = false;
+  const output = await capture.stderr(async () => {
+    await mockArgv(['validate'], kanbn);
+  });
+
+  assert.contains(output, /Kanbn has not been initialised in this folder/);
+});
+
+QUnit.test('Validate with no problems should print "Everything OK"', async assert => {
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /Everything OK/);
+  assert.deepEqual(mockConfig.output, { save: false });
+});
+
+QUnit.test('Validate with the save flag should pass save to kanbn.validate', async assert => {
+  await capture.stdout(async out => {
+    await mockArgv(['validate', '--save'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.deepEqual(mockConfig.output, { save: true });
+});
+
+QUnit.test('Validate with errors should print the errors', async assert => {
+  mockConfig.validateResult = [
+    {
+      task: 'test-task-1',
+      errors: 'Unable to parse task: data is missing a name heading'
+    }
+  ];
+  const output = await capture.stderr(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /1 errors found in task files/);
+  assert.contains(output, /test-task-1/);
+});
+
+QUnit.test('Validate with errors and the json flag should print the errors as JSON', async assert => {
+  mockConfig.validateResult = [
+    {
+      task: 'test-task-1',
+      errors: 'Unable to parse task: data is missing a name heading'
+    }
+  ];
+  const output = await capture.stderr(async out => {
+    await mockArgv(['validate', '--json'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  const json = output.join('').substring(output.join('').indexOf('['));
+  assert.deepEqual(JSON.parse(json), mockConfig.validateResult);
+});
+
+QUnit.test('Validate should report tasks whose dates disagree with their column', async assert => {
+  mockConfig.dateDrift = [
+    {
+      task: 'test-task-1',
+      column: 'Done',
+      issue: 'missing',
+      field: 'completed',
+      fixable: true,
+      message: 'is in a completed column but has no completed date'
+    }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /1 task has dates that don't match its column/);
+  assert.contains(output, /test-task-1: is in a completed column but has no completed date/);
+  assert.contains(output, /kanbn validate --fix/);
+});
+
+QUnit.test('Validate with the json flag should print date drift as JSON', async assert => {
+  mockConfig.dateDrift = [
+    {
+      task: 'test-task-1',
+      column: 'Done',
+      issue: 'missing',
+      field: 'completed',
+      fixable: true,
+      message: 'is in a completed column but has no completed date'
+    }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate', '--json'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.deepEqual(JSON.parse(output.join('')), mockConfig.dateDrift);
+});
+
+QUnit.test('Validate with the fix flag and nothing to fix should print "nothing to fix"', async assert => {
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate', '--fix'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /Everything OK, nothing to fix/);
+});
+
+QUnit.test('Validate with the fix flag should report the dates it filled in', async assert => {
+  mockConfig.fixedDateDrift = [
+    {
+      task: 'test-task-1',
+      field: 'completed',
+      date: new Date('2026-01-01T00:00:00.000Z'),
+      source: 'updated date'
+    }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate', '--fix'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /Filled in 1 missing date/);
+  assert.contains(output, /test-task-1: completed set to 2026-01-01T00:00:00\.000Z \(from updated date\)/);
+});
+
+QUnit.test('A failure while validating should print the error', async assert => {
+  mockConfig.errors.validate = 'Not initialised in this folder';
+
+  const output = await capture.stderr(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /Not initialised in this folder/);
+});
+
+QUnit.test('A failure while looking for date drift should print the error', async assert => {
+  mockConfig.errors.findDateDrift = 'Unable to load tasks';
+
+  const output = await capture.stderr(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /Unable to load tasks/);
+});
+
+QUnit.test('A failure while fixing date drift should print the error', async assert => {
+  mockConfig.errors.fixDateDrift = 'Unable to save tasks';
+
+  const output = await capture.stderr(async out => {
+    await mockArgv(['validate', '--fix'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /Unable to save tasks/);
+});
+
+QUnit.test('Validate with the fix flag and the json flag should print the fixed dates as JSON', async assert => {
+  mockConfig.fixedDateDrift = [
+    {
+      task: 'test-task-1',
+      field: 'completed',
+      date: new Date('2026-01-01T00:00:00.000Z'),
+      source: 'updated date'
+    }
+  ];
+
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate', '--fix', '--json'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  const fixed = JSON.parse(output.join(''));
+  assert.strictEqual(fixed.length, 1);
+  assert.strictEqual(fixed[0].task, 'test-task-1');
+});
+
+QUnit.test('Drift that cannot be fixed should not suggest the fix flag', async assert => {
+  mockConfig.dateDrift = [
+    {
+      task: 'test-task-1',
+      column: 'Backlog',
+      issue: 'unexpected',
+      field: 'completed',
+      fixable: false,
+      message: 'has a completed date but is not in a completed column'
+    }
+  ];
+
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /1 task has dates that don't match its column/);
+  assert.strictEqual(output.join('').indexOf('--fix'), -1);
+});

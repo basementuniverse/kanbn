@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const kanbn = require('../../src/main');
 
 QUnit.module('findUntrackedTasks tests', {
@@ -25,7 +25,7 @@ QUnit.module('findUntrackedTasks tests', {
 
 QUnit.test('Find untracked tasks in uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.findUntrackedTasks();
     },

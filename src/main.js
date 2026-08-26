@@ -1102,29 +1102,6 @@ function buildGanttSchedule(index, tasks, now, trackedTaskIds = new Set()) {
 }
 
 /**
- * Render a gantt bar for a scheduled task
- * @param {object} task
- * @param {Date} from
- * @param {Date} to
- * @return {string}
- */
-function renderGanttBar(task, from, to) {
-  const result = [];
-  for (let date = new Date(from.getTime()); date <= to; date = new Date(date.getTime() + DAY)) {
-    if (date < task.start || date > task.end) {
-      result.push(' ');
-    } else if (task.completed instanceof Date) {
-      result.push('█');
-    } else if (task.started instanceof Date) {
-      result.push('▓');
-    } else {
-      result.push('░');
-    }
-  }
-  return result.join('');
-}
-
-/**
  * Get a list of tasks that were started before and/or completed after a date
  *
  * A task is active from its started date until its completed date. This used to be derived by
@@ -1233,17 +1210,18 @@ function normaliseDate(date, resolution = 'minutes') {
  * @param {object} index
  * @param {object} taskData
  * @param {string} columnName
+ * @param {Date} [date=new Date()] The date to stamp
  * @return {object} The updated task data
  */
-function updateColumnLinkedCustomFields(index, taskData, columnName) {
+function updateColumnLinkedCustomFields(index, taskData, columnName, date = new Date()) {
   // Update built-in column-linked metadata properties first (started and completed dates). The
   // columns are always listed in startedColumns/completedColumns, but the field that gets written
   // can be pointed elsewhere with startedField/completedField
   taskData = updateColumnLinkedCustomField(
-    index, taskData, columnName, getCompletedField(index), "once", "completedColumns"
+    index, taskData, columnName, getCompletedField(index), "once", "completedColumns", date
   );
   taskData = updateColumnLinkedCustomField(
-    index, taskData, columnName, getStartedField(index), "once", "startedColumns"
+    index, taskData, columnName, getStartedField(index), "once", "startedColumns", date
   );
 
   // Update column-linked custom fields
@@ -1255,7 +1233,9 @@ function updateColumnLinkedCustomFields(index, taskData, columnName) {
           taskData,
           columnName,
           customField.name,
-          customField.updateDate || "none"
+          customField.updateDate || "none",
+          null,
+          date
         );
       }
     }
@@ -1276,19 +1256,21 @@ function updateColumnLinkedCustomFields(index, taskData, columnName) {
  * @param {string} [updateCriteria='none']
  * @param {?string} [columnListName=null] The option holding the linked column names, or null to use
  * the `${fieldName}Columns` convention
+ * @param {Date} [date=new Date()] The date to stamp
  */
 function updateColumnLinkedCustomField(
-  index, taskData, columnName, fieldName, updateCriteria = "none", columnListName = null
+  index, taskData, columnName, fieldName, updateCriteria = "none", columnListName = null,
+  date = new Date()
 ) {
   const columnList = columnListName || `${fieldName}Columns`;
   if (columnList in index.options && index.options[columnList].indexOf(columnName) !== -1) {
     switch (updateCriteria) {
       case "always":
-        taskData = setTaskMetadata(taskData, fieldName, new Date());
+        taskData = setTaskMetadata(taskData, fieldName, date);
         break;
       case "once":
         if (!(fieldName in taskData.metadata && taskData.metadata[fieldName])) {
-          taskData = setTaskMetadata(taskData, fieldName, new Date());
+          taskData = setTaskMetadata(taskData, fieldName, date);
         }
         break;
       default:
@@ -2077,13 +2059,18 @@ class Kanbn {
     // Find current column before mutating data
     const currentColumnName = findTaskColumn(index, taskId);
 
+    // Stamp every date this move writes with the same timestamp, so that the history event and the
+    // dates it backfills from can't disagree by a millisecond
+    const moveDate = new Date();
+
     // Update the task's updated date
     let taskData = await this.loadTask(taskId);
-    taskData = setTaskMetadata(taskData, "updated", new Date());
+    taskData = setTaskMetadata(taskData, "updated", moveDate);
 
     // Add history only when a task changes columns
     if (currentColumnName !== columnName) {
       taskData = appendTaskHistory(taskData, {
+        date: moveDate,
         type: 'moved',
         fromColumn: currentColumnName,
         toColumn: columnName
@@ -2091,7 +2078,7 @@ class Kanbn {
     }
 
     // Update task metadata dates
-    taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
+    taskData = updateColumnLinkedCustomFields(index, taskData, columnName, moveDate);
     await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
 
     // If we're moving the task to a new position, calculate the absolute position

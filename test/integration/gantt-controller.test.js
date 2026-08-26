@@ -1,6 +1,7 @@
 const mockRequire = require('mock-require');
 const mockArgv = require('mock-argv');
 const captureConsole = require('capture-console');
+const capture = require('../capture');
 const {
 	config: mockConfig,
 	kanbn: mockKanbn
@@ -15,6 +16,7 @@ QUnit.module('gantt controller tests', {
 		kanbn = require('../../index');
 	},
 	beforeEach() {
+		mockConfig.reset();
 		mockConfig.initialised = true;
 		mockConfig.output = null;
 		mockConfig.ganttData = {
@@ -61,7 +63,9 @@ QUnit.test('Gantt with invalid now date should print parse error', async assert 
 });
 
 QUnit.test('Gantt should pass parsed now date to kanbn.gantt', async assert => {
-	await mockArgv(['gantt', '--now', '2026-01-02'], kanbn);
+	await capture.stdout(async () => {
+		await mockArgv(['gantt', '--now', '2026-01-02'], kanbn);
+	});
 
 	assert.ok(mockConfig.output.now instanceof Date);
 	assert.ok(mockConfig.output.now.toISOString().startsWith('2026-01-02'));
@@ -90,7 +94,10 @@ QUnit.test('Gantt should warn when dependency cycles are detected', async assert
 		]
 	};
 
-	await mockArgv(['gantt'], kanbn);
+	// Swallow the chart itself, so it doesn't end up interleaved with the test output
+	await capture.stdout(async () => {
+		await mockArgv(['gantt'], kanbn);
+	});
 
 	captureConsole.stopIntercept(process.stderr);
 	assert.contains(output, /Warning: dependency cycle detected/);
@@ -175,4 +182,40 @@ QUnit.test('Gantt should render ellipsis stubs for filtered dependency endpoints
 	const rendered = output.join('');
 	assert.ok(rendered.includes('…'));
 	assert.ok(rendered.includes('→'));
+});
+
+QUnit.test('Gantt in uninitialised folder should print an error', async assert => {
+	mockConfig.initialised = false;
+	const output = await capture.stderr(async () => {
+		await mockArgv(['gantt'], kanbn);
+	});
+
+	assert.contains(output, /Kanbn has not been initialised in this folder/);
+});
+
+QUnit.test('Gantt with an invalid date should print a parse error', async assert => {
+	const output = await capture.stderr(async () => {
+		await mockArgv(['gantt', '--date', 'not-a-date'], kanbn);
+	});
+
+	assert.contains(output, /Unable to parse date/);
+});
+
+QUnit.test('Gantt should pass parsed CLI arguments to kanbn.gantt', async assert => {
+	await capture.stdout(async out => {
+		await mockArgv([
+			'gantt',
+			'--json',
+			'--assigned', 'Alex',
+			'--column', 'In Progress',
+			'--column', 'Done',
+			'--date', '2026-01-01'
+		], kanbn);
+		await capture.waitFor(() => out.length > 0);
+	});
+
+	assert.equal(mockConfig.output.assigned, 'Alex');
+	assert.deepEqual(mockConfig.output.columns, ['In Progress', 'Done']);
+	assert.equal(mockConfig.output.dates.length, 1);
+	assert.equal(mockConfig.output.dates[0].toISOString().substr(0, 10), '2026-01-01');
 });

@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
@@ -25,7 +25,7 @@ QUnit.module('addUntrackedTaskToIndex tests', {
 
 QUnit.test('Add untracked task in un-initialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.addUntrackedTaskToIndex('test-task-2', 'Test Column');
     },
@@ -34,7 +34,7 @@ QUnit.test('Add untracked task in un-initialised folder should throw "not initia
 });
 
 QUnit.test('Add non-existent untracked task should throw "no task file" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.addUntrackedTaskToIndex('test-task-4', 'Test Column');
     },
@@ -44,7 +44,7 @@ QUnit.test('Add non-existent untracked task should throw "no task file" error', 
 
 QUnit.test('Add untracked task in non-existent column should throw "no column" error', async assert => {
   const NON_EXISTENT_COLUMN = 'Wibble';
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.addUntrackedTaskToIndex('test-task-2', NON_EXISTENT_COLUMN);
     },
@@ -53,7 +53,7 @@ QUnit.test('Add untracked task in non-existent column should throw "no column" e
 });
 
 QUnit.test('Add untracked task that is already indexed should throw "already indexed" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.addUntrackedTaskToIndex('test-task-1', 'Test Column');
     },

@@ -15,6 +15,7 @@ QUnit.module('archive controller tests', {
     kanbn = require('../../index');
   },
   beforeEach() {
+    mockConfig.reset();
     mockConfig.initialised = false;
     mockConfig.output = null;
   }

@@ -4,7 +4,8 @@
   "description": "A CLI Kanban application",
   "main": "index.js",
   "scripts": {
-    "test": "KANBN_ENV=test qunit ./test/**/*.test.js"
+    "test": "KANBN_ENV=test qunit ./test/**/*.test.js",
+    "coverage": "KANBN_ENV=test c8 --reporter=text --reporter=html --include=src/** --include=index.js qunit ./test/**/*.test.js"
   },
   "preferGlobal": true,
   "bin": {
@@ -55,10 +56,10 @@
   },
   "devDependencies": {
     "@types/typescript": "^2.0.0",
+    "c8": "^12.0.0",
     "capture-console": "^1.0.1",
     "faker": "^5.1.0",
     "mock-argv": "^1.1.10",
-    "mock-fs": "^4.13.0",
     "mock-require": "^3.0.3",
     "mock-stdin": "^1.0.0",
     "mockdate": "^3.0.2",

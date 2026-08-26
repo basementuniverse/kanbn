@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const fs = require('fs');
 const path = require('path');
 const kanbn = require('../../src/main');
@@ -19,7 +19,7 @@ QUnit.module('validate tests', {
 
 QUnit.test('Validate uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.validate();
     },
@@ -40,7 +40,7 @@ QUnit.test(
 
     // Re-write an invalid index file
     await fs.promises.writeFile(
-      path.join(process.cwd(), '.kanbn/index.md'),
+      await kanbn.getIndexPath(),
       '#'
     );
 
@@ -58,15 +58,15 @@ QUnit.test('Validate with problems in task files should return array of task err
 
   // Re-write invalid task files
   await fs.promises.writeFile(
-    path.join(process.cwd(), '.kanbn/tasks/task-1.md'),
+    path.join(await kanbn.getTaskFolderPath(), 'task-1.md'),
     ''
   );
   await fs.promises.writeFile(
-    path.join(process.cwd(), '.kanbn/tasks/task-2.md'),
+    path.join(await kanbn.getTaskFolderPath(), 'task-2.md'),
     'test'
   );
   await fs.promises.writeFile(
-    path.join(process.cwd(), '.kanbn/tasks/task-3.md'),
+    path.join(await kanbn.getTaskFolderPath(), 'task-3.md'),
     '# Name\n\n## Metadata\n\ntest'
   );
 

@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('./real-fs');
 const faker = require('faker');
 const parseIndex = require('../src/parse-index');
 const parseTask = require('../src/parse-task');

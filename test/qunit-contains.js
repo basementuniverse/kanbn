@@ -6,7 +6,8 @@ const stripAnsi = require('strip-ansi');
  * @param {string|RegExp} expected The string or regex we expect to find in the array
  * @param {string} message A message to display if the test fails
  */
-QUnit.assert.contains = async (input, expected, message) => {
+QUnit.assert.contains = function (input, expected, message) {
+  const assert = this && typeof this.pushResult === 'function' ? this : QUnit.config.current.assert;
   if (typeof expected === 'string') {
     expected = new RegExp(expected);
   }
@@ -17,7 +18,7 @@ QUnit.assert.contains = async (input, expected, message) => {
       break;
     }
   }
-  QUnit.config.current.assert.pushResult({
+  assert.pushResult({
     result,
     actual: input.map(stripAnsi).join('\n'),
     expected,

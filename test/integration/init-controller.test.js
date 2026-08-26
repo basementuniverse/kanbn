@@ -16,6 +16,7 @@ QUnit.module('init controller tests', {
     kanbn = require('../../index');
   },
   beforeEach() {
+    mockConfig.reset();
     mockConfig.initialised = false;
     mockConfig.output = null;
   }
@@ -140,9 +141,16 @@ QUnit.test('Initialise kanbn interactively with an empty project name', async as
     ['', context.keys.enter]
   ]);
 
-  captureConsole.stopIntercept(process.stdout);
   assert.contains(output, /Project name cannot be empty/);
   assert.equal(mockConfig.output, null);
+
+  // Answer the rest of the prompt, so it doesn't stay open and swallow the next test's input
+  await context.sendInput([
+    ['Test project name', context.keys.enter],
+    ['n', context.keys.enter],
+    ['n', context.keys.enter]
+  ]);
+  captureConsole.stopIntercept(process.stdout);
 });
 
 QUnit.test('Initialise kanbn interactively with an empty column name', async assert => {
@@ -195,9 +203,10 @@ QUnit.test('Reinitialise kanbn interactively should show current title', async a
 
   mockConfig.initialised = true;
   await mockArgv(['init', '-i'], kanbn);
+
+  // Reinitialising skips the column prompts, so this only answers the name and description
   await context.sendInput([
     [context.keys.enter],
-    ['n', context.keys.enter],
     ['n', context.keys.enter]
   ]);
 

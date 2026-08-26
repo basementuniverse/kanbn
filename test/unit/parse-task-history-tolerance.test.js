@@ -59,7 +59,7 @@ QUnit.test('should preserve unknown event types and keys through a round trip', 
 });
 
 QUnit.test('should still validate required fields on known event types', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => parseTask.md2json(`# Test Name
 
 ## History
@@ -74,7 +74,7 @@ QUnit.test('should still validate required fields on known event types', async a
 });
 
 QUnit.test('should still require type and date on every event', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => parseTask.md2json(`# Test Name
 
 ## History
@@ -85,7 +85,7 @@ QUnit.test('should still require type and date on every event', async assert => 
     /history event is missing type/,
     'an event with no type is rejected regardless of tolerance'
   );
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => parseTask.md2json(`# Test Name
 
 ## History

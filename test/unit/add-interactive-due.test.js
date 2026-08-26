@@ -1,4 +1,5 @@
 const mockRequire = require('mock-require');
+const capture = require('../capture');
 const {
   config: mockConfig,
   kanbn: mockKanbn
@@ -25,6 +26,7 @@ QUnit.module('add interactive due date tests', {
     });
   },
   beforeEach() {
+    mockConfig.reset();
     mockConfig.initialised = true;
     mockConfig.output = null;
     mockConfig.trackedTasks = [];
@@ -38,11 +40,17 @@ QUnit.module('add interactive due date tests', {
 });
 
 QUnit.test('Interactive add stores due metadata as a Date', async assert => {
-  const addController = require('../../src/controller/add');
-  await addController({ interactive: true });
 
-  // The controller uses a Promise chain for interactive mode, so flush the microtask queue.
-  await Promise.resolve();
+  // reRequire rather than require, so the controller picks up the mocked inquirer even if an
+  // earlier test in the same run has already loaded it with the real one
+  const addController = mockRequire.reRequire('../../src/controller/add');
+
+  // The controller uses a Promise chain for interactive mode, so wait for it to report back rather
+  // than letting its output land in the middle of the test output
+  await capture.stdout(async () => {
+    await addController({ interactive: true });
+    await capture.waitFor(() => mockConfig.output !== null);
+  });
 
   assert.ok(mockConfig.output !== null, 'task was created');
   assert.ok(mockConfig.output.taskData.metadata.due instanceof Date, 'due metadata is a Date');

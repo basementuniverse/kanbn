@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const kanbn = require('../../src/main');
 const fixtures = require('../fixtures');
 
@@ -15,7 +15,7 @@ QUnit.module('sort tests', {
 });
 
 QUnit.test('Sort in uninitialised folder should throw "not initialised" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.sort('column', {});
     },
@@ -28,7 +28,7 @@ QUnit.test('Sort non-existent column should throw "non-existent column" error', 
     countTasks: 0,
     countColumns: 1
   });
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.sort('Column 2', {});
     },

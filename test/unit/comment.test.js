@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
@@ -19,7 +19,7 @@ QUnit.module('comment tests', {
 
 QUnit.test('Add comment to task in uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.comment('task-1', '', '');
     },
@@ -28,7 +28,7 @@ QUnit.test('Add comment to task in uninitialised folder should throw "not initia
 });
 
 QUnit.test('Add comment to non-existent task should throw "task file not found" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.comment('task-2', '', '');
     },
@@ -49,7 +49,7 @@ QUnit.test('Add comment to an untracked task should throw "task not indexed" err
   });
 
   // Try to add a comment to an untracked task
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.comment('test-task', '', '');
     },
@@ -58,7 +58,7 @@ QUnit.test('Add comment to an untracked task should throw "task not indexed" err
 });
 
 QUnit.test('Add a comment with blank text throw "blank text" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.comment('task-1', '', '');
     },

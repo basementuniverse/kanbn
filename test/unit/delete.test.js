@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
@@ -19,7 +19,7 @@ QUnit.module('deleteTask tests', {
 
 QUnit.test('Delete task in uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.deleteTask('task-1', {});
     },
@@ -28,7 +28,7 @@ QUnit.test('Delete task in uninitialised folder should throw "not initialised" e
 });
 
 QUnit.test('Delete non-existent task should throw "task not indexed" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.deleteTask('task-11', {});
     },
@@ -47,7 +47,7 @@ QUnit.test('Delete an untracked task should throw "task not indexed" error', asy
       }
     }
   });
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.deleteTask('test-task', {});
     },

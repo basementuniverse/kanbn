@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
@@ -19,7 +19,7 @@ QUnit.module('archive tests', {
 
 QUnit.test('Archive task in uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.archiveTask('task-1');
     },
@@ -28,7 +28,7 @@ QUnit.test('Archive task in uninitialised folder should throw "not initialised" 
 });
 
 QUnit.test('Archive non-existent task should throw "task file not found" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.archiveTask('task-2');
     },
@@ -49,7 +49,7 @@ QUnit.test('Archive untracked task should throw "task not indexed" error', async
   });
 
   // Try to archive an untracked task
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.archiveTask('test-task');
     },
@@ -75,7 +75,7 @@ QUnit.test(
     });
 
     // Try to archive a task that has a duplicate in the archive
-    assert.throwsAsync(
+    await assert.throwsAsync(
       async () => {
         await kanbn.archiveTask('test-task');
       },

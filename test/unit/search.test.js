@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const kanbn = require('../../src/main');
 const fixtures = require('../fixtures');
 
@@ -15,7 +15,7 @@ QUnit.module('search tests', {
 });
 
 QUnit.test('Search in uninitialised folder should throw "not initialised" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.search();
     },

@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
@@ -15,7 +15,7 @@ QUnit.module('sprint tests', {
 });
 
 QUnit.test('Start a sprint in uninitialised folder should throw "not initialised" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.sprint('Sprint 1', '', new Date());
     },

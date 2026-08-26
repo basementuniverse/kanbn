@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 const mockDate = require('mockdate');
@@ -25,7 +25,7 @@ QUnit.module('moveTask tests', {
 
 QUnit.test('Move task in uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.moveTask('task-1', 'Column 2');
     },
@@ -34,7 +34,7 @@ QUnit.test('Move task in uninitialised folder should throw "not initialised" err
 });
 
 QUnit.test('Move non-existent task should throw "task file not found" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.moveTask('task-18', 'Column 2');
     },
@@ -55,7 +55,7 @@ QUnit.test('Move an untracked task should throw "task not indexed" error', async
   });
 
   // Try to move an untracked task
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.moveTask('test-task', 'Test Column 1');
     },
@@ -64,7 +64,7 @@ QUnit.test('Move an untracked task should throw "task not indexed" error', async
 });
 
 QUnit.test('Move a task to a non-existent column should throw "column not found" error', async assert => {
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.moveTask('task-1', 'Column 5');
     },
@@ -133,7 +133,6 @@ QUnit.test('Move task within the same column should not append a moved history e
 });
 
 QUnit.test('Move a task into a custom metadata-linked column (update date once)', async assert => {
-  const BASE_PATH = await kanbn.getMainFolder();
   const TEST_DATE_1 = '2000-01-01T00:00:00.000Z';
   const TEST_DATE_2 = '2000-01-02T00:00:00.000Z';
 
@@ -154,6 +153,9 @@ QUnit.test('Move a task into a custom metadata-linked column (update date once)'
       ]
     }
   });
+
+  // The fixture builds a fresh board, so resolve the base path afterwards
+  const BASE_PATH = await kanbn.getMainFolder();
 
   // Move task
   mockDate.set(TEST_DATE_1);
@@ -177,7 +179,6 @@ QUnit.test('Move a task into a custom metadata-linked column (update date once)'
 });
 
 QUnit.test('Move a task into a custom metadata-linked column (update date always)', async assert => {
-  const BASE_PATH = await kanbn.getMainFolder();
   const TEST_DATE_1 = '2000-01-01T00:00:00.000Z';
   const TEST_DATE_2 = '2000-01-02T00:00:00.000Z';
 
@@ -198,6 +199,9 @@ QUnit.test('Move a task into a custom metadata-linked column (update date always
       ]
     }
   });
+
+  // The fixture builds a fresh board, so resolve the base path afterwards
+  const BASE_PATH = await kanbn.getMainFolder();
 
   // Move task
   mockDate.set(TEST_DATE_1);

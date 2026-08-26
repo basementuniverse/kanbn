@@ -1,4 +1,4 @@
-const mockFileSystem = require('mock-fs');
+const mockFileSystem = require('../real-fs');
 const kanbn = require('../../src/main');
 const context = require('../context');
 
@@ -13,7 +13,7 @@ QUnit.module('restore tests', {
 
 QUnit.test('Restore task in uninitialised folder should throw "not initialised" error', async assert => {
   mockFileSystem();
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.restoreTask('task-1');
     },
@@ -27,7 +27,7 @@ QUnit.test('Restore task with no archive folder should throw "no archive folder"
       'index.md': '# Test Project\n\n## Test Column'
     }
   });
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.restoreTask('task-1');
     },
@@ -42,7 +42,7 @@ QUnit.test('Restore non-existing task should throw "archived task not found" err
       'archive': {}
     }
   });
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.restoreTask('task-1');
     },
@@ -62,7 +62,7 @@ QUnit.test('Restore task with duplicate indexed task should throw "already index
       }
     }
   });
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.restoreTask('test-task-1');
     },
@@ -82,7 +82,7 @@ QUnit.test('Restore task with duplicate untracked task should throw "already exi
       }
     }
   });
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.restoreTask('test-task-1');
     },
@@ -99,7 +99,7 @@ QUnit.test('Restore task with no columns in the index should throw "no columns" 
       }
     }
   });
-  assert.throwsAsync(
+  await assert.throwsAsync(
     async () => {
       await kanbn.restoreTask('test-task-1');
     },
@@ -108,7 +108,6 @@ QUnit.test('Restore task with no columns in the index should throw "no columns" 
 });
 
 QUnit.test('Restore task to original column', async assert => {
-  const BASE_PATH = await kanbn.getMainFolder();
   mockFileSystem({
     '.kanbn': {
       'index.md': '# Test Project\n\n## Test Column 1\n\n- test-task-1\n\n## Test Column 2',
@@ -121,6 +120,9 @@ QUnit.test('Restore task to original column', async assert => {
     }
   });
 
+  // Resolve the base path after the fixture, since it builds the board in a fresh folder
+  const BASE_PATH = await kanbn.getMainFolder();
+
   await kanbn.restoreTask('test-task-2');
   context.indexHasTask(assert, BASE_PATH, 'test-task-2', 'Test Column 2');
   context.taskFileExists(assert, BASE_PATH, 'test-task-2');
@@ -128,7 +130,6 @@ QUnit.test('Restore task to original column', async assert => {
 });
 
 QUnit.test('Restore task to first column', async assert => {
-  const BASE_PATH = await kanbn.getMainFolder();
   mockFileSystem({
     '.kanbn': {
       'index.md': '# Test Project\n\n## Test Column 1\n\n- test-task-1\n\n## Test Column 2',
@@ -140,6 +141,9 @@ QUnit.test('Restore task to first column', async assert => {
       }
     }
   });
+
+  // Resolve the base path after the fixture, since it builds the board in a fresh folder
+  const BASE_PATH = await kanbn.getMainFolder();
 
   await kanbn.restoreTask('test-task-2');
   context.indexHasTask(assert, BASE_PATH, 'test-task-2', 'Test Column 1');
@@ -148,7 +152,6 @@ QUnit.test('Restore task to first column', async assert => {
 });
 
 QUnit.test('Restore task to specified column', async assert => {
-  const BASE_PATH = await kanbn.getMainFolder();
   mockFileSystem({
     '.kanbn': {
       'index.md': '# Test Project\n\n## Test Column 1\n\n- test-task-1\n\n## Test Column 2',
@@ -160,6 +163,9 @@ QUnit.test('Restore task to specified column', async assert => {
       }
     }
   });
+
+  // Resolve the base path after the fixture, since it builds the board in a fresh folder
+  const BASE_PATH = await kanbn.getMainFolder();
 
   await kanbn.restoreTask('test-task-2', 'Test Column 2');
   context.indexHasTask(assert, BASE_PATH, 'test-task-2', 'Test Column 2');
