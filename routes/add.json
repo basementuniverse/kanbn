@@ -18,19 +18,43 @@
       "due",
       "plannedStart",
       "plannedFinish",
-      "progress"
+      "progress",
+      "board"
     ],
     "alias": {
-      "interactive": ["i"],
-      "name": ["n"],
-      "description": ["d"],
-      "column": ["c"],
-      "sub-task": ["s"],
-      "tag": ["t"],
-      "relation": ["r"],
-      "due": ["e"],
-      "assigned": ["a"],
-      "untracked": ["u"]
+      "interactive": [
+        "i"
+      ],
+      "name": [
+        "n"
+      ],
+      "description": [
+        "d"
+      ],
+      "column": [
+        "c"
+      ],
+      "sub-task": [
+        "s"
+      ],
+      "tag": [
+        "t"
+      ],
+      "relation": [
+        "r"
+      ],
+      "due": [
+        "e"
+      ],
+      "assigned": [
+        "a"
+      ],
+      "untracked": [
+        "u"
+      ],
+      "board": [
+        "b"
+      ]
     }
   },
   "controller": "./src/controller/add",

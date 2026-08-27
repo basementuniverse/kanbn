@@ -10,3 +10,9 @@ Options:
   {b}kanbn restore "task-id" --column "column"{b}
   {b}kanbn restore "task-id" -c "column"{b}
     Restore a task from the archive and place it in the specified column.
+
+  {b}kanbn restore "task-id" --board "board-slug"{b}
+  {b}kanbn restore "task-id" -b "board-slug"{b}
+    Restore the task to that board only. Without this, the task goes back to every board it was on
+    when it was archived, in the column it occupied on each. A board that has since been deleted is
+    reported and skipped rather than failing the restore.

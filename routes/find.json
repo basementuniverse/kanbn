@@ -8,7 +8,8 @@
     "boolean": [
       "interactive",
       "quiet",
-      "json"
+      "json",
+      "all-boards"
     ],
     "string": [
       "id",
@@ -32,19 +33,43 @@
       "plannedFinish",
       "workload",
       "progress",
-      "assigned"
+      "assigned",
+      "board"
     ],
     "alias": {
-      "interactive": ["i"],
-      "name": ["n"],
-      "description": ["d"],
-      "column": ["c"],
-      "quiet": ["q"],
-      "due": ["e"],
-      "sub-task": ["s"],
-      "tag": ["t"],
-      "relation": ["r"],
-      "json": ["j"]
+      "interactive": [
+        "i"
+      ],
+      "name": [
+        "n"
+      ],
+      "description": [
+        "d"
+      ],
+      "column": [
+        "c"
+      ],
+      "quiet": [
+        "q"
+      ],
+      "due": [
+        "e"
+      ],
+      "sub-task": [
+        "s"
+      ],
+      "tag": [
+        "t"
+      ],
+      "relation": [
+        "r"
+      ],
+      "json": [
+        "j"
+      ],
+      "board": [
+        "b"
+      ]
     }
   },
   "controller": "./src/controller/find",

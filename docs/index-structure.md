@@ -130,9 +130,35 @@ customFields:
 
 Set to `false` to suppress hints and notices printed alongside normal output, such as the reminder shown when tasks have dates that don't match their column. Defaults to `true`. Hints are never shown when using `--json`.
 
+### `defaultBoard`
+
+The board that commands target when `-b` isn't given and `KANBN_BOARD` isn't set. Workspace-scoped: it belongs in the config file, or in the main board's front matter when there is no config file.
+
+See [multiple boards](multiple-boards.md).
+
+### `boards`
+
+Board discovery settings. `exclude` lists markdown files in the kanbn folder that aren't boards, `order` sets the display order for `kanbn boards`, and any other key is a board slug whose value is that board's options.
+
+```yaml
+boards:
+  exclude:
+    - notes.md
+  order:
+    - index
+    - design
+  design:
+    hiddenColumns:
+      - Ideas
+```
+
+Workspace-scoped. See [multiple boards](multiple-boards.md).
+
 ### `sprints`
 
 A list of sprints. Each sprint will have `start`, `name` and `description` properties.
+
+A board can declare its own `sprints` in its front matter, which **replaces** the workspace list for that board entirely. See [multiple boards](multiple-boards.md#per-board-sprints).
 
 Run `kanbn sprint --help` for more information.
 

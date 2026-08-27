@@ -13,6 +13,39 @@ const DEFAULT_INDEX_FILE_NAME = "index.md";
 const DEFAULT_TASKS_FOLDER_NAME = "tasks";
 const DEFAULT_ARCHIVE_FOLDER_NAME = "archive";
 
+// Slugs that always resolve to the main board, whatever the index file is called
+const MAIN_BOARD_ALIASES = ["main", "default"];
+
+// Options that describe the workspace rather than a single board. They are only ever read from the
+// config file (or, when there isn't one, from the main board's front matter) - if one of these turns
+// up in a secondary board's front matter it is ignored, and `kanbn validate` reports it
+const WORKSPACE_SCOPED_OPTIONS = [
+  "mainFolder",
+  "indexFile",
+  "taskFolder",
+  "archiveFolder",
+  "defaultBoard",
+  "boards",
+  "customFields",
+  "dateFormat",
+  "defaultTaskWorkload",
+  "taskWorkloadTags",
+];
+
+// Options that a secondary board inherits from the main board's front matter. When there is no
+// config file the main board's front matter is doing double duty - it holds the workspace options
+// *and* the main board's own board-scoped ones - so only this allowlist propagates. Anything else
+// there (startedColumns, hiddenColumns, views, custom field column linkages, ...) belongs to the
+// main board alone, and a secondary board that wants it has to say so itself
+const WORKSPACE_INHERITED_OPTIONS = [...WORKSPACE_SCOPED_OPTIONS, "sprints"];
+
+// Keys inside the `boards` config option that aren't board slugs
+const RESERVED_BOARDS_CONFIG_KEYS = ["exclude", "order"];
+
+// History event types that belong to the task rather than to a board, so they count when replaying
+// for any board. Archiving removes a task from every board, and progress is a property of the task
+const BOARD_AGNOSTIC_EVENT_TYPES = ["progress", "archived"];
+
 // Date normalisation intervals measured in milliseconds
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
@@ -63,6 +96,53 @@ async function exists(path) {
     return false;
   }
   return true;
+}
+
+/**
+ * Convert a board file name into a board slug, i.e. "design.md" -> "design"
+ * @param {string} fileName The board file name
+ * @return {string} The board slug
+ */
+function boardSlugFromFileName(fileName) {
+  return path.basename(fileName, path.extname(fileName));
+}
+
+/**
+ * Copy an object, leaving out the specified keys
+ * @param {object} o The object to copy
+ * @param {string[]} keys The keys to leave out
+ * @return {object} A copy of the object without the specified keys
+ */
+function omitKeys(o, keys) {
+  return Object.fromEntries(Object.entries(o).filter(([key]) => keys.indexOf(key) === -1));
+}
+
+/**
+ * Record which options belong to a board's own front matter, so that saving the board writes exactly
+ * these rather than everything it inherited from the workspace
+ * @param {object} index The index object
+ * @param {object} ownOptions The options that belong to this board
+ * @return {object} The index object
+ */
+function setOwnOptions(index, ownOptions) {
+  Object.defineProperty(index, "ownOptions", {
+    value: { ...ownOptions },
+    enumerable: false,
+    writable: true,
+    configurable: true,
+  });
+  return index;
+}
+
+/**
+ * Compare two option values structurally, so that an option inherited from the workspace can be told
+ * apart from one that a board operation has actually changed
+ * @param {any} a
+ * @param {any} b
+ * @return {boolean} True if the two values are equivalent
+ */
+function sameOptionValue(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 /**
@@ -227,15 +307,20 @@ function setTaskMetadata(taskData, property, value) {
  * Append a structured history event to a task
  * @param {object} taskData The task object
  * @param {object} historyEvent The history event payload
+ * @param {?string} [boardSlug=null] The board the event happened on, or null for the main board
  * @return {object} The modified task object
  */
-function appendTaskHistory(taskData, historyEvent) {
+function appendTaskHistory(taskData, historyEvent, boardSlug = null) {
   if (!('history' in taskData) || taskData.history === null) {
     taskData.history = [];
   }
   taskData.history.push({
     date: new Date(),
-    ...historyEvent
+    ...historyEvent,
+
+    // Events on the main board carry no board key, so a single-board workspace writes exactly the
+    // history it always has
+    ...(boardSlug === null ? {} : { board: boardSlug })
   });
   return taskData;
 }
@@ -782,16 +867,36 @@ function getTaskProgressAtDate(task, date) {
 }
 
 /**
+ * Check whether a history event counts when replaying for a board. An event belongs to a board if it
+ * names that board, or if it names none and we're replaying for the main board - which is exactly
+ * what makes every task file written before boards existed replay the way it always has
+ * @param {object} historyEvent The history event
+ * @param {?string} [boardSlug=null] The board being replayed for, or null for the main board
+ * @return {boolean} True if the event counts for this board
+ */
+function historyEventOnBoard(historyEvent, boardSlug = null) {
+  if (BOARD_AGNOSTIC_EVENT_TYPES.indexOf(historyEvent.type) !== -1) {
+    return true;
+  }
+  if ("board" in historyEvent && historyEvent.board) {
+    return historyEvent.board === boardSlug;
+  }
+  return boardSlug === null;
+}
+
+/**
  * Get timeline dates for a task in a period. For history-enabled tasks this uses all history event dates,
  * otherwise it falls back to created/started/completed dates.
  * @param {object} task
  * @param {Date} from
  * @param {Date} to
+ * @param {?string} [boardSlug=null] The board to replay for, or null for the main board
  * @return {Date[]}
  */
-function getTaskTimelineDates(task, from, to) {
+function getTaskTimelineDates(task, from, to, boardSlug = null) {
   if ("history" in task && Array.isArray(task.history) && task.history.length > 0) {
     return task.history
+      .filter((historyEvent) => historyEventOnBoard(historyEvent, boardSlug))
       .map((historyEvent) => historyEvent.date)
       .filter((date) => date && date >= from && date <= to);
   }
@@ -1150,13 +1255,15 @@ function countActiveTasksAtDate(index, tasks, date) {
  * @param {object} index
  * @param {object[]} tasks
  * @param {Date} date
+ * @param {?string} [boardSlug=null] The board to replay for, or null for the main board
  * @return {object[]} A list of event objects, with event type and task id
  */
-function getTaskEventsAtDate(index, tasks, date) {
+function getTaskEventsAtDate(index, tasks, date, boardSlug = null) {
   return tasks
     .map((task) => {
       if ("history" in task && Array.isArray(task.history) && task.history.length > 0) {
         return task.history
+          .filter((historyEvent) => historyEventOnBoard(historyEvent, boardSlug))
           .filter((historyEvent) => historyEvent.date && historyEvent.date.getTime() === date.getTime())
           .map((historyEvent) => ({
             eventType: historyEvent.type,
@@ -1285,15 +1392,57 @@ class Kanbn {
   CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
   CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
 
-  // Memoize config
-  configMemo = null;
+  // The board this instance is scoped to, or null for the main board
+  boardSlug = null;
 
-  constructor(root = null) {
+  // Boards named in an archived task's metadata that no longer existed when it was restored, set by
+  // restoreTask() for the caller to report
+  lastRestoreWarnings = [];
+
+  /**
+   * @param {?string} [root=null] The workspace root folder
+   * @param {object} [options={}] Instance options: `board` scopes this instance to a board, `caches`
+   * lets a board-scoped clone share its parent's memoized config
+   */
+  constructor(root = null, options = {}) {
     if(root) {
       this.ROOT = root
       this.CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
       this.CONFIG_JSON = path.join(this.ROOT, "kanbn.json");
     }
+    this.caches = options.caches || { config: null, workspaceOptions: null };
+    this.boardSlug = options.board || null;
+  }
+
+  // Memoized config, kept in the shared cache object so that board-scoped clones don't each re-read it
+  get configMemo() {
+    return this.caches.config;
+  }
+
+  set configMemo(value) {
+    this.caches.config = value;
+  }
+
+  /**
+   * Get a copy of this instance scoped to another board. The returned instance shares this one's
+   * cached config, so scoping to a board costs no extra file reads
+   * @param {?string} [slug=null] The board slug, or null/"main"/"default" for the main board
+   * @return {Kanbn} A board-scoped Kanbn instance
+   */
+  board(slug = null) {
+    if (slug === null || slug === undefined || slug === "") {
+      return this.boardSlug === null ? this : new Kanbn(this.ROOT, { caches: this.caches });
+    }
+    return new Kanbn(this.ROOT, { board: String(slug).trim(), caches: this.caches });
+  }
+
+  /**
+   * Alias for board()
+   * @param {?string} [slug=null] The board slug
+   * @return {Kanbn} A board-scoped Kanbn instance
+   */
+  withBoard(slug = null) {
+    return this.board(slug);
   }
 
   /**
@@ -1313,6 +1462,7 @@ class Kanbn {
     } else {
       await fs.promises.writeFile(this.CONFIG_JSON, JSON.stringify(config, null, 4));
     }
+    this.caches.workspaceOptions = null;
   }
 
   /**
@@ -1344,7 +1494,8 @@ class Kanbn {
    * Clear cached config
    */
   clearConfigCache() {
-    this.configMemo = null;
+    this.caches.config = null;
+    this.caches.workspaceOptions = null;
   }
 
   /**
@@ -1404,11 +1555,64 @@ class Kanbn {
   }
 
   /**
-   * Get the index path
+   * Get the main board's slug. This is the index file name without its extension, so a workspace with
+   * a customised `indexFile` gets a main board slug to match
+   * @return {Promise<string>} The main board slug
+   */
+  async getMainBoardSlug() {
+    return boardSlugFromFileName(await this.getIndexFileName());
+  }
+
+  /**
+   * Resolve a board slug, mapping the reserved aliases and an absent slug onto the main board
+   * @param {?string} [slug=undefined] The board slug, defaulting to this instance's board
+   * @return {Promise<string>} The resolved board slug
+   */
+  async resolveBoardSlug(slug = undefined) {
+    if (slug === undefined) {
+      slug = this.boardSlug;
+    }
+    const mainBoardSlug = await this.getMainBoardSlug();
+    if (slug === null || slug === undefined || slug === "") {
+      return mainBoardSlug;
+    }
+    slug = String(slug).trim();
+    if (MAIN_BOARD_ALIASES.indexOf(slug.toLowerCase()) !== -1) {
+      return mainBoardSlug;
+    }
+    return slug;
+  }
+
+  /**
+   * Check if a slug refers to the main board
+   * @param {?string} [slug=undefined] The board slug, defaulting to this instance's board
+   * @return {Promise<boolean>} True if the slug refers to the main board
+   */
+  async isMainBoard(slug = undefined) {
+    return (await this.resolveBoardSlug(slug)) === (await this.getMainBoardSlug());
+  }
+
+  /**
+   * Get the file path for a board. The main board keeps its configured index file name, every other
+   * board is a sibling markdown file named after its slug
+   * @param {?string} [slug=undefined] The board slug, defaulting to this instance's board
+   * @return {Promise<string>} The board file path
+   */
+  async getBoardPath(slug = undefined) {
+    const resolvedSlug = await this.resolveBoardSlug(slug);
+    const mainFolder = await this.getMainFolder();
+    if (resolvedSlug === (await this.getMainBoardSlug())) {
+      return path.join(mainFolder, await this.getIndexFileName());
+    }
+    return path.join(mainFolder, `${resolvedSlug}.md`);
+  }
+
+  /**
+   * Get the index path. This is the path of the board this instance is scoped to
    * @return {Promise<string>} The kanbn index path
    */
   async getIndexPath() {
-    return path.join(await this.getMainFolder(), await this.getIndexFileName());
+    return this.getBoardPath();
   }
 
   /**
@@ -1518,10 +1722,147 @@ class Kanbn {
   }
 
   /**
-   * Overwrite the index file with the specified data
-   * @param {object} indexData Index data to save
+   * Get the workspace-scoped options. These live in the config file if there is one, and in the main
+   * board's front matter if there isn't - which means loading a secondary board also means reading the
+   * main board. The result is memoized so that costs one extra file read per process, not per board
+   * @return {Promise<object>} The workspace options
    */
-  async saveIndex(indexData) {
+  async getWorkspaceOptions() {
+    return (await this.loadWorkspaceOptions()).options;
+  }
+
+  /**
+   * Load the workspace options along with where they came from, since that decides how much of them
+   * a secondary board inherits
+   * @return {Promise<{options: object, fromConfig: boolean}>} The workspace options and their source
+   */
+  async loadWorkspaceOptions() {
+    if (this.caches.workspaceOptions === null) {
+      const config = await this.getConfig();
+      if (config !== null) {
+        this.caches.workspaceOptions = { options: { ...config }, fromConfig: true };
+      } else {
+        let options = {};
+        try {
+          const mainBoardData = await fs.promises.readFile(
+            await this.getBoardPath(await this.getMainBoardSlug()),
+            { encoding: "utf-8" }
+          );
+          options = parseIndex.md2json(mainBoardData).options;
+        } catch (error) {
+          // A missing or unparseable main board leaves secondary boards with defaults only. This is
+          // reported by validate rather than thrown, so that one broken file doesn't break every board
+          options = {};
+        }
+        this.caches.workspaceOptions = { options, fromConfig: false };
+      }
+    }
+    return this.caches.workspaceOptions;
+  }
+
+  /**
+   * Get the options a secondary board inherits from the workspace. A config file is workspace-level
+   * by construction, so all of it is inherited; the main board's front matter is that board's own
+   * file, so only the workspace-scoped keys in it are
+   * @return {Promise<object>} The inherited options
+   */
+  async getInheritedBoardOptions() {
+    const { options, fromConfig } = await this.loadWorkspaceOptions();
+    if (fromConfig) {
+      return { ...options };
+    }
+    return Object.fromEntries(
+      Object.entries(options).filter(([key]) => WORKSPACE_INHERITED_OPTIONS.indexOf(key) !== -1)
+    );
+  }
+
+  /**
+   * Get the per-board options declared for a board in the config file's `boards` key, if any
+   * @param {?string} [slug=undefined] The board slug, defaulting to this instance's board
+   * @return {Promise<object>} The board's options from config, or an empty object
+   */
+  async getBoardConfig(slug = undefined) {
+    const resolvedSlug = await this.resolveBoardSlug(slug);
+    const config = await this.getConfig();
+    if (config === null || typeof config.boards !== "object" || config.boards === null) {
+      return {};
+    }
+    if (RESERVED_BOARDS_CONFIG_KEYS.indexOf(resolvedSlug) !== -1) {
+      return {};
+    }
+    const boardConfig = config.boards[resolvedSlug];
+    return typeof boardConfig === "object" && boardConfig !== null && !Array.isArray(boardConfig)
+      ? { ...boardConfig }
+      : {};
+  }
+
+  /**
+   * Layer a board's own front matter options over the workspace options
+   * @param {string} resolvedSlug The resolved board slug
+   * @param {object} ownOptions The options taken from the board file's front matter
+   * @return {Promise<object>} The resolved options
+   */
+  async resolveBoardOptions(resolvedSlug, ownOptions) {
+    // The main board is where the workspace options live, so there is nothing to layer: this is
+    // exactly the behaviour Kanbn has always had
+    if (resolvedSlug === (await this.getMainBoardSlug())) {
+      const config = await this.getConfig();
+      return config !== null ? { ...ownOptions, ...config } : { ...ownOptions };
+    }
+
+    // Workspace-scoped keys in a secondary board's front matter are ignored - one task file has to
+    // parse identically for every board that references it. validate reports them
+    return {
+      ...(await this.getInheritedBoardOptions()),
+      ...(await this.getBoardConfig(resolvedSlug)),
+      ...omitKeys(ownOptions, WORKSPACE_SCOPED_OPTIONS),
+    };
+  }
+
+  /**
+   * Work out which options belong in a secondary board's own front matter, so that options inherited
+   * from the workspace aren't copied into every board file the first time it is saved
+   * @param {string} resolvedSlug The resolved board slug
+   * @param {object} indexData The board data being saved
+   * @return {Promise<object>} The options to write to the board file's front matter
+   */
+  async getOwnBoardOptions(resolvedSlug, indexData) {
+    const previousOwnOptions = indexData.ownOptions ? { ...indexData.ownOptions } : {};
+    const inheritedOptions = {
+      ...(await this.getInheritedBoardOptions()),
+      ...(await this.getBoardConfig(resolvedSlug)),
+    };
+    const options = indexData.options || {};
+    const ownOptions = { ...previousOwnOptions };
+    for (const [key, value] of Object.entries(options)) {
+      if (WORKSPACE_SCOPED_OPTIONS.indexOf(key) !== -1) {
+        continue;
+      }
+
+      // Keep anything the board already declared, and pick up anything that differs from what the
+      // workspace provides - i.e. anything this operation actually changed
+      if (key in previousOwnOptions || !(key in inheritedOptions) || !sameOptionValue(inheritedOptions[key], value)) {
+        ownOptions[key] = value;
+      }
+    }
+
+    // Drop anything that has been removed from the board's options entirely
+    for (const key of Object.keys(ownOptions)) {
+      if (!(key in options)) {
+        delete ownOptions[key];
+      }
+    }
+    return ownOptions;
+  }
+
+  /**
+   * Overwrite a board file with the specified data
+   * @param {?string} slug The board slug, or null for the main board
+   * @param {object} indexData Board data to save
+   */
+  async saveBoard(slug, indexData) {
+    const resolvedSlug = await this.resolveBoardSlug(slug);
+
     // Apply column sorting if any sorters are defined in options
     if ("columnSorting" in indexData.options && Object.keys(indexData.options.columnSorting).length) {
       for (let columnName in indexData.options.columnSorting) {
@@ -1534,15 +1875,64 @@ class Kanbn {
       }
     }
 
-    // If there is a separate config file, save options to this file
-    let ignoreOptions = false;
-    if (await this.configExists()) {
-      await this.saveConfig(indexData.options);
-      ignoreOptions = true;
+    const boardPath = await this.getBoardPath(resolvedSlug);
+    if (resolvedSlug === (await this.getMainBoardSlug())) {
+
+      // If there is a separate config file, save options to this file
+      let ignoreOptions = false;
+      if (await this.configExists()) {
+        await this.saveConfig(indexData.options);
+        ignoreOptions = true;
+      }
+
+      // The main board owns the workspace options, so any cached copy is now stale
+      this.caches.workspaceOptions = null;
+      await fs.promises.writeFile(boardPath, parseIndex.json2md(indexData, ignoreOptions));
+      return;
     }
 
-    // Save index
-    await fs.promises.writeFile(await this.getIndexPath(), parseIndex.json2md(indexData, ignoreOptions));
+    // A secondary board's options always live in its own front matter, and workspace-scoped options
+    // are never written to the config file as a side effect of a board-local operation
+    const ownOptions = await this.getOwnBoardOptions(resolvedSlug, indexData);
+    await fs.promises.writeFile(
+      boardPath,
+      parseIndex.json2md({ ...indexData, options: ownOptions }, false)
+    );
+  }
+
+  /**
+   * Load a board file and parse it to an object
+   * @param {?string} [slug=undefined] The board slug, defaulting to this instance's board
+   * @return {Promise<object>} The board object
+   */
+  async loadBoard(slug = undefined) {
+    const resolvedSlug = await this.resolveBoardSlug(slug);
+    const isMainBoard = resolvedSlug === (await this.getMainBoardSlug());
+    let boardData = "";
+    try {
+      boardData = await fs.promises.readFile(await this.getBoardPath(resolvedSlug), { encoding: "utf-8" });
+    } catch (error) {
+      throw new Error(
+        isMainBoard
+          ? `Couldn't access index file: ${error.message}`
+          : `Couldn't access board file for board "${resolvedSlug}": ${error.message}`
+      );
+    }
+    const index = parseIndex.md2json(boardData);
+
+    // Remember which options came from this board's own front matter, so that saving it again doesn't
+    // persist everything it inherited from the workspace
+    setOwnOptions(index, index.options);
+    index.options = await this.resolveBoardOptions(resolvedSlug, index.options);
+    return index;
+  }
+
+  /**
+   * Overwrite the index file with the specified data
+   * @param {object} indexData Index data to save
+   */
+  async saveIndex(indexData) {
+    return this.saveBoard(this.boardSlug, indexData);
   }
 
   /**
@@ -1550,20 +1940,7 @@ class Kanbn {
    * @return {Promise<object>} The index object
    */
   async loadIndex() {
-    let indexData = "";
-    try {
-      indexData = await fs.promises.readFile(await this.getIndexPath(), { encoding: "utf-8" });
-    } catch (error) {
-      throw new Error(`Couldn't access index file: ${error.message}`);
-    }
-    const index = parseIndex.md2json(indexData);
-
-    // If configuration settings exist in a separate config file, merge them with index options
-    const config = await this.getConfig();
-    if (config !== null) {
-      index.options = { ...index.options, ...config };
-    }
-    return index;
+    return this.loadBoard(this.boardSlug);
   }
 
   /**
@@ -1649,10 +2026,380 @@ class Kanbn {
   }
 
   /**
+   * Check if the workspace has been initialised, regardless of which board this instance is scoped to
+   * @return {Promise<boolean>} True if the main board exists
+   */
+  async workspaceInitialised() {
+    return await exists(await this.getBoardPath(await this.getMainBoardSlug()));
+  }
+
+  /**
+   * Get the slugs that can't be used for a board, because they would collide with the main board, one
+   * of its aliases, or one of the workspace's folders
+   * @return {Promise<string[]>} The reserved board slugs
+   */
+  async getReservedBoardSlugs() {
+    return [
+      ...MAIN_BOARD_ALIASES,
+      DEFAULT_INDEX_FILE_NAME,
+      boardSlugFromFileName(DEFAULT_INDEX_FILE_NAME),
+      await this.getMainBoardSlug(),
+      DEFAULT_TASKS_FOLDER_NAME,
+      DEFAULT_ARCHIVE_FOLDER_NAME,
+      await this.getTaskFolderName(),
+      await this.getArchiveFolderName(),
+    ];
+  }
+
+  /**
+   * Check that a slug can be used for a new board, throwing a descriptive error if it can't
+   * @param {string} slug The board slug to check
+   * @return {Promise<string>} The validated slug
+   */
+  async validateBoardSlug(slug) {
+    if (!slug || typeof slug !== "string" || !slug.trim()) {
+      throw new Error("Board slug cannot be empty");
+    }
+    slug = slug.trim();
+    if (slug !== utility.paramCase(slug)) {
+      throw new Error(`Board slug "${slug}" is not valid, try "${utility.paramCase(slug)}"`);
+    }
+    if ((await this.getReservedBoardSlugs()).indexOf(slug) !== -1) {
+      throw new Error(`Board slug "${slug}" is reserved`);
+    }
+    return slug;
+  }
+
+  /**
+   * Get the boards config from the config file, i.e. the exclude list and display order
+   * @return {Promise<{exclude: string[], order: string[]}>} The boards config
+   */
+  async getBoardsConfig() {
+    const config = await this.getConfig();
+    const boards =
+      config !== null && typeof config.boards === "object" && config.boards !== null && !Array.isArray(config.boards)
+        ? config.boards
+        : {};
+    return {
+      exclude: (Array.isArray(boards.exclude) ? boards.exclude : []).map(boardSlugFromFileName),
+      order: (Array.isArray(boards.order) ? boards.order : []).map(boardSlugFromFileName),
+    };
+  }
+
+  /**
+   * Find all boards in the workspace. Boards are discovered by globbing markdown files directly inside
+   * the main folder, so the task and archive folders are excluded by construction. A file counts as a
+   * board if it parses as an index; anything that doesn't is ignored here and reported by validate
+   * @return {Promise<object[]>} A list of boards, main board first unless an explicit order says otherwise
+   */
+  async listBoards() {
+    const mainFolder = await this.getMainFolder();
+    if (!(await exists(mainFolder))) {
+      return [];
+    }
+    const mainBoardSlug = await this.getMainBoardSlug();
+    const { exclude, order } = await this.getBoardsConfig();
+    const boardPaths = await glob(`${mainFolder}/*.md`);
+    const boards = [];
+    for (const boardPath of boardPaths) {
+      const slug = boardSlugFromFileName(boardPath);
+      if (exclude.indexOf(slug) !== -1) {
+        continue;
+      }
+      let boardData = null;
+      try {
+        boardData = parseIndex.md2json(await fs.promises.readFile(boardPath, { encoding: "utf-8" }));
+      } catch (error) {
+        continue;
+      }
+      boards.push({
+        slug,
+        path: boardPath,
+        name: boardData.name,
+        description: boardData.description,
+        main: slug === mainBoardSlug,
+      });
+    }
+
+    // Order: anything named in the config order first, in that order, then the main board, then the
+    // rest alphabetically
+    boards.sort((a, b) => {
+      const aOrder = order.indexOf(a.slug), bOrder = order.indexOf(b.slug);
+      if (aOrder !== -1 || bOrder !== -1) {
+        if (aOrder === -1) { return 1; }
+        if (bOrder === -1) { return -1; }
+        return aOrder - bOrder;
+      }
+      if (a.main !== b.main) {
+        return a.main ? -1 : 1;
+      }
+      return a.slug.localeCompare(b.slug);
+    });
+    return boards;
+  }
+
+  /**
+   * Work out which board a command should target: the --board argument, then the KANBN_BOARD
+   * environment variable, then the defaultBoard option, then the main board
+   * @param {?string} [slug=null] The board slug given on the command line, if any
+   * @return {Promise<?string>} The target board slug, or null for the main board
+   */
+  async resolveTargetBoard(slug = null) {
+    if (slug !== null && slug !== undefined && String(slug).trim() !== "") {
+      return String(slug).trim();
+    }
+    if (process.env.KANBN_BOARD && process.env.KANBN_BOARD.trim() !== "") {
+      return process.env.KANBN_BOARD.trim();
+    }
+    const workspaceOptions = await this.getWorkspaceOptions();
+    if (workspaceOptions.defaultBoard && String(workspaceOptions.defaultBoard).trim() !== "") {
+      return String(workspaceOptions.defaultBoard).trim();
+    }
+    return null;
+  }
+
+  /**
+   * Get a Kanbn instance scoped to the board a command's arguments point at
+   * @param {object} [args={}] The parsed command arguments
+   * @return {Promise<Kanbn>} A board-scoped Kanbn instance
+   */
+  async boardFromArgs(args = {}) {
+    return this.board(await this.resolveTargetBoard(utility.strArg(args.board) || null));
+  }
+
+  /**
+   * List boards with the information `kanbn boards` displays: everything listBoards() returns, plus
+   * column and task counts, completion percentage and the file's last modified date
+   * @return {Promise<object[]>} A list of boards with summary information
+   */
+  async getBoardsSummary() {
+    const boards = await this.listBoards();
+    const result = [];
+    for (const board of boards) {
+      const summary = { ...board, columns: 0, tasks: 0, completed: 0, completedPercentage: 0, modified: null };
+      try {
+        const boardData = await this.loadBoard(board.slug);
+        const tasks = await this.loadAllTrackedTasks(boardData);
+        summary.columns = Object.keys(boardData.columns).length;
+        summary.tasks = tasks.length;
+        summary.completed = tasks.filter((task) => taskCompleted(boardData, task)).length;
+        summary.completedPercentage = summary.tasks
+          ? Math.round((summary.completed / summary.tasks) * 100)
+          : 0;
+      } catch (error) {
+        // A board that can't be loaded is still worth listing; validate reports the reason
+      }
+      try {
+        summary.modified = (await fs.promises.stat(board.path)).mtime;
+      } catch (error) {
+        summary.modified = null;
+      }
+      result.push(summary);
+    }
+    return result;
+  }
+
+  /**
+   * Get every task that appears on more than one board, with the column it occupies on each
+   * @param {boolean} [allTasks=false] True to include tasks that only appear on one board
+   * @return {Promise<object[]>} A list of tasks and their board membership
+   */
+  async getCrossBoardTasks(allTasks = false) {
+    const membership = {};
+    for (const board of await this.listBoards()) {
+      let boardData = null;
+      try {
+        boardData = await this.loadBoard(board.slug);
+      } catch (error) {
+        continue;
+      }
+      for (const [columnName, taskIds] of Object.entries(boardData.columns)) {
+        for (const taskId of taskIds) {
+          if (!(taskId in membership)) {
+            membership[taskId] = {};
+          }
+          membership[taskId][board.slug] = columnName;
+        }
+      }
+    }
+    return Object.entries(membership)
+      .filter(([, boards]) => allTasks || Object.keys(boards).length > 1)
+      .map(([id, boards]) => ({ id, boards }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }
+
+  /**
+   * Get the value to record in a history event's `board` key for this instance's board. The main
+   * board records nothing, which is what keeps existing task files valid and unchanged
+   * @return {Promise<?string>} The board slug, or null for the main board
+   */
+  async historyBoard() {
+    return (await this.isMainBoard()) ? null : await this.resolveBoardSlug();
+  }
+
+  /**
+   * Check if a board exists
+   * @param {string} slug The board slug
+   * @return {Promise<boolean>} True if the board file exists
+   */
+  async boardExists(slug) {
+    return await exists(await this.getBoardPath(slug));
+  }
+
+  /**
+   * Create a new board
+   * @param {string} slug The board slug
+   * @param {object} [options={}] The board's name, description, columns and options
+   * @return {Promise<string>} The created board's slug
+   */
+  async createBoard(slug, options = {}) {
+    const validatedSlug = await this.validateBoardSlug(slug);
+    if (await this.boardExists(validatedSlug)) {
+      throw new Error(`Board "${validatedSlug}" already exists`);
+    }
+    if (!(await this.workspaceInitialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+    const columns =
+      "columns" in options && options.columns.length ? options.columns : defaultInitialiseOptions.columns;
+
+    // A new board only picks up the default started and completed columns if it actually has columns
+    // by those names - a design board with Ideas/Designing/Signed Off shouldn't silently claim that
+    // "In Progress" started work and "Done" finished it
+    const boardOptions = "options" in options ? { ...options.options } : {};
+    for (const [key, defaultColumns] of Object.entries(defaultInitialiseOptions.options)) {
+      if (key in boardOptions) {
+        continue;
+      }
+      const matchingColumns = defaultColumns.filter((columnName) => columns.indexOf(columnName) !== -1);
+      if (matchingColumns.length) {
+        boardOptions[key] = matchingColumns;
+      }
+    }
+
+    const board = {
+      name: "name" in options && options.name ? options.name : validatedSlug,
+      description: "description" in options ? options.description : "",
+      options: boardOptions,
+      columns: Object.fromEntries(columns.map((columnName) => [columnName, []])),
+    };
+
+    // Options passed to createBoard are deliberate, so they're written to the board file even when
+    // the workspace happens to provide the same value
+    setOwnOptions(board, boardOptions);
+    await this.saveBoard(validatedSlug, board);
+    return validatedSlug;
+  }
+
+  /**
+   * Delete a board file. Tasks referenced only by this board become untracked; their files are left
+   * alone, since boards own membership and tasks are shared
+   * @param {string} slug The board slug
+   * @return {Promise<string[]>} The ids of tasks that are no longer referenced by any board
+   */
+  async deleteBoard(slug) {
+    const resolvedSlug = await this.resolveBoardSlug(slug);
+    if (await this.isMainBoard(resolvedSlug)) {
+      throw new Error("The main board cannot be deleted");
+    }
+    if (!(await this.boardExists(resolvedSlug))) {
+      throw new Error(`Board "${resolvedSlug}" doesn't exist`);
+    }
+    const orphaned = await this.findOrphanedTasks(resolvedSlug);
+    await fs.promises.unlink(await this.getBoardPath(resolvedSlug));
+    return orphaned;
+  }
+
+  /**
+   * Find the tasks that would become untracked if a board were deleted, i.e. the tasks it references
+   * that no other board references
+   * @param {string} slug The board slug
+   * @return {Promise<string[]>} The ids of tasks referenced only by this board
+   */
+  async findOrphanedTasks(slug) {
+    const resolvedSlug = await this.resolveBoardSlug(slug);
+    const taskIds = [...getTrackedTaskIds(await this.loadBoard(resolvedSlug))];
+    const orphaned = [];
+    for (const taskId of taskIds) {
+      const boards = await this.findTaskBoards(taskId);
+      if (Object.keys(boards).filter((boardSlug) => boardSlug !== resolvedSlug).length === 0) {
+        orphaned.push(taskId);
+      }
+    }
+    return orphaned;
+  }
+
+  /**
+   * Rename a board
+   * @param {string} slug The board slug
+   * @param {string} newSlug The new board slug
+   * @param {?string} [newName=null] An optional new display name for the board
+   * @return {Promise<string>} The new slug
+   */
+  async renameBoard(slug, newSlug, newName = null) {
+    const resolvedSlug = await this.resolveBoardSlug(slug);
+    if (await this.isMainBoard(resolvedSlug)) {
+      throw new Error("The main board cannot be renamed");
+    }
+    if (!(await this.boardExists(resolvedSlug))) {
+      throw new Error(`Board "${resolvedSlug}" doesn't exist`);
+    }
+    const validatedSlug = await this.validateBoardSlug(newSlug);
+    if (validatedSlug !== resolvedSlug && (await this.boardExists(validatedSlug))) {
+      throw new Error(`Board "${validatedSlug}" already exists`);
+    }
+    const board = await this.loadBoard(resolvedSlug);
+    if (newName !== null) {
+      board.name = newName;
+    }
+    if (validatedSlug !== resolvedSlug) {
+      await fs.promises.rename(await this.getBoardPath(resolvedSlug), await this.getBoardPath(validatedSlug));
+    }
+    await this.saveBoard(validatedSlug, board);
+    return validatedSlug;
+  }
+
+  /**
+   * Find every board that references a task, and the column it occupies on each
+   * @param {string} taskId The task id
+   * @return {Promise<Record<string, string>>} A map of board slug to column name
+   */
+  async findTaskBoards(taskId) {
+    const result = {};
+    for (const board of await this.listBoards()) {
+      let boardData = null;
+      try {
+        boardData = await this.loadBoard(board.slug);
+      } catch (error) {
+        continue;
+      }
+      const columnName = findTaskColumn(boardData, taskId);
+      if (columnName !== null) {
+        result[board.slug] = columnName;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Alias for findTaskBoards(), used when displaying a task's board membership
+   * @param {string} taskId The task id
+   * @return {Promise<Record<string, string>>} A map of board slug to column name
+   */
+  async getTaskBoardColumns(taskId) {
+    return this.findTaskBoards(taskId);
+  }
+
+  /**
    * Initialise a kanbn board in the current working directory
    * @param {object} [options={}] Initial columns and other config options
    */
   async initialise(options = {}) {
+    // A board-scoped instance initialises its own board rather than the workspace
+    if (!(await this.isMainBoard())) {
+      return this.initialiseBoard(this.boardSlug, options);
+    }
+
     // Check if a main folder is defined in an existing config file
     const mainFolder = await this.getMainFolder();
 
@@ -1701,6 +2448,52 @@ class Kanbn {
         ));
     }
     await this.saveIndex(index);
+  }
+
+  /**
+   * Create a secondary board, or update an existing one's name, description, columns and options
+   * @param {string} slug The board slug
+   * @param {object} [options={}] The board's name, description, columns and options
+   * @return {Promise<string>} The board slug
+   */
+  async initialiseBoard(slug, options = {}) {
+    const resolvedSlug = await this.resolveBoardSlug(slug);
+    if (!(await this.boardExists(resolvedSlug))) {
+      return this.createBoard(resolvedSlug, options);
+    }
+    if (Object.keys(options).length === 0) {
+      return resolvedSlug;
+    }
+
+    // The board already exists, so update it in the same way initialise() updates the main board
+    const board = await this.loadBoard(resolvedSlug);
+    "name" in options && options.name && (board.name = options.name);
+    "description" in options && (board.description = options.description);
+    if ("options" in options) {
+      board.options = Object.assign(board.options, options.options);
+      setOwnOptions(board, { ...board.ownOptions, ...options.options });
+    }
+    "columns" in options &&
+      (board.columns = Object.assign(
+        board.columns,
+        Object.fromEntries(
+          options.columns.map((columnName) => [
+            columnName,
+            columnName in board.columns ? board.columns[columnName] : [],
+          ])
+        )
+      ));
+    await this.saveBoard(resolvedSlug, board);
+    return resolvedSlug;
+  }
+
+  /**
+   * Check if a task file exists, regardless of whether any board references it
+   * @param {string} taskId The task id to check
+   * @return {Promise<boolean>} True if the task file exists
+   */
+  async taskFileExists(taskId) {
+    return exists(getTaskPath(await this.getTaskFolderPath(), removeFileExtension(taskId)));
   }
 
   /**
@@ -1800,7 +2593,7 @@ class Kanbn {
       column: columnName,
       fromProgress: 0,
       toProgress: getTaskMetadata(taskData, 'progress') || 0
-    });
+    }, await this.historyBoard());
 
     // Update task metadata dates
     taskData = updateColumnLinkedCustomFields(index, taskData, columnName, now);
@@ -1844,15 +2637,35 @@ class Kanbn {
     // Load task data
     let taskData = await this.loadTask(taskId);
     const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
+    const now = new Date();
+
+    // Record the task joining this board. Board membership has no other representation in a task
+    // file, so without this event a board's history has no record of the task ever arriving
+    taskData = appendTaskHistory(taskData, {
+      date: now,
+      type: 'added',
+      column: columnName
+    }, await this.historyBoard());
 
     // Update task metadata dates
-    taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
+    taskData = updateColumnLinkedCustomFields(index, taskData, columnName, now);
     await this.saveTask(taskPath, taskData);
 
     // Add the task to the column and save the index
     index = addTaskToIndex(index, taskId, columnName);
     await this.saveIndex(index);
     return taskId;
+  }
+
+  /**
+   * Add an existing task to this board. Boards own membership, so the same task file can be added to
+   * any number of boards, in a different column on each
+   * @param {string} taskId The task id
+   * @param {string} columnName The column to add the task to
+   * @return {Promise<string>} The id of the task that was added
+   */
+  async addTaskToBoard(taskId, columnName) {
+    return this.addUntrackedTaskToIndex(taskId, columnName);
   }
 
   /**
@@ -1891,6 +2704,67 @@ class Kanbn {
 
     // Return the set difference
     return new Set([...untrackedTasks].filter((x) => !trackedTasks.has(x)));
+  }
+
+  /**
+   * Find tasks that no board references at all. "Tracked" is workspace-scoped: a task is tracked if
+   * any board references it, so a task can be missing from this board and still be tracked
+   * @return {Promise<Set<string>>} A set of untracked task ids
+   */
+  async findWorkspaceUntrackedTasks() {
+    if (!(await this.workspaceInitialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+
+    // Collect the tasks referenced by every board
+    const trackedTasks = new Set();
+    for (const board of await this.listBoards()) {
+      try {
+        for (const taskId of getTrackedTaskIds(await this.loadBoard(board.slug))) {
+          trackedTasks.add(taskId);
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    // Get all tasks in the tasks folder and return the set difference
+    const files = await glob(`${await this.getTaskFolderPath()}/*.md`);
+    return new Set(files.map((task) => path.parse(task).name).filter((taskId) => !trackedTasks.has(taskId)));
+  }
+
+  /**
+   * Find tasks that other boards track but this one doesn't - the "what could I pull onto this board"
+   * list
+   * @return {Promise<Record<string, Record<string, string>>>} A map of task id to board slug to column
+   */
+  async findTasksOnOtherBoards() {
+    const thisBoardSlug = await this.resolveBoardSlug();
+    const trackedHere = getTrackedTaskIds(await this.loadIndex());
+    const result = {};
+    for (const board of await this.listBoards()) {
+      if (board.slug === thisBoardSlug) {
+        continue;
+      }
+      let boardData = null;
+      try {
+        boardData = await this.loadBoard(board.slug);
+      } catch (error) {
+        continue;
+      }
+      for (const [columnName, taskIds] of Object.entries(boardData.columns)) {
+        for (const taskId of taskIds) {
+          if (trackedHere.has(taskId)) {
+            continue;
+          }
+          if (!(taskId in result)) {
+            result[taskId] = {};
+          }
+          result[taskId][board.slug] = columnName;
+        }
+      }
+    }
+    return result;
   }
 
   /**
@@ -2015,10 +2889,20 @@ class Kanbn {
       throw new Error(`A task with id "${newTaskId}" already exists`);
     }
 
-    // Check that a task with the new id isn't already indexed
+    // Check that a task with the new id isn't already indexed, on this board or any other - the id
+    // is the file name, so it has to be free everywhere
     if (taskInIndex(index, newTaskId)) {
       throw new Error(`A task with id "${newTaskId}" is already in the index`);
     }
+    const boardsWithNewId = Object.keys(await this.findTaskBoards(newTaskId));
+    if (boardsWithNewId.length) {
+      throw new Error(
+        `A task with id "${newTaskId}" is already on board "${boardsWithNewId[0]}"`
+      );
+    }
+
+    // Note every board that references this task before anything is written
+    const otherBoards = await this.findTaskBoards(taskId);
 
     // Update the task name and updated date
     let taskData = await this.loadTask(taskId);
@@ -2029,7 +2913,17 @@ class Kanbn {
     // Rename the task file
     await fs.promises.rename(getTaskPath(await this.getTaskFolderPath(), taskId), newTaskPath);
 
-    // Update the task id in the index
+    // Update the task id in the index, and in every other board that references it - the task file
+    // has moved, so a board still pointing at the old id would have a broken link
+    const thisBoardSlug = await this.resolveBoardSlug();
+    for (const slug of Object.keys(otherBoards)) {
+      if (slug === thisBoardSlug) {
+        continue;
+      }
+      const otherBoard = this.board(slug);
+      const otherIndex = await otherBoard.loadIndex();
+      await otherBoard.saveIndex(renameTaskInIndex(otherIndex, taskId, newTaskId));
+    }
     index = renameTaskInIndex(index, taskId, newTaskId);
     await this.saveIndex(index);
     return newTaskId;
@@ -2041,9 +2935,10 @@ class Kanbn {
    * @param {string} columnName The name of the column that the task will be moved to
    * @param {?number} [position=null] The position to move the task to within the target column
    * @param {boolean} [relative=false] Treat the position argument as relative instead of absolute
+   * @param {boolean} [add=false] Add the task to this board if it isn't on it yet (secondary boards only)
    * @return {Promise<string>} The id of the task that was moved
    */
-  async moveTask(taskId, columnName, position = null, relative = false) {
+  async moveTask(taskId, columnName, position = null, relative = false, add = false) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
       throw new Error("Not initialised in this folder");
@@ -2058,7 +2953,18 @@ class Kanbn {
     // Get index and make sure the task is indexed
     let index = await this.loadIndex();
     if (!taskInIndex(index, taskId)) {
-      throw new Error(`Task "${taskId}" is not in the index`);
+
+      // Moving a task onto a board it isn't on yet adds it, so that membership doesn't have to be a
+      // separate step. Only on a secondary board: on the main board this stays the error it has
+      // always been
+      if (!add || (await this.isMainBoard())) {
+        throw new Error(`Task "${taskId}" is not in the index`);
+      }
+      if (!(columnName in index.columns)) {
+        throw new Error(`Column "${columnName}" doesn't exist`);
+      }
+      await this.addTaskToBoard(taskId, columnName);
+      return taskId;
     }
 
     // Make sure the target column exists
@@ -2084,7 +2990,7 @@ class Kanbn {
         type: 'moved',
         fromColumn: currentColumnName,
         toColumn: columnName
-      });
+      }, await this.historyBoard());
     }
 
     // Update task metadata dates
@@ -2111,9 +3017,10 @@ class Kanbn {
    * Remove a task from the index and optionally delete the task file as well
    * @param {string} taskId The id of the task to remove
    * @param {boolean} [removeFile=false] True if the task file should be removed
+   * @param {boolean} [allBoards=false] True to remove the task from every board that references it
    * @return {Promise<string>} The id of the task that was deleted
    */
-  async deleteTask(taskId, removeFile = false) {
+  async deleteTask(taskId, removeFile = false, allBoards = false) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
       throw new Error("Not initialised in this folder");
@@ -2126,10 +3033,40 @@ class Kanbn {
       throw new Error(`Task "${taskId}" is not in the index`);
     }
 
+    // A task file is shared, so deleting it out from under another board would break that board.
+    // Removing the task from this board only is always safe, and is what happens without --all-boards
+    const thisBoardSlug = await this.resolveBoardSlug();
+    const otherBoards = Object.keys(await this.findTaskBoards(taskId)).filter((slug) => slug !== thisBoardSlug);
+    if (removeFile && otherBoards.length && !allBoards) {
+      throw new Error(
+        `Task "${taskId}" is on ${otherBoards.length} other ${otherBoards.length === 1 ? "board" : "boards"} ` +
+          `(${otherBoards.join(", ")})`
+      );
+    }
+
     // Remove the task from whichever column it's in
+    const columnName = findTaskColumn(index, taskId);
     index = removeTaskFromIndex(index, taskId);
 
-    // Optionally remove the task file as well
+    // Record the task leaving this board, but only when the task file survives - a removed event on
+    // a file that's about to be deleted records nothing anyone can read
+    if (!removeFile && (await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
+      let taskData = await this.loadTask(taskId);
+      taskData = appendTaskHistory(taskData, {
+        type: 'removed',
+        fromColumn: columnName
+      }, await this.historyBoard());
+      await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
+    }
+
+    // Optionally remove the task from every other board, and remove the task file as well
+    if (allBoards) {
+      for (const slug of otherBoards) {
+        const otherBoard = this.board(slug);
+        const otherIndex = await otherBoard.loadIndex();
+        await otherBoard.saveIndex(removeTaskFromIndex(otherIndex, taskId));
+      }
+    }
     if (removeFile && (await exists(getTaskPath(await this.getTaskFolderPath(), taskId)))) {
       await fs.promises.unlink(getTaskPath(await this.getTaskFolderPath(), taskId));
     }
@@ -2160,6 +3097,38 @@ class Kanbn {
   }
 
   /**
+   * Search every board in the workspace. A task on several boards appears once, annotated with the
+   * board and column it occupies on each
+   * @param {object} [filters={}] The filters to apply
+   * @param {boolean} [quiet=false] Only return task ids if true, otherwise return full task details
+   * @return {Promise<object[]|string[]>} A list of matching tasks, or task ids
+   */
+  async searchAllBoards(filters = {}, quiet = false) {
+    if (!(await this.workspaceInitialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+    const results = new Map();
+    for (const board of await this.listBoards()) {
+      let matches = [];
+      try {
+        matches = await this.board(board.slug).search(filters, quiet);
+      } catch (error) {
+        continue;
+      }
+      for (const match of matches) {
+        const taskId = quiet ? match : match.id;
+        if (!results.has(taskId)) {
+          results.set(taskId, quiet ? taskId : { ...match, boards: {} });
+        }
+        if (!quiet) {
+          results.get(taskId).boards[board.slug] = match.column;
+        }
+      }
+    }
+    return [...results.values()];
+  }
+
+  /**
    * Output project status information
    * @param {boolean} [quiet=false] Output full or partial status information
    * @param {boolean} [untracked=false] Show a list of untracked tasks
@@ -2185,13 +3154,29 @@ class Kanbn {
       name: index.name,
     };
 
+    // Name the board this status applies to, but only once there is more than one board - a
+    // single-board workspace produces exactly the output it always has
+    const boards = await this.listBoards();
+    if (boards.length > 1) {
+      result.board = await this.resolveBoardSlug();
+    }
+
     // Get un-tracked tasks if required
     if (untracked) {
-      result.untrackedTasks = [...(await this.findUntrackedTasks())].map((taskId) => `${taskId}.md`);
+
+      // Untracked means "on no board at all", which is workspace-scoped
+      result.untrackedTasks = [...(await this.findWorkspaceUntrackedTasks())].map((taskId) => `${taskId}.md`);
 
       // If output is quiet, output a list of untracked task filenames
       if (quiet) {
         return result.untrackedTasks;
+      }
+
+      // Tasks that are tracked, but not on this board. This is the useful half of the answer: it's
+      // the list of work that could be pulled onto this board
+      const tasksOnOtherBoards = await this.findTasksOnOtherBoards();
+      if (Object.keys(tasksOnOtherBoards).length) {
+        result.tasksOnOtherBoards = tasksOnOtherBoards;
       }
     }
 
@@ -2454,6 +3439,196 @@ class Kanbn {
   }
 
   /**
+   * Validate every board in the workspace, and the tasks each of them references
+   * @param {boolean} [save=false] Re-save each board and its tasks
+   * @return {Promise<object[]|boolean>} A list of errors, or true if there were none
+   */
+  async validateAllBoards(save = false) {
+    if (!(await this.workspaceInitialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+    const errors = [];
+    for (const board of await this.listBoards()) {
+      const result = await this.board(board.slug).validate(save);
+      if (result !== true) {
+        errors.push(...result.map((error) => ({ board: board.slug, ...error })));
+      }
+    }
+    return errors.length ? errors : true;
+  }
+
+  /**
+   * Check a workspace for multi-board problems. These are reported rather than thrown: every one of
+   * them is a workspace that still works, just not the way its author probably meant it to
+   * @return {Promise<object[]>} A list of warnings, each with a type, a message and the board it applies to
+   */
+  async findBoardWarnings() {
+    if (!(await this.workspaceInitialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+    const warnings = [];
+    const mainBoardSlug = await this.getMainBoardSlug();
+    const boards = await this.listBoards();
+    const boardSlugs = new Set(boards.map((board) => board.slug));
+    const { exclude } = await this.getBoardsConfig();
+
+    // Markdown files beside the boards that don't parse as one. These are ignored during ordinary
+    // commands, which is the right default, but the user should be able to find out why
+    const mainFolder = await this.getMainFolder();
+    for (const filePath of await glob(`${mainFolder}/*.md`)) {
+      const slug = boardSlugFromFileName(filePath);
+      if (boardSlugs.has(slug)) {
+        continue;
+      }
+      if (exclude.indexOf(slug) !== -1) {
+        warnings.push({
+          board: slug,
+          type: "excluded-board",
+          message: `"${path.basename(filePath)}" is excluded by the boards.exclude config and isn't treated as a board`
+        });
+        continue;
+      }
+      try {
+        parseIndex.md2json(await fs.promises.readFile(filePath, { encoding: "utf-8" }));
+      } catch (error) {
+        warnings.push({
+          board: slug,
+          type: "unparseable-board",
+          message: `"${path.basename(filePath)}" doesn't parse as a board and is being ignored: ${error.message}`
+        });
+      }
+    }
+
+    const stampingBoards = [];
+    const knownBoards = new Set(boardSlugs);
+    const taskBoardColumns = {};
+    for (const board of boards) {
+      let boardData = null;
+      try {
+        boardData = await this.loadBoard(board.slug);
+      } catch (error) {
+        continue;
+      }
+
+      // Workspace-scoped options in a secondary board's front matter are ignored, and silently
+      // ignoring them would leave the user wondering why they had no effect
+      if (board.slug !== mainBoardSlug) {
+        const rawOptions = boardData.ownOptions || {};
+        for (const key of Object.keys(rawOptions)) {
+          if (WORKSPACE_SCOPED_OPTIONS.indexOf(key) !== -1) {
+            warnings.push({
+              board: board.slug,
+              type: "workspace-scoped-option",
+              message: `"${key}" is a workspace-scoped option and is ignored in a board file`
+            });
+          }
+        }
+      }
+
+      // More than one board writing the same shared completed field means whichever board is touched
+      // first silently owns that date for the whole workspace
+      if ("completedColumns" in boardData.options && boardData.options.completedColumns.length) {
+        stampingBoards.push({ slug: board.slug, field: getCompletedField(boardData) });
+      }
+
+      // Sprints are assumed to be in order: the last one is taken as the current sprint, and each
+      // one runs until the next one starts
+      const sprints = "sprints" in boardData.options ? boardData.options.sprints : [];
+      for (let i = 1; i < sprints.length; i++) {
+        if (new Date(sprints[i].start) < new Date(sprints[i - 1].start)) {
+          warnings.push({
+            board: board.slug,
+            type: "sprints-out-of-order",
+            message: `sprint "${sprints[i].name}" starts before "${sprints[i - 1].name}"`
+          });
+          break;
+        }
+      }
+
+      // A task can only be in one column per board
+      for (const [columnName, taskIds] of Object.entries(boardData.columns)) {
+        for (const taskId of taskIds) {
+          if (!(taskId in taskBoardColumns)) {
+            taskBoardColumns[taskId] = {};
+          }
+          if (board.slug in taskBoardColumns[taskId]) {
+            warnings.push({
+              board: board.slug,
+              type: "duplicate-task",
+              message: `task "${taskId}" appears in both "${taskBoardColumns[taskId][board.slug]}" and "${columnName}"`
+            });
+          } else {
+            taskBoardColumns[taskId][board.slug] = columnName;
+          }
+        }
+      }
+    }
+
+    // Several boards stamping the same shared field
+    const fields = {};
+    for (const { slug, field } of stampingBoards) {
+      if (!(field in fields)) {
+        fields[field] = [];
+      }
+      fields[field].push(slug);
+    }
+    for (const [field, slugs] of Object.entries(fields)) {
+      if (slugs.length > 1) {
+        warnings.push({
+          board: null,
+          type: "multiple-stamping-authorities",
+          message:
+            `boards ${slugs.map((slug) => `"${slug}"`).join(", ")} all stamp "${field}" - ` +
+            'whichever is touched first owns that date for every board'
+        });
+      }
+    }
+
+    // Tasks referenced by a board with no file behind them
+    for (const [taskId, taskBoards] of Object.entries(taskBoardColumns)) {
+      if (!(await this.taskFileExists(taskId))) {
+        warnings.push({
+          board: Object.keys(taskBoards)[0],
+          type: "missing-task-file",
+          message: `task "${taskId}" is referenced by ${Object.keys(taskBoards).join(", ")} but has no file`
+        });
+      }
+    }
+
+    // Tasks that no board references at all
+    for (const taskId of await this.findWorkspaceUntrackedTasks()) {
+      warnings.push({
+        board: null,
+        type: "untracked-task",
+        message: `task "${taskId}" isn't on any board`
+      });
+    }
+
+    // History events naming a board that has been deleted. These never match a board during replay,
+    // so they're harmless - but they're the only trace a deleted board leaves behind
+    const reportedBoards = new Set();
+    for (const taskId of Object.keys(taskBoardColumns)) {
+      let taskData = null;
+      try {
+        taskData = await this.loadTask(taskId);
+      } catch (error) {
+        continue;
+      }
+      for (const historyEvent of taskData.history || []) {
+        if (historyEvent.board && !knownBoards.has(historyEvent.board) && !reportedBoards.has(historyEvent.board)) {
+          reportedBoards.add(historyEvent.board);
+          warnings.push({
+            board: historyEvent.board,
+            type: "unknown-board-in-history",
+            message: `history events name board "${historyEvent.board}", which doesn't exist`
+          });
+        }
+      }
+    }
+    return warnings;
+  }
+
+  /**
    * Find tasks whose started/completed dates disagree with the column they're in
    *
    * Task state comes from metadata dates only, so a task moved between columns by hand (by editing
@@ -2618,19 +3793,28 @@ class Kanbn {
       throw new Error("Not initialised in this folder");
     }
 
-    // Get index and make sure it has a list of sprints in the options
+    // Sprints are workspace-level unless a board declares its own list. Adding a sprint from a
+    // secondary board that hasn't declared one appends to the workspace list rather than quietly
+    // forking it - a fork would be invisible and would freeze that board out of every future
+    // workspace sprint. Creating a board-local list stays a deliberate front-matter edit
     const index = await this.loadIndex();
-    if (!("sprints" in index.options)) {
-      index.options.sprints = [];
+    const isMainBoard = await this.isMainBoard();
+    const boardOwnsSprints = !isMainBoard && "sprints" in (index.ownOptions || {});
+    const target = isMainBoard || boardOwnsSprints ? this : this.board(await this.getMainBoardSlug());
+    const targetIndex = target === this ? index : await target.loadIndex();
+
+    if (!("sprints" in targetIndex.options)) {
+      targetIndex.options.sprints = [];
     }
-    const sprintNumber = index.options.sprints.length + 1;
+    const sprintNumber = targetIndex.options.sprints.length + 1;
     const sprint = {
       start: start,
     };
 
-    // If the name is blank, generate a default name
+    // If the name is blank, generate a default name. A board-local list prefixes the board name, so
+    // that two boards generating their own "Sprint 1" can still be told apart
     if (!name) {
-      sprint.name = `Sprint ${sprintNumber}`;
+      sprint.name = boardOwnsSprints ? `${index.name} Sprint ${sprintNumber}` : `Sprint ${sprintNumber}`;
     } else {
       sprint.name = name;
     }
@@ -2640,9 +3824,12 @@ class Kanbn {
       sprint.description = description;
     }
 
-    // Add sprint and save the index
-    index.options.sprints.push(sprint);
-    await this.saveIndex(index);
+    // Add sprint and save the board that owns the list
+    targetIndex.options.sprints.push(sprint);
+    await target.saveIndex(targetIndex);
+
+    // Tell the caller which list this went into, so the CLI can say so
+    sprint.board = boardOwnsSprints ? await this.resolveBoardSlug() : null;
     return sprint;
   }
 
@@ -2664,6 +3851,14 @@ class Kanbn {
 
     // Get index and tasks
     const index = await this.loadIndex();
+
+    // Burndown measures work in flight, which a board with no started columns has no notion of. An
+    // empty chart looks like a bug, so say what's actually missing
+    if (!("startedColumns" in index.options) || !index.options.startedColumns.length) {
+      throw new Error(
+        `Board "${await this.resolveBoardSlug()}" declares no startedColumns, so it has no notion of work in progress`
+      );
+    }
     const startedField = getStartedField(index);
     const completedField = getCompletedField(index);
     const tasks = [...(await this.loadAllTrackedTasks(index))]
@@ -2810,6 +4005,10 @@ class Kanbn {
       });
     }
 
+    // Datapoints are placed and annotated from this board's history, so activity on another board
+    // doesn't put markers on this board's chart
+    const historyBoard = await this.historyBoard();
+
     // Get workload datapoints for each period
     series.forEach((s) => {
       s.dataPoints = [
@@ -2817,23 +4016,23 @@ class Kanbn {
           x: s.from,
           y: getWorkloadAtDate(index, tasks, s.from),
           count: countActiveTasksAtDate(index, tasks, s.from),
-          tasks: getTaskEventsAtDate(index, tasks, s.from),
+          tasks: getTaskEventsAtDate(index, tasks, s.from, historyBoard),
         },
         ...tasks
-          .map((task) => getTaskTimelineDates(task, s.from, s.to))
+          .map((task) => getTaskTimelineDates(task, s.from, s.to, historyBoard))
           .flat()
           .filter((d) => d)
           .map((x) => ({
             x,
             y: getWorkloadAtDate(index, tasks, x),
             count: countActiveTasksAtDate(index, tasks, x),
-            tasks: getTaskEventsAtDate(index, tasks, x),
+            tasks: getTaskEventsAtDate(index, tasks, x, historyBoard),
           })),
         {
           x: s.to,
           y: getWorkloadAtDate(index, tasks, s.to),
           count: countActiveTasksAtDate(index, tasks, s.to),
-          tasks: getTaskEventsAtDate(index, tasks, s.to),
+          tasks: getTaskEventsAtDate(index, tasks, s.to, historyBoard),
         },
       ].sort((a, b) => a.x.getTime() - b.x.getTime());
     });
@@ -2858,6 +4057,9 @@ class Kanbn {
     const selectedTaskIds = taskIds === null
       ? null
       : new Set(taskIds.map((taskId) => removeFileExtension(taskId)));
+
+    // Show this board's history, plus the events that aren't board-scoped at all
+    const historyBoard = await this.historyBoard();
 
     // Build date filter periods from sprints and/or dates
     const periods = [];
@@ -2951,6 +4153,7 @@ class Kanbn {
 
         const historyEvents = ("history" in task && Array.isArray(task.history) ? task.history : [])
           .filter((historyEvent) => historyEvent.date instanceof Date)
+          .filter((historyEvent) => historyEventOnBoard(historyEvent, historyBoard))
           .map((historyEvent) => {
             const event = { ...historyEvent };
             delete event.date;
@@ -3140,7 +4343,15 @@ class Kanbn {
     const taskColumn = findTaskColumn(index, taskId);
     taskData = setTaskMetadata(taskData, "column", taskColumn);
 
-    // Add history event
+    // Archiving removes a task from every board, so remember where it was on each of them. The
+    // single `column` key is kept for the main board, so archives written before boards existed -
+    // and archives of tasks that are only on one board - are unchanged
+    const taskBoards = await this.findTaskBoards(taskId);
+    if (Object.keys(taskBoards).length > 1) {
+      taskData = setTaskMetadata(taskData, "columns", taskBoards);
+    }
+
+    // Add history event. Archiving isn't board-scoped, so the event carries no board key
     taskData = appendTaskHistory(taskData, {
       type: 'archived',
       fromColumn: taskColumn
@@ -3149,8 +4360,8 @@ class Kanbn {
     // Save the task inside the archive folder
     await this.saveTask(archivedTaskPath, taskData);
 
-    // Remove the original task
-    await this.deleteTask(taskId, true);
+    // Remove the original task from every board that references it
+    await this.deleteTask(taskId, true, true);
 
     return taskId;
   }
@@ -3159,9 +4370,11 @@ class Kanbn {
    * Restore a task from the archive
    * @param {string} taskId The task id
    * @param {?string} [columnName=null] The column to restore the task to
+   * @param {boolean} [singleBoard=false] Restore only to this board, rather than to every board the
+   * task was on when it was archived
    * @return {Promise<string>} The task id
    */
-  async restoreTask(taskId, columnName = null) {
+  async restoreTask(taskId, columnName = null, singleBoard = false) {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
       throw new Error("Not initialised in this folder");
@@ -3202,7 +4415,30 @@ class Kanbn {
     // Load the task from the archive
     let taskData = await this.loadArchivedTask(taskId);
     let actualColumnName = columnName || getTaskMetadata(taskData, "column") || columns[0];
+
+    // Work out which other boards this task was on when it was archived. A board that has since been
+    // deleted is skipped with a warning rather than failing the restore
+    const thisBoardSlug = await this.resolveBoardSlug();
+    const archivedColumns = getTaskMetadata(taskData, "columns") || {};
+    const otherBoards = [];
+    const missingBoards = [];
+    this.lastRestoreWarnings = [];
+    if (!singleBoard) {
+      for (const [slug, archivedColumn] of Object.entries(archivedColumns)) {
+        if (slug === thisBoardSlug) {
+          continue;
+        }
+        if (await this.boardExists(slug)) {
+          otherBoards.push([slug, archivedColumn]);
+        } else {
+          missingBoards.push(slug);
+        }
+      }
+    }
     taskData = setTaskMetadata(taskData, "column", undefined);
+    if ("metadata" in taskData && "columns" in taskData.metadata) {
+      taskData = setTaskMetadata(taskData, "columns", undefined);
+    }
 
     // Stamp every date this call writes with the same timestamp, so that the history event and the
     // column-linked dates can't disagree by a millisecond
@@ -3222,6 +4458,25 @@ class Kanbn {
     // Add the task to the column and save the index
     index = addTaskToIndex(index, taskId, actualColumnName);
     await this.saveIndex(index);
+
+    // Restore the task to every other board it was on, falling back to that board's first column if
+    // the column it used to be in has since gone
+    for (const [slug, archivedColumn] of otherBoards) {
+      const otherBoard = this.board(slug);
+      const otherIndex = await otherBoard.loadIndex();
+      const otherColumns = Object.keys(otherIndex.columns);
+      if (!otherColumns.length) {
+        missingBoards.push(slug);
+        continue;
+      }
+      await otherBoard.addTaskToBoard(
+        taskId,
+        archivedColumn in otherIndex.columns ? archivedColumn : otherColumns[0]
+      );
+    }
+    // Boards the task used to be on that no longer exist, for the caller to report. Restoring is
+    // best-effort: a deleted board shouldn't stop the task coming back to the boards that remain
+    this.lastRestoreWarnings = missingBoards;
 
     // Delete the archived task file
     await fs.promises.unlink(archivedTaskPath);

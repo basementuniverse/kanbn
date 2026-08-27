@@ -9,8 +9,16 @@
       "list"
     ],
     "alias": {
-      "list": ["l"]
-    }
+      "list": [
+        "l"
+      ],
+      "board": [
+        "b"
+      ]
+    },
+    "string": [
+      "board"
+    ]
   },
   "controller": "./src/controller/archive",
   "help": "./docs/commands/archive.txt"

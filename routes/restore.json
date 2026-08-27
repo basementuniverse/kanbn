@@ -6,10 +6,16 @@
   ],
   "args": {
     "string": [
-      "column"
+      "column",
+      "board"
     ],
     "alias": {
-      "column": ["c"]
+      "column": [
+        "c"
+      ],
+      "board": [
+        "b"
+      ]
     }
   },
   "controller": "./src/controller/restore",

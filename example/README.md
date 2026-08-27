@@ -48,6 +48,29 @@ kanbn board -v everything
 kanbn board -v triage --json
 ```
 
+## [`boards`](boards)
+
+Several boards over one shared pool of tasks. See [Multiple Boards](../docs/multiple-boards.md).
+
+- an engineering board in [`index.md`](boards/.kanbn/index.md) and a design board in
+  [`design.md`](boards/.kanbn/design.md), sharing one `tasks/` folder
+- three tasks that sit in **different columns on each board** - including one that design has started
+  and engineering hasn't
+- `startedField` / `completedField` on the design board, so design progress is tracked in its own
+  metadata fields rather than in the shared `started` / `completed` dates
+- board-scoped options in each board's front matter, and workspace-scoped `customFields` in the main
+  board's - where they are inherited by both
+
+```bash
+kanbn boards
+kanbn boards --tasks
+kanbn board -b design
+kanbn status -b design --untracked
+kanbn task build-tenant-settings-page
+kanbn find --all-boards
+kanbn validate --all-boards
+```
+
 ## [`advanced`](advanced)
 
 Project configuration beyond the defaults. See

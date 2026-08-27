@@ -10,12 +10,22 @@
     ],
     "string": [
       "name",
-      "description"
+      "description",
+      "board"
     ],
     "alias": {
-      "interactive": ["i"],
-      "name": ["n"],
-      "description": ["d"]
+      "interactive": [
+        "i"
+      ],
+      "name": [
+        "n"
+      ],
+      "description": [
+        "d"
+      ],
+      "board": [
+        "b"
+      ]
     }
   },
   "controller": "./src/controller/sprint",

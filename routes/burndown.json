@@ -13,15 +13,31 @@
       "sprint",
       "assigned",
       "column",
-      "normalise"
+      "normalise",
+      "board"
     ],
     "alias": {
-      "json": ["j"],
-      "date": ["d"],
-      "sprint": ["p"],
-      "assigned": ["a"],
-      "column": ["c"],
-      "normalise": ["n"]
+      "json": [
+        "j"
+      ],
+      "date": [
+        "d"
+      ],
+      "sprint": [
+        "p"
+      ],
+      "assigned": [
+        "a"
+      ],
+      "column": [
+        "c"
+      ],
+      "normalise": [
+        "n"
+      ],
+      "board": [
+        "b"
+      ]
     }
   },
   "controller": "./src/controller/burndown",

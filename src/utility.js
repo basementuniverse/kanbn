@@ -20,6 +20,135 @@ module.exports = (() => {
     },
 
     /**
+     * Resolve the board a command targets and return a Kanbn instance scoped to it, printing an
+     * error and returning null if the workspace or the board doesn't exist
+     * @param {object} workspace The workspace-scoped Kanbn instance
+     * @param {object} args The parsed command arguments
+     * @return {Promise<object|null>} A board-scoped Kanbn instance, or null if it can't be resolved
+     */
+    async resolveBoard(workspace, args) {
+
+      // Sprint numbers and names are relative to one board's list, so an aggregate across boards
+      // can't resolve them. Refuse rather than guess
+      if (args['all-boards'] && args.sprint) {
+        this.error(
+          '{b}--sprint{b} and {b}--all-boards{b} cannot be used together, because sprint numbers ' +
+          'and names are relative to a single board'
+        );
+        return null;
+      }
+      const kanbn = await workspace.boardFromArgs(args);
+      if (!await kanbn.workspaceInitialised()) {
+        this.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+        return null;
+      }
+      if (!await kanbn.initialised()) {
+        this.error(
+          `Board "${await kanbn.resolveBoardSlug()}" doesn't exist\n` +
+          'Try running: {b}kanbn boards{b}'
+        );
+        return null;
+      }
+      return kanbn;
+    },
+
+    /**
+     * Resolve the boards a command targets, along with the column to use on each. `-b` is repeatable
+     * and pairs positionally with `-c`: board i uses the i-th `-c` if there is one, otherwise the
+     * first `-c`, otherwise that board's first column (Q5). Prints an error and returns null if any
+     * board can't be resolved
+     * @param {object} workspace The workspace-scoped Kanbn instance
+     * @param {object} args The parsed command arguments
+     * @return {Promise<object[]|null>} One entry per target board, or null on error
+     */
+    async resolveBoardTargets(workspace, args) {
+      const boardArgs = args.board === undefined
+        ? []
+        : this.arrayArg(args.board).filter(slug => slug !== undefined && slug !== '');
+      const columnArgs = args.column === undefined ? [] : this.arrayArg(args.column);
+      const slugs = boardArgs.length ? boardArgs : [await workspace.resolveTargetBoard(null)];
+
+      // With a single target board an unknown column is an error, exactly as it has always been.
+      // Falling back only makes sense when several boards are targeted at once, where a column can
+      // legitimately exist on one and not another
+      const allowFallback = slugs.length > 1;
+
+      const targets = [];
+      for (let i = 0; i < slugs.length; i++) {
+        const kanbn = await this.resolveBoard(workspace, { board: slugs[i] });
+        if (kanbn === null) {
+          return null;
+        }
+        let index;
+        try {
+          index = await kanbn.getIndex();
+        } catch (error) {
+          this.error(error);
+          return null;
+        }
+        const columnNames = Object.keys(index.columns);
+        if (!columnNames.length) {
+          this.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}');
+          return null;
+        }
+
+        const requestedColumn = columnArgs.length
+          ? (columnArgs[i] !== undefined ? columnArgs[i] : columnArgs[0])
+          : null;
+        let columnName = requestedColumn === null ? columnNames[0] : requestedColumn;
+        let fallback = false;
+        if (!(columnName in index.columns)) {
+          if (!allowFallback) {
+            this.error(`Column "${columnName}" doesn't exist`);
+            return null;
+          }
+          columnName = columnNames[0];
+          fallback = true;
+        }
+        targets.push({
+          kanbn,
+          index,
+          slug: await kanbn.resolveBoardSlug(),
+          columnName,
+          requestedColumn,
+          fallback
+        });
+      }
+      return targets;
+    },
+
+    /**
+     * Tell the user when a target board didn't have the column that was asked for, so that a task
+     * quietly landing somewhere else is never a surprise
+     * @param {object[]} targets Targets from resolveBoardTargets()
+     * @param {boolean} show False to suppress the notice
+     */
+    showColumnFallbackNotices(targets, show = true) {
+      if (!show) {
+        return;
+      }
+      for (const target of targets.filter(t => t.fallback)) {
+        console.log(this.replaceTags(
+          `{d}Board "${target.slug}" has no column "${target.requestedColumn}" - using "${target.columnName}"{d}`
+        ));
+      }
+    },
+
+    /**
+     * Show a hint about how many boards this workspace has, so that a command showing one board
+     * doesn't look like it's showing everything. Suppressed for machine-readable output and when the
+     * board sets verbose to false
+     * @param {object[]} boards The list of boards
+     * @param {boolean} show False to suppress the hint
+     */
+    showBoardCountHint(boards, show = true) {
+      if (!show || boards.length < 2) {
+        return;
+      }
+      console.log(this.replaceTags(`\n{d}${boards.length} boards available -{d} {b}kanbn boards{b}`));
+    },
+
+    /**
      * Show a hint about tasks whose dates don't match the column they're in. Hints are suppressed
      * for machine-readable output and when the board sets verbose to false
      * @param {object[]} drift Drift entries from kanbn.getDateDrift()

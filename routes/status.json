@@ -13,15 +13,31 @@
     ],
     "string": [
       "sprint",
-      "date"
+      "date",
+      "board"
     ],
     "alias": {
-      "untracked": ["u"],
-      "quiet": ["q"],
-      "json": ["j"],
-      "due": ["e"],
-      "sprint": ["p"],
-      "date": ["d"]
+      "untracked": [
+        "u"
+      ],
+      "quiet": [
+        "q"
+      ],
+      "json": [
+        "j"
+      ],
+      "due": [
+        "e"
+      ],
+      "sprint": [
+        "p"
+      ],
+      "date": [
+        "d"
+      ],
+      "board": [
+        "b"
+      ]
     }
   },
   "controller": "./src/controller/status",

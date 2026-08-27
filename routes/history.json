@@ -1,27 +1,41 @@
 {
-	"name": "Task History",
-	"commands": [
-		"history",
-		"hi"
-	],
-	"args": {
-		"boolean": [
-			"json"
-		],
-		"string": [
-			"date",
-			"sprint",
-			"assigned",
-			"task"
-		],
-		"alias": {
-			"json": ["j"],
-			"date": ["d"],
-			"sprint": ["p"],
-			"assigned": ["a"],
-			"task": ["t"]
-		}
-	},
-	"controller": "./src/controller/history",
-	"help": "./docs/commands/history.txt"
+  "name": "Task History",
+  "commands": [
+    "history",
+    "hi"
+  ],
+  "args": {
+    "boolean": [
+      "json"
+    ],
+    "string": [
+      "date",
+      "sprint",
+      "assigned",
+      "task",
+      "board"
+    ],
+    "alias": {
+      "json": [
+        "j"
+      ],
+      "date": [
+        "d"
+      ],
+      "sprint": [
+        "p"
+      ],
+      "assigned": [
+        "a"
+      ],
+      "task": [
+        "t"
+      ],
+      "board": [
+        "b"
+      ]
+    }
+  },
+  "controller": "./src/controller/history",
+  "help": "./docs/commands/history.txt"
 }

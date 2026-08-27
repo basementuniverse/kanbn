@@ -9,8 +9,16 @@
       "json"
     ],
     "alias": {
-      "json": ["j"]
-    }
+      "json": [
+        "j"
+      ],
+      "board": [
+        "b"
+      ]
+    },
+    "string": [
+      "board"
+    ]
   },
   "controller": "./src/controller/task",
   "help": "./docs/commands/task.txt"

@@ -13,8 +13,13 @@ Do not use this skill to redesign scope, rewrite completed tasks, or invent new 
 
 Your output must stay inside the Kanbn task surface:
 
-- `.kanbn/index.md`
+- `.kanbn/index.md` — the main board
+- `.kanbn/{board-slug}.md` — any secondary boards, in exactly the same format as the index
 - `.kanbn/tasks/*.md`
+
+A workspace may hold several boards over one shared pool of tasks. Rescheduling changes task
+metadata dates, which are shared, so it applies to every board at once — you do not need to touch
+board files unless a task's column changes.
 
 You may read the current board and gantt output, but the end result should be a revised schedule for existing tasks, not a new plan.
 

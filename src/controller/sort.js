@@ -1,6 +1,9 @@
-const kanbn = require('../main');
+const workspace = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
+
+// The board this command targets - set from --board before anything else runs
+let kanbn = workspace;
 
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
@@ -275,6 +278,13 @@ function sortColumn(columnName, sorters, save) {
 
 module.exports = async (args, argv) => {
 
+  // Work out which board this command targets
+  const scoped = await utility.resolveBoard(workspace, args);
+  if (scoped === null) {
+    return;
+  }
+  kanbn = scoped;
+
   // Sortable fields and aliases
   const sortOptions = Object.fromEntries(utility.zip(
     sorterFields.map(sorterField => sorterField.options).flat(),
@@ -296,8 +306,14 @@ module.exports = async (args, argv) => {
     '--save'
   ];
 
-  // Get the column that we're sorting
-  argv = argv.slice(3);
+  // Get the column that we're sorting. --board is consumed above, so drop it and its value before
+  // the sorter walk below, which would otherwise read the board slug as a sorter filter
+  argv = argv.slice(3).filter((arg, i, all) => {
+    if (arg === '--board' || arg === '-b') {
+      return false;
+    }
+    return !(i > 0 && (all[i - 1] === '--board' || all[i - 1] === '-b'));
+  });
   const columnName = args._.length > 1 ? args._[1] : null;
 
   // Column name must be defined if not sorting interactively

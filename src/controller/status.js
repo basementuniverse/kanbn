@@ -1,15 +1,19 @@
-const kanbn = require('../main');
+const workspace = require('../main');
 const utility = require('../utility');
 const chrono = require('chrono-node');
 const yaml = require('yamljs');
 
+// The board this command targets - set from --board before anything else runs
+let kanbn = workspace;
+
 module.exports = async args => {
 
-  // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  // Work out which board this command targets
+  const scoped = await utility.resolveBoard(workspace, args);
+  if (scoped === null) {
     return;
   }
+  kanbn = scoped;
 
   // Get sprint number or name
   let sprint = null;

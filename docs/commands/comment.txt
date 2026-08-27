@@ -15,3 +15,8 @@ Options:
   {b}kanbn comment "task-id" --text "text"{b}
   {b}kanbn comment "task-id" -t "text"{b}
     Set the comment text.
+
+  {b}kanbn comment "task-id" --board "board-slug"{b}
+  {b}kanbn comment "task-id" -b "board-slug"{b}
+    Target a board other than the main one. Falls back to the KANBN_BOARD environment variable and
+    then to the defaultBoard option. See {b}kanbn boards{b} for the list of boards.

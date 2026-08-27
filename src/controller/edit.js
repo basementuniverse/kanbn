@@ -1,9 +1,12 @@
-const kanbn = require('../main');
+const workspace = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
 const chrono = require('chrono-node');
 const getGitUsername = require('../git-user-name');
+
+// The board this command targets - set from --board before anything else runs
+let kanbn = workspace;
 
 inquirer.registerPrompt('datepicker', require('inquirer-datepicker'));
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
@@ -455,11 +458,12 @@ function updateTask(taskId, taskData, columnName, unsetFields = []) {
 
 module.exports = async args => {
 
-  // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  // Work out which board this command targets
+  const scoped = await utility.resolveBoard(workspace, args);
+  if (scoped === null) {
     return;
   }
+  kanbn = scoped;
 
   // Get the task that we're editing
   const taskId = args._[1];

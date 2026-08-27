@@ -89,10 +89,30 @@ kanbn board -v by-assignee
 
 See [views](views.md) for columns, lanes, filters and sorters.
 
+## Multiple boards
+
+A workspace can hold more than one board, all sharing the same pool of tasks:
+
+```
+kanbn init -b design -n "Design Pipeline" -c Ideas -c Designing -c "Signed Off"
+kanbn boards
+```
+
+Every board-scoped command takes `-b`, so a task can sit in `In Progress` on the main board and `Designing` on the design board at the same time:
+
+```
+kanbn move my-new-task -b design -c Designing
+kanbn board -b design
+kanbn boards --tasks
+```
+
+See [multiple boards](multiple-boards.md) for membership, per-board options and per-board sprints.
+
 ## Next steps
 
 - [Index structure](index-structure.md) — project settings, tags and workload calculations
+- [Multiple boards](multiple-boards.md) — several boards over one shared pool of tasks
 - [Task structure](task-structure.md) — task metadata, sub-tasks, relations and comments
 - [Views](views.md) and [filtering and sorting](filtering-and-sorting.md)
 - [Advanced configuration](advanced-configuration.md) — separate config files and custom paths
-- The [`example`](../example) directory contains three ready-to-run boards you can experiment with
+- The [`example`](../example) directory contains four ready-to-run workspaces you can experiment with

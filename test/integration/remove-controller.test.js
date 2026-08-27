@@ -55,22 +55,25 @@ QUnit.test('Remove a task with the force flag should not prompt for confirmation
     await capture.waitFor(() => out.length > 0);
   });
 
-  assert.contains(output, /Removed task "test-task-1"/);
+  assert.contains(output, /Removed task "test-task-1" file and index entry/);
   assert.deepEqual(mockConfig.output, {
     taskId: 'test-task-1',
-    removeFile: false
+    removeFile: true,
+    allBoards: false
   });
 });
 
 QUnit.test('Remove a task with the index flag should only remove the index entry', async assert => {
-  await capture.stdout(async out => {
+  const output = await capture.stdout(async out => {
     await mockArgv(['remove', 'test-task-1', '-f', '-x'], kanbn);
     await capture.waitFor(() => out.length > 0);
   });
 
+  assert.contains(output, /Removed task "test-task-1" from the index/);
   assert.deepEqual(mockConfig.output, {
     taskId: 'test-task-1',
-    removeFile: true
+    removeFile: false,
+    allBoards: false
   });
 });
 

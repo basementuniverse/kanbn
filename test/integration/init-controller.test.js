@@ -6,6 +6,7 @@ const {
   kanbn: mockKanbn
 } = require('../mock-kanbn');
 const context = require('../context');
+const capture = require('../capture');
 
 let kanbn;
 
@@ -212,4 +213,63 @@ QUnit.test('Reinitialise kanbn interactively should show current title', async a
 
   captureConsole.stopIntercept(process.stdout);
   assert.contains(output, new RegExp(`\(${mockConfig.index.name}\)`));
+});
+
+QUnit.test('Create a board with --board', async assert => {
+  mockConfig.initialised = true;
+  mockConfig.boards = [
+    { slug: 'index', path: 'test/index.md', name: 'Test Project', description: '', main: true }
+  ];
+  const output = await capture.stdout(async () => {
+    await mockArgv(
+      ['init', '-b', 'design', '-n', 'Design Pipeline', '-c', 'Ideas', '-c', 'Designing'],
+      kanbn
+    );
+    await context.sleep(50);
+  });
+
+  assert.equal(mockConfig.boardSlug, 'design', 'init should scope itself to the new board');
+  assert.contains(output, /Created board "design" in test/);
+  assert.deepEqual(mockConfig.output, {
+    name: 'Design Pipeline',
+    columns: ['Ideas', 'Designing']
+  });
+});
+
+QUnit.test('Update an existing board with --board', async assert => {
+  mockConfig.initialised = true;
+  mockConfig.boards = [
+    { slug: 'index', path: 'test/index.md', name: 'Test Project', description: '', main: true },
+    { slug: 'design', path: 'test/design.md', name: 'Design Pipeline', description: '', main: false }
+  ];
+  const output = await capture.stdout(async () => {
+    await mockArgv(['init', '-b', 'design', '-n', 'UX Pipeline'], kanbn);
+    await context.sleep(50);
+  });
+
+  assert.contains(output, /Updated board "design" in test/);
+  assert.equal(mockConfig.output.name, 'UX Pipeline');
+});
+
+QUnit.test('Create a board in an uninitialised workspace', async assert => {
+  mockConfig.initialised = false;
+  const output = await capture.stderr(async () => {
+    await mockArgv(['init', '-b', 'design'], kanbn);
+    await context.sleep(50);
+  });
+
+  assert.contains(output, /Kanbn has not been initialised in this folder/);
+  assert.equal(mockConfig.output, null);
+});
+
+QUnit.test('Create a board with a reserved slug', async assert => {
+  mockConfig.initialised = true;
+  mockConfig.errors.validateBoardSlug = 'Board slug "main" is reserved';
+  const output = await capture.stderr(async () => {
+    await mockArgv(['init', '-b', 'main'], kanbn);
+    await context.sleep(50);
+  });
+
+  assert.contains(output, /Board slug "main" is reserved/);
+  assert.equal(mockConfig.output, null);
 });

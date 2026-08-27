@@ -4,7 +4,29 @@ declare type config = {
   mainFolder?: string,
   indexFile?: string,
   taskFolder?: string,
-  archiveFolder?: string
+  archiveFolder?: string,
+  defaultBoard?: string,
+  boards?: {
+    exclude?: string[],
+    order?: string[],
+    [slug: string]: any
+  }
+};
+
+declare type board = {
+  slug: string,
+  path: string,
+  name: string,
+  description: string,
+  main: boolean
+};
+
+declare type boardSummary = board & {
+  columns: number,
+  tasks: number,
+  completed: number,
+  completedPercentage: number,
+  modified: Date | null
 };
 
 declare type index = {
@@ -59,11 +81,24 @@ declare type sprint = {
 };
 
 export class Kanbn {
-  constructor(root?: any);
+  constructor(root?: any, options?: { board?: string, caches?: any });
   ROOT: string;
   CONFIG_YAML: string;
   CONFIG_JSON: string;
   configMemo: any;
+  /**
+   * The board this instance is scoped to, or null for the main board
+   */
+  boardSlug: string | null;
+  /**
+   * Get a copy of this instance scoped to another board, sharing this one's cached config
+   * @param {?string} [slug=null] The board slug, or null/"main"/"default" for the main board
+   */
+  board(slug?: string | null): Kanbn;
+  /**
+   * Alias for board()
+   */
+  withBoard(slug?: string | null): Kanbn;
   /**
    * Check if a separate config file exists
    * @returns {Promise<boolean>} True if a config file exists
@@ -108,7 +143,25 @@ export class Kanbn {
    */
   getMainFolder(): Promise<string>;
   /**
-   * Get the index path
+   * Get the main board's slug, i.e. the index file name without its extension
+   * @return {Promise<string>} The main board slug
+   */
+  getMainBoardSlug(): Promise<string>;
+  /**
+   * Resolve a board slug, mapping the reserved aliases and an absent slug onto the main board
+   * @param {?string} [slug] The board slug, defaulting to this instance's board
+   */
+  resolveBoardSlug(slug?: string | null): Promise<string>;
+  /**
+   * Check if a slug refers to the main board
+   */
+  isMainBoard(slug?: string | null): Promise<boolean>;
+  /**
+   * Get the file path for a board
+   */
+  getBoardPath(slug?: string | null): Promise<string>;
+  /**
+   * Get the index path, i.e. the path of the board this instance is scoped to
    * @return {Promise<string>} The kanbn index path
    */
   getIndexPath(): Promise<string>;
@@ -154,6 +207,126 @@ export class Kanbn {
    * @param {object} indexData Index data to save
    */
   saveIndex(indexData: object): Promise<void>;
+  /**
+   * Get the workspace-scoped options, from the config file or the main board's front matter
+   */
+  getWorkspaceOptions(): Promise<Record<string, any>>;
+  /**
+   * Load the workspace options along with where they came from
+   */
+  loadWorkspaceOptions(): Promise<{ options: Record<string, any>, fromConfig: boolean }>;
+  /**
+   * Get the options a secondary board inherits from the workspace
+   */
+  getInheritedBoardOptions(): Promise<Record<string, any>>;
+  /**
+   * Get the per-board options declared for a board under the `boards` key in the config file
+   */
+  getBoardConfig(slug?: string | null): Promise<Record<string, any>>;
+  /**
+   * Layer a board's own front matter options over the workspace options
+   */
+  resolveBoardOptions(resolvedSlug: string, ownOptions: Record<string, any>): Promise<Record<string, any>>;
+  /**
+   * Work out which options belong in a secondary board's own front matter
+   */
+  getOwnBoardOptions(resolvedSlug: string, indexData: object): Promise<Record<string, any>>;
+  /**
+   * Overwrite a board file with the specified data
+   */
+  saveBoard(slug: string | null, indexData: object): Promise<void>;
+  /**
+   * Load a board file and parse it to an object
+   */
+  loadBoard(slug?: string | null): Promise<index>;
+  /**
+   * Work out which board a command should target: --board, then KANBN_BOARD, then defaultBoard
+   */
+  resolveTargetBoard(slug?: string | null): Promise<string | null>;
+  /**
+   * Get a Kanbn instance scoped to the board a command's arguments point at
+   */
+  boardFromArgs(args?: object): Promise<Kanbn>;
+  /**
+   * Find all boards in the workspace
+   */
+  listBoards(): Promise<board[]>;
+  /**
+   * List boards with column and task counts, completion percentage and last modified date
+   */
+  getBoardsSummary(): Promise<boardSummary[]>;
+  /**
+   * Get every task that appears on more than one board, with the column it occupies on each
+   */
+  getCrossBoardTasks(allTasks?: boolean): Promise<{ id: string, boards: Record<string, string> }[]>;
+  /**
+   * Check if a board exists
+   */
+  boardExists(slug: string): Promise<boolean>;
+  /**
+   * Get the value to record in a history event's `board` key, or null for the main board
+   */
+  historyBoard(): Promise<string | null>;
+  /**
+   * Add an existing task to this board
+   */
+  addTaskToBoard(taskId: string, columnName: string): Promise<string>;
+  /**
+   * Check if a task file exists, regardless of whether any board references it
+   */
+  taskFileExists(taskId: string): Promise<boolean>;
+  /**
+   * Boards named in an archived task's metadata that no longer existed when it was restored
+   */
+  lastRestoreWarnings: string[];
+  /**
+   * Create a new board
+   */
+  createBoard(slug: string, options?: object): Promise<string>;
+  /**
+   * Create a secondary board, or update an existing one
+   */
+  initialiseBoard(slug: string, options?: object): Promise<string>;
+  /**
+   * Delete a board file, returning the ids of tasks that are no longer on any board
+   */
+  deleteBoard(slug: string): Promise<string[]>;
+  /**
+   * Find the tasks that would become untracked if a board were deleted
+   */
+  findOrphanedTasks(slug: string): Promise<string[]>;
+  /**
+   * Rename a board
+   */
+  renameBoard(slug: string, newSlug: string, newName?: string | null): Promise<string>;
+  /**
+   * Find every board that references a task, and the column it occupies on each
+   */
+  findTaskBoards(taskId: string): Promise<Record<string, string>>;
+  /**
+   * Alias for findTaskBoards()
+   */
+  getTaskBoardColumns(taskId: string): Promise<Record<string, string>>;
+  /**
+   * Get the slugs that can't be used for a board
+   */
+  getReservedBoardSlugs(): Promise<string[]>;
+  /**
+   * Check that a slug can be used for a new board, throwing if it can't
+   */
+  validateBoardSlug(slug: string): Promise<string>;
+  /**
+   * Get the boards config from the config file, i.e. the exclude list and display order
+   */
+  getBoardsConfig(): Promise<{ exclude: string[], order: string[] }>;
+  /**
+   * Find tasks that no board references at all
+   */
+  findWorkspaceUntrackedTasks(): Promise<Set<string>>;
+  /**
+   * Find tasks that other boards track but this one doesn't
+   */
+  findTasksOnOtherBoards(): Promise<Record<string, Record<string, string>>>;
   /**
    * Load the index file and parse it to an object
    * @return {Promise<object>} The index object
@@ -201,6 +374,11 @@ export class Kanbn {
    * @return {Promise<boolean>} True if the current working directory has been initialised, otherwise false
    */
   initialised(): Promise<boolean>;
+  /**
+   * Check if the workspace has been initialised, regardless of which board this instance is scoped to
+   * @return {Promise<boolean>} True if the main board exists
+   */
+  workspaceInitialised(): Promise<boolean>;
   /**
    * Initialise a kanbn board in the current working directory
    * @param {object} [options={}] Initial columns and other config options
@@ -265,14 +443,14 @@ export class Kanbn {
    * @param {boolean} [relative=false] Treat the position argument as relative instead of absolute
    * @return {Promise<string>} The id of the task that was moved
    */
-  moveTask(taskId: string, columnName: string, position?: number | null, relative?: boolean): Promise<string>;
+  moveTask(taskId: string, columnName: string, position?: number | null, relative?: boolean, add?: boolean): Promise<string>;
   /**
    * Remove a task from the index and optionally delete the task file as well
    * @param {string} taskId The id of the task to remove
    * @param {boolean} [removeFile=false] True if the task file should be removed
    * @return {Promise<string>} The id of the task that was deleted
    */
-  deleteTask(taskId: string, removeFile?: boolean): Promise<string>;
+  deleteTask(taskId: string, removeFile?: boolean, allBoards?: boolean): Promise<string>;
   /**
    * Search for indexed tasks
    * @param {object} [filters={}] The filters to apply
@@ -347,7 +525,7 @@ export class Kanbn {
    * @param {?string} [columnName=null] The column to restore the task to
    * @return {Promise<string>} The task id
    */
-  restoreTask(taskId: string, columnName?: string | null): Promise<string>;
+  restoreTask(taskId: string, columnName?: string | null, singleBoard?: boolean): Promise<string>;
   /**
    * Nuke it from orbit, it's the only way to be sure
    */

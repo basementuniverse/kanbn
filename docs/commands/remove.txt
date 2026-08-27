@@ -1,12 +1,23 @@
 {b}kanbn remove "task-id"{b}
 {b}kanbn rm "task-id"{b}
 
-Remove an existing task.
+Remove an existing task. This deletes the task file and its index entry.
 
 Options:
   {b}kanbn remove "task-id" --index{b}
+  {b}kanbn remove "task-id" -x{b}
     Only remove the task from the index. The task file will not be deleted.
 
   {b}kanbn remove "task-id" --force{b}
   {b}kanbn remove "task-id" -f{b}
     Force remove the task without asking for confirmation.
+
+  {b}kanbn remove "task-id" --board "board-slug"{b}
+  {b}kanbn remove "task-id" -b "board-slug"{b}
+    Remove the task from that board. Combine this with {b}--index{b} to remove it from that board
+    only - boards own membership, so the task file and its entries on every other board are
+    untouched.
+
+  {b}kanbn remove "task-id" --all-boards{b}
+    Task files are shared between boards, so deleting one while another board still references it is
+    refused. This removes the task from every board that references it, then deletes the file.

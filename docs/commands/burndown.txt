@@ -37,3 +37,9 @@ Options:
   {b}kanbn burndown --n "days"|"hours"|"minutes"|"seconds"{b}
     Normalise dates. Task event times (history events or legacy created/started/completed dates) will be rounded down to the nearest day, hour, minute or second. This may cause task events to be grouped together.
     If this option is set to a blank or unsupported value, the normalisation mode will be automatically selected based on the date range.
+
+  {b}kanbn burndown --board "board-slug"{b}
+  {b}kanbn burndown -b "board-slug"{b}
+    Chart a board other than the main one. Burndown measures work in flight, so a board that
+    declares no {b}startedColumns{b} has nothing to chart and says so rather than drawing an empty
+    chart.

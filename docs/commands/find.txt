@@ -137,3 +137,14 @@ Examples:
 
   {b}kanbn find --count-sub-tasks 1 --count-sub-tasks 99 --progress 0 -q{b}
     List the ids of tasks that have sub-tasks but no progress yet.
+
+  {b}kanbn find --board "board-slug"{b}
+  {b}kanbn find -b "board-slug"{b}
+    Target a board other than the main one. Falls back to the KANBN_BOARD environment variable and
+    then to the defaultBoard option. See {b}kanbn boards{b} for the list of boards.
+
+  {b}kanbn find --all-boards{b}
+    Search every board in the workspace. A task on several boards appears once, annotated with the
+    board and column it occupies on each. Without this, the search is scoped to the target board.
+    This can't be combined with {b}--sprint{b}: sprint numbers and names are relative to one board's
+    list, so there is no sensible answer across several.

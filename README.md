@@ -4,7 +4,7 @@ A CLI kanban board application.
 
 Documentation can be found [here](./docs/index.md).
 
-Ready-to-run example boards live in [`example`](./example) - a [basic board](./example/basic), one demonstrating [views and lanes](./example/views), and one demonstrating [advanced configuration](./example/advanced).
+Ready-to-run example workspaces live in [`example`](./example) - a [basic board](./example/basic), one demonstrating [views and lanes](./example/views), one demonstrating [multiple boards](./example/boards), and one demonstrating [advanced configuration](./example/advanced).
 
 ## Installation
 
@@ -24,6 +24,7 @@ Where <command> is one of:
   version ....... Show package version
   init .......... Initialise kanbn board
   board ......... Show the kanbn board
+  boards ........ List the boards in this workspace
   task .......... Show a kanbn task
   add ........... Add a kanbn task
   edit .......... Edit a kanbn task

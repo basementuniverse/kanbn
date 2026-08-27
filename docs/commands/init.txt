@@ -19,3 +19,16 @@ Options:
   {b}kanbn init --column "column"{b}
   {b}kanbn init -c "column"{b}
     Initialise a kanbn board and add the specified column. This option can be repeated to add multiple columns.
+
+  {b}kanbn init --board "board-slug"{b}
+  {b}kanbn init -b "board-slug"{b}
+    Create a secondary board beside the main one, at {b}.kanbn/board-slug.md{b}. Secondary boards
+    share the main board's task folder, so a task can appear on several boards, in a different
+    column on each. Combine with {b}-n{b}, {b}-d{b} and {b}-c{b} to set the board's name,
+    description and columns:
+      {b}kanbn init -b design -n "Design Pipeline" -c Ideas -c Designing -c "Signed Off"{b}
+    Running it again on an existing board updates its name, description and columns, exactly as
+    {b}kanbn init{b} does for the main board. A new board only picks up the default started and
+    completed columns if it actually has columns by those names, so a board with its own workflow
+    doesn't silently inherit "In Progress" and "Done".
+    The workspace has to exist first - run {b}kanbn init{b} with no {b}-b{b} to create it.

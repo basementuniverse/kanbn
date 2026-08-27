@@ -1,9 +1,12 @@
-const kanbn = require('../main');
+const workspace = require('../main');
 const utility = require('../utility');
 const asciichart = require('asciichart');
 const term = require('terminal-kit').terminal;
 const chrono = require('chrono-node');
 const formatDate = require('dateformat');
+
+// The board this command targets - set from --board before anything else runs
+let kanbn = workspace;
 
 const getLabelPlacements = (from, to, width, dateFormat, maxLabels) => {
   for (let count = maxLabels; count >= 1; count--) {
@@ -62,11 +65,12 @@ const renderXAxisLabels = (from, to, width, dateFormat, leftPadding) => {
 
 module.exports = async args => {
 
-  // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  // Work out which board this command targets
+  const scoped = await utility.resolveBoard(workspace, args);
+  if (scoped === null) {
     return;
   }
+  kanbn = scoped;
   const index = await kanbn.getIndex();
 
   // Get sprint numbers or names

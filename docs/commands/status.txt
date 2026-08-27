@@ -15,7 +15,11 @@ Options:
 
   {b}kanbn status --untracked{b}
   {b}kanbn status -u{b}
-    Show a list of untracked task filenames.
+    Show a list of untracked task filenames. "Untracked" is workspace-scoped: a task is tracked if
+    any board references it, so this lists task files that are on no board at all.
+    When other boards track tasks that the target board doesn't, they're listed separately under
+    {b}tasksOnOtherBoards{b}, with the column each one occupies - the "what could I pull onto this
+    board" list.
 
   {b}kanbn status --due{b}
   {b}kanbn status -e{b}
@@ -33,3 +37,8 @@ Options:
     This option can be repeated - if multiple dates are specified, show task workloads for tasks between the earliest and latest dates.
     The date can be in (almost) any format.
     This option will be ignored if the --quiet or --sprint options are set.
+
+  {b}kanbn status --board "board-slug"{b}
+  {b}kanbn status -b "board-slug"{b}
+    Target a board other than the main one. Falls back to the KANBN_BOARD environment variable and
+    then to the defaultBoard option. See {b}kanbn boards{b} for the list of boards.

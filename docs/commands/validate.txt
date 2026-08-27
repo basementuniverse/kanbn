@@ -21,3 +21,18 @@ Options:
   {b}kanbn validate --json{b}
   {b}kanbn validate -j{b}
     Output validation errors in JSON format.
+
+  {b}kanbn validate --board "board-slug"{b}
+  {b}kanbn validate -b "board-slug"{b}
+    Target a board other than the main one. Falls back to the KANBN_BOARD environment variable and
+    then to the defaultBoard option. See {b}kanbn boards{b} for the list of boards.
+
+  {b}kanbn validate --all-boards{b}
+    Validate every board in the workspace and the tasks each of them references, rather than just
+    the target board.
+
+In a workspace with more than one board, {b}validate{b} also reports multi-board warnings - a
+workspace-scoped option in a board file, several boards stamping the same shared date, sprints out
+of order, a task on no board at all, history naming a board that has been deleted, and markdown
+files beside the boards that don't parse as one. These are warnings, not errors: each describes a
+workspace that still works, just not the way its author probably meant it to.

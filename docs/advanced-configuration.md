@@ -8,6 +8,8 @@ If any project options are added to the index file, then the next time Kanbn wri
 
 _Note: in future, it might be possible to split project options between the index and configuration files, but for now configuration must be saved inside only one of these files._
 
+This applies to the **main board**. In a workspace with [several boards](multiple-boards.md), a secondary board's own options always live in that board file's front matter, and a board-local operation never writes to the configuration file.
+
 _Note: Kanbn rewrites whichever file holds the project options every time it saves them (`kanbn add`, `kanbn move`, `kanbn sort --save`, `kanbn validate --save`, and so on). The YAML is regenerated, so formatting and comments in that file are not preserved._
 
 ## Configuring default locations
@@ -48,3 +50,24 @@ This will rename the folder where tasks are stored. By default this is `tasks`. 
 ### `archiveFolder`
 
 This will rename the archive folder where archived tasks are stored. By default this is `archive`. It is relative to the main folder.
+
+## Multiple boards
+
+Two more workspace-scoped options control [multiple boards](multiple-boards.md): `defaultBoard` names the board that commands target when `-b` isn't given, and `boards` controls discovery, display order and per-board options.
+
+```yaml
+defaultBoard: design
+boards:
+  exclude:
+    - notes.md
+  order:
+    - index
+    - design
+  design:
+    hiddenColumns:
+      - Ideas
+```
+
+Note that `indexFile` also sets the **main board's slug**: with `indexFile: board.md`, the main board's slug is `board`, and `main` / `default` still resolve to it.
+
+Where a configuration file exists, everything in it is inherited by every board — it is workspace-level by construction, so a board-scoped option declared there is a deliberate statement about all boards. Where there is no configuration file, the workspace options live in the main board's front matter, and only the workspace-scoped ones propagate; `startedColumns`, `views` and the rest stay with the main board.

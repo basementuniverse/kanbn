@@ -7,12 +7,23 @@
   "args": {
     "boolean": [
       "force",
-      "index"
+      "index",
+      "all-boards"
     ],
     "alias": {
-      "force": ["f"],
-      "index": ["x"]
-    }
+      "force": [
+        "f"
+      ],
+      "index": [
+        "x"
+      ],
+      "board": [
+        "b"
+      ]
+    },
+    "string": [
+      "board"
+    ]
   },
   "controller": "./src/controller/remove",
   "help": "./docs/commands/remove.txt"

@@ -106,7 +106,7 @@ The name of the user this task is assigned to.
 
 The amount of progress for this task. This should be between 0 (not started) and 1 (complete).
 
-Progress is not derived from sub-tasks. If the task has no `progress` value it counts as 0, and a task that is considered complete always counts as 1 regardless of this value. A task is considered complete if it has a `completed` date or is in one of the [`completedColumns`](index-structure.md#completedcolumns).
+Progress is not derived from sub-tasks. If the task has no `progress` value it counts as 0, and a task that is considered complete always counts as 1 regardless of this value. A task is considered complete if its [`completedField`](index-structure.md#completedfield) — `completed` by default — has a date. The column a task sits in doesn't make it complete; see [Index Structure](index-structure.md#completedcolumns).
 
 ### `started`
 
@@ -157,6 +157,8 @@ An optional array of structured lifecycle events used for richer timeline report
 Supported event types:
 
 - `created`: requires `date` and `column`
+- `added`: requires `date` and `column` — the task joined a board
+- `removed`: requires `date` — the task left a board
 - `moved`: requires `date`, `fromColumn`, `toColumn`
 - `progress`: requires `date`, `fromProgress`, `toProgress`
 - `archived`: requires `date`, `fromColumn`
@@ -167,3 +169,22 @@ Notes:
 - History entries are stored in the reserved `## History` section as list items.
 - `date` should be an ISO timestamp.
 - Additional fields (for example `author`) are preserved if present.
+- An event type this version of Kanbn doesn't recognise is preserved and skipped rather than rejected, so a task file written by a newer version stays readable.
+
+### Board attribution
+
+In a workspace with [multiple boards](multiple-boards.md), an event carries an optional `board` key naming the board it happened on:
+
+```markdown
+## History
+
+- type: moved
+  date: 2026-07-14T09:12:00.000Z
+  fromColumn: Ideas
+  toColumn: Designing
+  board: design
+```
+
+Events on the **main board carry no `board` key**, so a single-board workspace writes exactly the history it always has, and every existing task file stays valid.
+
+`archived` and `progress` events are never board-scoped: archiving removes a task from every board, and progress is a property of the task rather than of a board.

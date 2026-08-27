@@ -15,3 +15,12 @@ Options:
   {b}kanbn sprint --description "description"{b}
   {b}kanbn sprint -d "description"{b}
     Start a new sprint with the specified description.
+
+  {b}kanbn sprint --board "board-slug"{b}
+  {b}kanbn sprint -b "board-slug"{b}
+    Add a sprint from the context of another board. Sprints are workspace-level by default, so this
+    appends to the workspace list and says so. A board that declares its own {b}sprints{b} in its
+    front matter gets the sprint appended there instead, auto-named {b}{Board name} Sprint {n}{b} so
+    that two boards' sprints can't be confused.
+    A board with its own list can't see the workspace sprints at all - that's the cost of forking,
+    and it's why forking is a deliberate front-matter edit rather than a flag.

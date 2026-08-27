@@ -9,11 +9,19 @@
       "json"
     ],
     "string": [
-      "view"
+      "view",
+      "board"
     ],
     "alias": {
-      "view": ["v"],
-      "json": ["j"]
+      "view": [
+        "v"
+      ],
+      "json": [
+        "j"
+      ],
+      "board": [
+        "b"
+      ]
     }
   },
   "controller": "./src/controller/board",

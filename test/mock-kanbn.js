@@ -49,6 +49,15 @@ function defaults() {
       events: []
     },
     taskColumn: 'Test Column',
+    boards: [
+      { slug: 'index', path: 'test/index.md', name: 'Test Project', description: '', main: true }
+    ],
+    taskBoards: {},
+    crossBoardTasks: [],
+    orphanedTasks: [],
+    restoreWarnings: [],
+    boardWarnings: [],
+    boardSlug: null,
     searchResults: [],
     statusData: {},
     validateResult: true,
@@ -86,7 +95,103 @@ function failIfConfigured(method) {
 // Mock kanbn library
 const kanbn = {
   async initialised() {
+
+    // A board-scoped instance reports whether that board exists, so that a controller given a
+    // --board that isn't there takes the "board doesn't exist" path
+    if (config.boardSlug && !config.boards.some(board => board.slug === config.boardSlug)) {
+      return false;
+    }
     return config.initialised;
+  },
+  async workspaceInitialised() {
+    return config.initialised;
+  },
+
+  // Board scoping - board() records which board was asked for and hands back the same mock, so that
+  // controllers can be driven with --board without the mock needing a second instance
+  board(slug = null) {
+    config.boardSlug = slug;
+    return kanbn;
+  },
+  withBoard(slug = null) {
+    return kanbn.board(slug);
+  },
+  async isMainBoard(slug = undefined) {
+    return (await kanbn.resolveBoardSlug(slug)) === 'index';
+  },
+  async addTaskToBoard(taskId, columnName) {
+    config.output = {
+      untrackedTask: taskId,
+      columnName
+    };
+    return taskId;
+  },
+  async resolveBoardSlug(slug = undefined) {
+    if (slug === undefined) {
+      slug = config.boardSlug;
+    }
+    return slug === null || slug === undefined || slug === '' ? 'index' : slug;
+  },
+  async resolveTargetBoard(slug = null) {
+    if (slug !== null && slug !== undefined && String(slug).trim() !== '') {
+      return String(slug).trim();
+    }
+    if (process.env.KANBN_BOARD) {
+      return process.env.KANBN_BOARD;
+    }
+    return null;
+  },
+  async boardFromArgs(args = {}) {
+    const argBoard = Array.isArray(args.board) ? args.board[args.board.length - 1] : args.board;
+    return kanbn.board(await kanbn.resolveTargetBoard(argBoard || null));
+  },
+  async listBoards() {
+    return config.boards;
+  },
+  async getBoardsSummary() {
+    return config.boards.map(board => ({
+      columns: 0,
+      tasks: 0,
+      completed: 0,
+      completedPercentage: 0,
+      modified: null,
+      ...board
+    }));
+  },
+  async getCrossBoardTasks(allTasks = false) {
+    config.output = { crossBoardTasks: true, allTasks };
+    return config.crossBoardTasks;
+  },
+  async findTaskBoards(taskId) {
+    return config.taskBoards;
+  },
+  async getTaskBoardColumns(taskId) {
+    return config.taskBoards;
+  },
+  async boardExists(slug) {
+    return config.boards.some(board => board.slug === slug);
+  },
+  async createBoard(slug, options = {}) {
+    config.output = { createBoard: slug, options };
+    return slug;
+  },
+  async deleteBoard(slug) {
+    config.output = { deleteBoard: slug };
+    failIfConfigured('deleteBoard');
+    return config.orphanedTasks || [];
+  },
+  async renameBoard(slug, newSlug, newName = null) {
+    config.output = { renameBoard: slug, newSlug, newName };
+    failIfConfigured('renameBoard');
+    return newSlug;
+  },
+  async findOrphanedTasks(slug) {
+    failIfConfigured('findOrphanedTasks');
+    return config.orphanedTasks || [];
+  },
+  async validateBoardSlug(slug) {
+    failIfConfigured('validateBoardSlug');
+    return slug;
   },
   async getMainFolder() {
     return config.mainFolderName;
@@ -136,6 +241,9 @@ const kanbn = {
   async findUntrackedTasks() {
     return config.untrackedTasks;
   },
+  async taskFileExists(taskId) {
+    return config.taskExists;
+  },
   async taskExists(taskId) {
     if (!config.taskExists) {
       throw new Error(`No task file found with id "${taskId}"`);
@@ -162,11 +270,13 @@ const kanbn = {
     };
     return taskId;
   },
-  async restoreTask(taskId, columnName) {
+  async restoreTask(taskId, columnName, singleBoard = false) {
     config.output = {
       taskId,
-      columnName
+      columnName,
+      singleBoard
     };
+    kanbn.lastRestoreWarnings = config.restoreWarnings;
     return taskId;
   },
   async getTask(taskId) {
@@ -181,12 +291,13 @@ const kanbn = {
   async loadAllTrackedTasks(index, columnName = null) {
     return config.trackedTasks;
   },
-  async moveTask(taskId, columnName, position = null, relative = false) {
+  async moveTask(taskId, columnName, position = null, relative = false, add = false) {
     config.output = {
       taskId,
       columnName,
       position,
-      relative
+      relative,
+      add
     };
     return taskId;
   },
@@ -206,11 +317,13 @@ const kanbn = {
     };
     return taskId;
   },
-  async deleteTask(taskId, removeFile = false) {
+  async deleteTask(taskId, removeFile = false, allBoards = false) {
     config.output = {
       taskId,
-      removeFile
+      removeFile,
+      allBoards
     };
+    failIfConfigured('deleteTask');
     return taskId;
   },
   async removeAll() {
@@ -260,6 +373,23 @@ const kanbn = {
     config.output = { save };
     failIfConfigured('validate');
     return config.validateResult;
+  },
+  async validateAllBoards(save = false) {
+    config.output = { save, allBoards: true };
+    failIfConfigured('validate');
+    return config.validateResult;
+  },
+  async findBoardWarnings() {
+    failIfConfigured('findBoardWarnings');
+    return config.boardWarnings;
+  },
+  async searchAllBoards(filters = {}, quiet = false) {
+    config.output = {
+      filters,
+      quiet,
+      allBoards: true
+    };
+    return config.searchResults;
   },
   async findDateDrift() {
     failIfConfigured('findDateDrift');

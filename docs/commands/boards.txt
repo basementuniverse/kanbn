@@ -1,0 +1,34 @@
+{b}kanbn boards{b}
+
+List the boards in this workspace.
+
+A board is a markdown file directly inside the kanbn folder, in the same format as the index. The
+index file is the main board; every other markdown file beside it is a secondary board. All boards
+share one task folder, so a task can appear on several boards, in a different column on each.
+
+Create a board with {b}kanbn init -b "board-slug"{b}, and target one with {b}-b "board-slug"{b} on
+any board-scoped command.
+
+Options:
+  {b}kanbn boards --tasks{b}
+  {b}kanbn boards -t{b}
+    Show every task that appears on more than one board, with the column it occupies on each.
+
+  {b}kanbn boards --tasks --all{b}
+  {b}kanbn boards -t -a{b}
+    Show every tracked task, not only the ones on more than one board.
+
+  {b}kanbn boards --rename "board-slug" --name "Board Name"{b}
+  {b}kanbn boards -r "board-slug" -n "Board Name"{b}
+    Rename a board. The positional argument is the new slug, and {b}--name{b} sets the display name:
+    {b}kanbn boards --rename design ux --name "UX Pipeline"{b}
+    Either the new slug or {b}--name{b} may be omitted, but not both. The main board can't be renamed.
+
+  {b}kanbn boards --delete "board-slug"{b}
+  {b}kanbn boards -d "board-slug"{b}
+    Delete a board file. Task files are never deleted, but tasks referenced only by this board become
+    untracked - if that would happen, the tasks are listed and {b}-f{b} is required to go ahead.
+
+  {b}kanbn boards --json{b}
+  {b}kanbn boards -j{b}
+    Output the board list, or the cross-board task overview, in JSON format.

@@ -70,3 +70,12 @@ Examples:
 
   {b}kanbn a -ui -f "my-task-3" -f "my-task-4" -c "Done"{b}
     Interactively adds untracked tasks "my-task-3.md" and "my-task-4.md" to the "Done" column.
+
+  {b}kanbn add --board "board-slug"{b}
+  {b}kanbn add -b "board-slug"{b}
+    Add the task to a board other than the main one. This option can be repeated to put one task on
+    several boards at once - the task file is created once and every board named references it:
+      {b}kanbn add -n "Task" -b index -b design -c Todo -c Designing{b}
+    Each {b}-b{b} pairs with the {b}-c{b} in the same position; boards with no {b}-c{b} of their own
+    use the first one given, and a board that hasn't got that column falls back to its first column
+    with a notice. With a single board an unknown column is still an error.

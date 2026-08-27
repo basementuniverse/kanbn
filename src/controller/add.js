@@ -1,9 +1,13 @@
-const kanbn = require('../main');
+const workspace = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
 const chrono = require('chrono-node');
 const getGitUsername = require('../git-user-name');
+
+// The boards this command targets - set from --board before anything else runs
+let kanbn = workspace;
+let boardTargets = [];
 
 inquirer.registerPrompt('datepicker', require('inquirer-datepicker'));
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
@@ -235,15 +239,24 @@ async function interactiveAddUntrackedTasks(untrackedTasks, columnName, columnNa
  * @param {object} taskData
  * @param {string} columnName
  */
-function createTask(taskData, columnName) {
-  kanbn
-  .createTask(taskData, columnName)
-  .then(taskId => {
-    console.log(`Created task "${taskId}" in column "${columnName}"`);
-  })
-  .catch(error => {
+async function createTask(taskData, columnName) {
+  try {
+
+    // The task is created once, on the first target board, and then added to the others - one task
+    // file, referenced by however many boards were named
+    const [first, ...rest] = boardTargets;
+    const taskId = await first.kanbn.createTask(taskData, columnName);
+    console.log(
+      `Created task "${taskId}" in column "${columnName}"` +
+      (boardTargets.length > 1 || !first.main ? ` on board "${first.slug}"` : '')
+    );
+    for (const target of rest) {
+      await target.kanbn.addTaskToBoard(taskId, target.columnName);
+      console.log(`Added task "${taskId}" to column "${target.columnName}" on board "${target.slug}"`);
+    }
+  } catch (error) {
     utility.error(error);
-  });
+  }
 }
 
 /**
@@ -252,50 +265,44 @@ function createTask(taskData, columnName) {
  * @param {string} columnName
  */
 async function addUntrackedTasks(untrackedTasks, columnName) {
-  for (let untrackedTask of untrackedTasks) {
-    try {
-      await kanbn.addUntrackedTaskToIndex(untrackedTask, columnName);
-    } catch (error) {
-      utility.error(error);
-      return;
+  for (const target of boardTargets) {
+
+    // The column chosen interactively or on the command line applies to the first board; the others
+    // use whatever resolveBoardTargets() paired them with
+    const targetColumn = target === boardTargets[0] ? columnName : target.columnName;
+    for (let untrackedTask of untrackedTasks) {
+      try {
+        await target.kanbn.addUntrackedTaskToIndex(untrackedTask, targetColumn);
+      } catch (error) {
+        utility.error(error);
+        return;
+      }
     }
+    console.log(
+      `Added ${untrackedTasks.length} task${untrackedTasks.length !== 1 ? 's' : ''} ` +
+      `to column "${targetColumn}"` + (boardTargets.length > 1 || !target.main ? ` on board "${target.slug}"` : '')
+    );
   }
-  console.log(
-    `Added ${untrackedTasks.length} task${untrackedTasks.length !== 1 ? 's' : ''} to column "${columnName}"`
-  );
 }
 
 module.exports = async args => {
 
-  // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  // Work out which boards this command targets, and which column to use on each. -b is repeatable,
+  // so one task can be created and placed on several boards at once
+  const targets = await utility.resolveBoardTargets(workspace, args);
+  if (targets === null) {
     return;
   }
+  boardTargets = targets;
+  kanbn = targets[0].kanbn;
+  for (const target of boardTargets) {
+    target.main = await target.kanbn.isMainBoard();
+  }
+  utility.showColumnFallbackNotices(boardTargets, kanbn.isVerbose(targets[0].index));
 
-  // Get the index and make sure it has some columns
-  let index;
-  try {
-    index = await kanbn.getIndex();
-  } catch (error) {
-    utility.error(error);
-    return;
-  }
+  const index = targets[0].index;
   const columnNames = Object.keys(index.columns);
-  if (!columnNames.length) {
-    utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}');
-    return;
-  }
-
-  // Get column name if specified, otherwise default to the first available column
-  let columnName = columnNames[0];
-  if (args.column) {
-    columnName = utility.strArg(args.column);
-    if (columnNames.indexOf(columnName) === -1) {
-      utility.error(`Column "${columnName}" doesn't exist`);
-      return;
-    }
-  }
+  const columnName = targets[0].columnName;
 
   // Add untracked file(s)
   if (args.untracked) {
@@ -534,8 +541,7 @@ module.exports = async args => {
           type: relation.type
         }));
       }
-      columnName = answers.column;
-      createTask(taskData, columnName);
+      createTask(taskData, answers.column);
     })
     .catch(error => {
       utility.error(error);

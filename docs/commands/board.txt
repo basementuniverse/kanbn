@@ -13,3 +13,8 @@ Options:
   {b}kanbn board -j{b}
     Output raw data instead of rendering the board. The data will be returned in JSON format.
     This is the quickest way to check what a view's filters actually match.
+
+  {b}kanbn board --board "board-slug"{b}
+  {b}kanbn board -b "board-slug"{b}
+    Target a board other than the main one. Falls back to the KANBN_BOARD environment variable and
+    then to the defaultBoard option. See {b}kanbn boards{b} for the list of boards.

@@ -11,3 +11,8 @@ Options:
   {b}kanbn rename "task-id" --name "name"{b}
   {b}kanbn rename "task-id" -n "name"{b}
     Rename the task with the specified name. This option is required if not renaming a task interactively.
+
+  {b}kanbn rename "task-id" --board "board-slug"{b}
+  {b}kanbn rename "task-id" -b "board-slug"{b}
+    Target a board other than the main one. Falls back to the KANBN_BOARD environment variable and
+    then to the defaultBoard option. See {b}kanbn boards{b} for the list of boards.

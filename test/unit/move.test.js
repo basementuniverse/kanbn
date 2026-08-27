@@ -20,6 +20,9 @@ QUnit.module('moveTask tests', {
   },
   afterEach() {
     mockFileSystem.restore();
+
+    // A frozen clock left behind here would leak into every test file that runs after this one
+    mockDate.reset();
   }
 });
 

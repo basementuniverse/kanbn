@@ -27,6 +27,20 @@ function validateOptions(options) {
       'startedField': { type: 'string' },
       'completedField': { type: 'string' },
       'verbose': { type: 'boolean' },
+      'defaultBoard': { type: 'string' },
+      'boards': {
+        type: 'object',
+        properties: {
+          'exclude': {
+            type: 'array',
+            items: { type: 'string' }
+          },
+          'order': {
+            type: 'array',
+            items: { type: 'string' }
+          }
+        }
+      },
       'sprints': {
         type: 'array',
         items: {

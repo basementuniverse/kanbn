@@ -21,3 +21,12 @@ Options:
     Move the task to a position relative to its current position in the target column.
     When specifying a negative value for N, the negative sign can be escaped with '/' or '\\' to prevent the value being recognised as an option. For example:
     {b}kanbn mv "task-1" -p \\-1 --relative{b}
+
+  {b}kanbn move "task-id" --board "board-slug"{b}
+  {b}kanbn move "task-id" -b "board-slug"{b}
+    Move the task on a board other than the main one. If the task isn't on that board yet it is
+    added, with a notice - so pulling work onto a board is one command rather than two.
+
+  {b}kanbn move "task-id" -b "board-slug" --no-add{b}
+    Refuse to move a task that isn't on the target board, instead of adding it.
+    The main board never adds implicitly: moving an untracked task there is an error either way.

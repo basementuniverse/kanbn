@@ -1,12 +1,12 @@
-const kanbn = require('../main');
+const workspace = require('../main');
 const utility = require('../utility');
 const board = require('../board');
 
 module.exports = async args => {
 
-  // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  // Work out which board we're showing
+  const kanbn = await utility.resolveBoard(workspace, args);
+  if (kanbn === null) {
     return;
   }
 
@@ -32,11 +32,10 @@ module.exports = async args => {
   // Show the board
   board
   .show(index, tasks, args.view, args.json)
-  .then(() => {
-    utility.showDateDriftHint(
-      kanbn.getDateDrift(index, tasks),
-      !args.json && kanbn.isVerbose(index)
-    );
+  .then(async () => {
+    const verbose = !args.json && kanbn.isVerbose(index);
+    utility.showDateDriftHint(kanbn.getDateDrift(index, tasks), verbose);
+    utility.showBoardCountHint(await workspace.listBoards(), verbose);
   })
   .catch(error => {
     utility.error(error);

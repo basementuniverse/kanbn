@@ -13,8 +13,17 @@ Do not use this skill to implement the project, edit source code, scaffold files
 
 Your output must stay inside the Kanbn planning surface:
 
-- `.kanbn/index.md`
+- `.kanbn/index.md` — the main board
+- `.kanbn/{board-slug}.md` — any secondary boards, in exactly the same format as the index
 - `.kanbn/tasks/*.md`
+
+A workspace may hold several boards over one shared pool of tasks. Every board file is a sibling of
+`index.md` inside `.kanbn/`, and boards own membership: a task can be referenced by several boards,
+in a different column on each. Task files never record which boards they belong to.
+
+Unless the user asks for more than one board, plan onto `.kanbn/index.md` alone. When they do want
+several, write each board file yourself in the same format, and make sure any task referenced by a
+board has a file in `.kanbn/tasks/`.
 
 Do not create application code, tests, CI files, or documentation unrelated to the Kanbn board.
 

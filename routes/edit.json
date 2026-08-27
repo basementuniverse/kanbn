@@ -22,18 +22,40 @@
       "plannedStart",
       "plannedFinish",
       "progress",
-      "unset"
+      "unset",
+      "board"
     ],
     "alias": {
-      "interactive": ["i"],
-      "name": ["n"],
-      "description": ["d"],
-      "column": ["c"],
-      "sub-task": ["s"],
-      "tag": ["t"],
-      "relation": ["r"],
-      "due": ["e"],
-      "assigned": ["a"]
+      "interactive": [
+        "i"
+      ],
+      "name": [
+        "n"
+      ],
+      "description": [
+        "d"
+      ],
+      "column": [
+        "c"
+      ],
+      "sub-task": [
+        "s"
+      ],
+      "tag": [
+        "t"
+      ],
+      "relation": [
+        "r"
+      ],
+      "due": [
+        "e"
+      ],
+      "assigned": [
+        "a"
+      ],
+      "board": [
+        "b"
+      ]
     }
   },
   "controller": "./src/controller/edit",

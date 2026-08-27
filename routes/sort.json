@@ -31,19 +31,43 @@
       "plannedFinish",
       "workload",
       "progress",
-      "assigned"
+      "assigned",
+      "board"
     ],
     "alias": {
-      "interactive": ["i"],
-      "name": ["n"],
-      "description": ["d"],
-      "sub-task": ["s"],
-      "tag": ["t"],
-      "relation": ["r"],
-      "due": ["e"],
-      "workload": ["w"],
-      "ascending": ["a"],
-      "descending": ["z"]
+      "interactive": [
+        "i"
+      ],
+      "name": [
+        "n"
+      ],
+      "description": [
+        "d"
+      ],
+      "sub-task": [
+        "s"
+      ],
+      "tag": [
+        "t"
+      ],
+      "relation": [
+        "r"
+      ],
+      "due": [
+        "e"
+      ],
+      "workload": [
+        "w"
+      ],
+      "ascending": [
+        "a"
+      ],
+      "descending": [
+        "z"
+      ],
+      "board": [
+        "b"
+      ]
     }
   },
   "controller": "./src/controller/sort",

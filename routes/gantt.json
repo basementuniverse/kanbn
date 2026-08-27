@@ -12,14 +12,28 @@
       "assigned",
       "column",
       "date",
-      "now"
+      "now",
+      "board"
     ],
     "alias": {
-      "json": ["j"],
-      "assigned": ["a"],
-      "column": ["c"],
-      "date": ["d"],
-      "now": ["n"]
+      "json": [
+        "j"
+      ],
+      "assigned": [
+        "a"
+      ],
+      "column": [
+        "c"
+      ],
+      "date": [
+        "d"
+      ],
+      "now": [
+        "n"
+      ],
+      "board": [
+        "b"
+      ]
     }
   },
   "controller": "./src/controller/gantt",

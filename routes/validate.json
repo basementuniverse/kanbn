@@ -7,13 +7,26 @@
     "boolean": [
       "json",
       "save",
-      "fix"
+      "fix",
+      "all-boards"
     ],
     "alias": {
-      "json": ["j"],
-      "save": ["s"],
-      "fix": ["f"]
-    }
+      "json": [
+        "j"
+      ],
+      "save": [
+        "s"
+      ],
+      "fix": [
+        "f"
+      ],
+      "board": [
+        "b"
+      ]
+    },
+    "string": [
+      "board"
+    ]
   },
   "controller": "./src/controller/validate",
   "help": "./docs/commands/validate.txt"

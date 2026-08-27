@@ -200,6 +200,7 @@ function validateHistoryFromMarkdown(history) {
         'column': { type: 'string' },
         'fromColumn': { type: 'string' },
         'toColumn': { type: 'string' },
+        'board': { type: 'string' },
         'author': { type: 'string' },
         'fromProgress': { oneOf: [{ type: 'number' }, { type: 'string' }] },
         'toProgress': { oneOf: [{ type: 'number' }, { type: 'string' }] }
@@ -226,6 +227,7 @@ function validateHistoryFromJSON(history) {
         'column': { type: 'string' },
         'fromColumn': { type: 'string' },
         'toColumn': { type: 'string' },
+        'board': { type: 'string' },
         'author': { type: 'string' },
         'fromProgress': { type: 'number' },
         'toProgress': { type: 'number' }
@@ -258,6 +260,13 @@ function validateHistoryEvent(historyEvent) {
       if (!historyEvent.column) {
         throw new Error('created history event is missing column');
       }
+      break;
+    case 'added':
+      if (!historyEvent.column) {
+        throw new Error('added history event is missing column');
+      }
+      break;
+    case 'removed':
       break;
     case 'moved':
       if (!historyEvent.fromColumn || !historyEvent.toColumn) {
@@ -293,6 +302,7 @@ const KNOWN_HISTORY_EVENT_KEYS = [
   'column',
   'fromColumn',
   'toColumn',
+  'board',
   'fromProgress',
   'toProgress',
   'author'
@@ -669,6 +679,12 @@ module.exports = {
               }
               if ('toColumn' in historyEvent) {
                 historyEventOutput.push(`toColumn: ${historyEvent.toColumn}`);
+              }
+
+              // Events on the main board carry no board key, so existing task files - and files
+              // written by single-board workspaces - are byte-identical to what they always were
+              if ('board' in historyEvent && historyEvent.board) {
+                historyEventOutput.push(`board: ${historyEvent.board}`);
               }
               if ('fromProgress' in historyEvent) {
                 historyEventOutput.push(`fromProgress: ${historyEvent.fromProgress}`);

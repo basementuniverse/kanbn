@@ -7,6 +7,7 @@ Where {b}<command>{b} is one of:
   {b}version{b} {d}.......{d} Show package version
   {b}init{b} {d}..........{d} Initialise kanbn board
   {b}board{b} {d}.........{d} Show the kanbn board
+  {b}boards{b} {d}........{d} List the boards in this workspace
   {b}task{b} {d}..........{d} Show a kanbn task
   {b}add{b} {d}...........{d} Add a kanbn task
   {b}edit{b} {d}..........{d} Edit a kanbn task

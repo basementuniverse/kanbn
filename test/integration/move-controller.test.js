@@ -99,7 +99,8 @@ QUnit.test('Move a task to another column', async assert => {
     taskId: 'test-task-1',
     columnName: 'Column 2',
     position: null,
-    relative: false
+    relative: false,
+    add: true
   });
 });
 
@@ -113,7 +114,8 @@ QUnit.test('Move a task to a position in another column', async assert => {
     taskId: 'test-task-1',
     columnName: 'Column 2',
     position: 2,
-    relative: false
+    relative: false,
+    add: true
   });
 });
 
@@ -127,7 +129,8 @@ QUnit.test('Move a task to a relative position', async assert => {
     taskId: 'test-task-1',
     columnName: 'Column 1',
     position: 1,
-    relative: true
+    relative: true,
+    add: true
   });
 });
 

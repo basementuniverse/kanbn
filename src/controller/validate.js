@@ -1,6 +1,9 @@
-const kanbn = require('../main');
+const workspace = require('../main');
 const utility = require('../utility');
 const yaml = require('yamljs');
+
+// The board this command targets - set from --board before anything else runs
+let kanbn = workspace;
 
 /**
  * Show a list of tasks whose dates disagree with the column they're in
@@ -27,18 +30,36 @@ function showDrift(drift, json) {
   }
 }
 
-module.exports = async args => {
-
-  // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+/**
+ * Show warnings about a multi-board workspace
+ * @param {object[]} warnings
+ */
+function showBoardWarnings(warnings) {
+  if (!warnings.length) {
     return;
   }
+  console.log(
+    `${warnings.length} ${warnings.length === 1 ? 'warning' : 'warnings'}:`
+  );
+  for (const warning of warnings) {
+    console.log(`  ${warning.board === null ? 'workspace' : warning.board}: ${warning.message}`);
+  }
+}
 
-  // Validate kanbn files
+module.exports = async args => {
+
+  // Work out which board this command targets
+  const scoped = await utility.resolveBoard(workspace, args);
+  if (scoped === null) {
+    return;
+  }
+  kanbn = scoped;
+
+  // Validate kanbn files, on this board or on every board in the workspace
+  const allBoards = !!args['all-boards'];
   let result;
   try {
-    result = await kanbn.validate(args.save);
+    result = allBoards ? await kanbn.validateAllBoards(args.save) : await kanbn.validate(args.save);
   } catch (error) {
     utility.error(error);
     return;
@@ -52,6 +73,20 @@ module.exports = async args => {
       )}`
     );
     return;
+  }
+
+  // Report multi-board problems. These are warnings rather than errors: each one describes a
+  // workspace that still works, just not the way its author probably meant it to. A workspace with
+  // one board has none of these problems to have, and its output is exactly what it always was
+  const multiBoard = (await kanbn.listBoards()).length > 1;
+  let boardWarnings = [];
+  if (multiBoard) {
+    try {
+      boardWarnings = await kanbn.findBoardWarnings();
+    } catch (error) {
+      utility.error(error);
+      return;
+    }
   }
 
   // Backfill missing started and completed dates
@@ -86,8 +121,26 @@ module.exports = async args => {
     utility.error(error);
     return;
   }
+  if (args.json) {
+
+    // A multi-board workspace has warnings to report as well as drift, so JSON output carries both.
+    // With a single board it stays the bare drift list it has always been
+    if (multiBoard) {
+      console.log(JSON.stringify({ drift, warnings: boardWarnings }, null, 2));
+      return;
+    }
+    if (drift.length) {
+      showDrift(drift, true);
+      return;
+    }
+    console.log('Everything OK');
+    return;
+  }
   if (drift.length) {
-    showDrift(drift, args.json);
+    showDrift(drift, false);
+  }
+  showBoardWarnings(boardWarnings);
+  if (drift.length || boardWarnings.length) {
     return;
   }
   console.log('Everything OK');

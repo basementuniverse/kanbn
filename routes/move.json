@@ -7,17 +7,33 @@
   "args": {
     "boolean": [
       "interactive",
-      "relative"
+      "relative",
+      "add"
     ],
     "string": [
       "column",
-      "position"
+      "position",
+      "board"
     ],
     "alias": {
-      "interactive": ["i"],
-      "column": ["c"],
-      "position": ["p"],
-      "relative": ["r"]
+      "interactive": [
+        "i"
+      ],
+      "column": [
+        "c"
+      ],
+      "position": [
+        "p"
+      ],
+      "relative": [
+        "r"
+      ],
+      "board": [
+        "b"
+      ]
+    },
+    "default": {
+      "add": true
     }
   },
   "controller": "./src/controller/move",

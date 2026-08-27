@@ -95,7 +95,8 @@ QUnit.test('Restore a task', async assert => {
     mockConfig.output,
     {
       taskId: 'task-1',
-      columnName: null
+      columnName: null,
+      singleBoard: false
     }
   );
 });
@@ -115,7 +116,8 @@ QUnit.test('Restore a task into a custom column', async assert => {
     mockConfig.output,
     {
       taskId: 'task-1',
-      columnName: 'Test Column'
+      columnName: 'Test Column',
+      singleBoard: false
     }
   );
 });

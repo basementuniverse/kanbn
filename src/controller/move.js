@@ -1,6 +1,9 @@
-const kanbn = require('../main');
+const workspace = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
+
+// The board this command targets - set from --board before anything else runs
+let kanbn = workspace;
 
 inquirer.registerPrompt('selectLine', require('inquirer-select-line'));
 
@@ -42,9 +45,9 @@ async function interactive(columns, columnName, columnNames, sortedColumnNames, 
  * @param {?number} [position=null]
  * @param {boolean} [relative=false]
  */
-function moveTask(taskId, columnName, position = null, relative = false) {
+function moveTask(taskId, columnName, position = null, relative = false, add = false) {
   kanbn
-  .moveTask(taskId, columnName, position, relative)
+  .moveTask(taskId, columnName, position, relative, add)
   .then(taskId => {
     console.log(`Moved task "${taskId}" to column "${columnName}"`);
   })
@@ -53,26 +56,40 @@ function moveTask(taskId, columnName, position = null, relative = false) {
   });
 }
 
+/**
+ * Add a task to the board it's being moved on, because it isn't on that board yet
+ * @param {string} taskId
+ * @param {string} columnName
+ * @param {string} boardSlug
+ * @param {boolean} verbose
+ */
+async function addTaskToBoard(taskId, columnName, boardSlug, verbose) {
+  try {
+    await kanbn.addTaskToBoard(taskId, columnName);
+    if (verbose) {
+      console.log(utility.replaceTags(
+        `{d}Task "${taskId}" wasn't on board "${boardSlug}" - it has been added{d}`
+      ));
+    }
+    console.log(`Moved task "${taskId}" to column "${columnName}"`);
+  } catch (error) {
+    utility.error(error);
+  }
+}
+
 module.exports = async args => {
 
-  // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  // Work out which board this command targets
+  const scoped = await utility.resolveBoard(workspace, args);
+  if (scoped === null) {
     return;
   }
+  kanbn = scoped;
 
   // Get the task that we're moving
   const taskId = args._[1];
   if (!taskId) {
     utility.error('No task id specified\nTry running {b}kanbn move "task id"{b}');
-    return;
-  }
-
-  // Make sure the task exists
-  try {
-    await kanbn.taskExists(taskId);
-  } catch (error) {
-    utility.error(error);
     return;
   }
 
@@ -87,6 +104,43 @@ module.exports = async args => {
   const columnNames = Object.keys(index.columns);
   if (!columnNames.length) {
     utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}');
+    return;
+  }
+
+  // Moving a task on a board it isn't on yet adds it there, so that pulling work onto a board is one
+  // command rather than two. --no-add turns that back into an error. The main board is unaffected:
+  // moving an untracked task there has always been an error and still is
+  const boardSlug = await kanbn.resolveBoardSlug();
+  const onThisBoard = boardSlug in await workspace.findTaskBoards(taskId);
+  if (!onThisBoard && !(await kanbn.isMainBoard())) {
+    if (!(await kanbn.taskFileExists(taskId))) {
+      utility.error(`No task file found with id "${taskId}"`);
+      return;
+    }
+    if (!args.add) {
+      utility.error(
+        `Task "${taskId}" is not on board "${boardSlug}"\n` +
+        'Drop {b}--no-add{b} to add it to this board while moving it'
+      );
+      return;
+    }
+    let targetColumn = columnNames[0];
+    if (args.column) {
+      targetColumn = utility.strArg(args.column);
+      if (columnNames.indexOf(targetColumn) === -1) {
+        utility.error(`Column "${targetColumn}" doesn't exist`);
+        return;
+      }
+    }
+    await addTaskToBoard(taskId, targetColumn, boardSlug, kanbn.isVerbose(index));
+    return;
+  }
+
+  // Make sure the task exists
+  try {
+    await kanbn.taskExists(taskId);
+  } catch (error) {
+    utility.error(error);
     return;
   }
 
@@ -138,6 +192,6 @@ module.exports = async args => {
 
   // Otherwise move task non-interactively
   } else {
-    moveTask(taskId, columnName, newPosition, args.relative);
+    moveTask(taskId, columnName, newPosition, args.relative, args.add);
   }
 };

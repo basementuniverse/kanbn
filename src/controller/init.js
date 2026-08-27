@@ -1,7 +1,10 @@
 const kanbn_module = require('../main');
-const kanbn = new kanbn_module.Kanbn();
+const workspace = new kanbn_module.Kanbn();
 const utility = require('../utility');
 const inquirer = require('inquirer');
+
+// The board being initialised - set from --board before anything else runs
+let kanbn = workspace;
 
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
@@ -73,11 +76,20 @@ async function interactive(options, initialised) {
  * Initialise kanbn
  * @param {object} options
  * @param {boolean} initialised
+ * @param {?string} boardSlug The slug of the board being initialised, or null for the main board
  */
-async function initialise(options, initialised) {
+async function initialise(options, initialised, boardSlug = null) {
   const mainFolder = await kanbn.getMainFolder();
   kanbn.initialise(options)
   .then(() => {
+    if (boardSlug !== null) {
+      console.log(
+        initialised
+          ? `Updated board "${boardSlug}" in ${mainFolder}`
+          : `Created board "${boardSlug}" in ${mainFolder}`
+      );
+      return;
+    }
     if (initialised) {
       console.log(`Reinitialised existing kanbn board in ${mainFolder}`);
     } else {
@@ -91,6 +103,29 @@ async function initialise(options, initialised) {
 
 module.exports = async args => {
   let options = {};
+
+  // Work out which board we're initialising. Without --board this is the main board, i.e. the whole
+  // workspace, which is exactly what init has always done
+  let boardSlug = null;
+  if (args.board) {
+    boardSlug = utility.strArg(args.board);
+
+    // A secondary board lives beside the main board and shares its tasks, so the workspace has to
+    // exist first
+    if (!await workspace.initialised()) {
+      utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+      return;
+    }
+    try {
+      boardSlug = await workspace.validateBoardSlug(boardSlug);
+    } catch (error) {
+      utility.error(error);
+      return;
+    }
+    kanbn = workspace.board(boardSlug);
+  } else {
+    kanbn = workspace;
+  }
 
   // If this folder is already initialised, set the default name and description using the current values
   const initialised = await kanbn.initialised();
@@ -129,7 +164,7 @@ module.exports = async args => {
       if ('columns' in answers) {
         answers.columns = answers.columns.map(column => column.columnName);
       }
-      await initialise(answers, initialised);
+      await initialise(answers, initialised, boardSlug);
     })
     .catch(error => {
       utility.error(error);
@@ -137,6 +172,6 @@ module.exports = async args => {
 
   // Non-interactive initialisation
   } else {
-    await initialise(options, initialised);
+    await initialise(options, initialised, boardSlug);
   }
 };

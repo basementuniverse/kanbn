@@ -1,8 +1,11 @@
-const kanbn = require('../main');
+const workspace = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
 const chrono = require('chrono-node');
 const yaml = require('yamljs');
+
+// The board this command targets - set from --board before anything else runs
+let kanbn = workspace;
 
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
@@ -213,12 +216,11 @@ async function interactive() {
  * @param {boolean} quiet
  * @param {boolean} json
  */
-function findTasks(filters, quiet, json) {
+function findTasks(filters, quiet, json, allBoards = false) {
   const removeEmptyProperties = o => Object.fromEntries(Object.entries(o).filter(
     ([k, v]) => !(Array.isArray(v) && v.length == 0) && !!v
   ));
-  kanbn
-  .search(filters, quiet)
+  (allBoards ? kanbn.searchAllBoards(filters, quiet) : kanbn.search(filters, quiet))
   .then(results => {
     if (quiet) {
       console.log(json ? JSON.stringify(results, null, 2) : results.join('\n'));
@@ -309,11 +311,12 @@ function convertDateFilters(filters, filterName) {
 
 module.exports = async args => {
 
-  // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  // Work out which board this command targets
+  const scoped = await utility.resolveBoard(workspace, args);
+  if (scoped === null) {
     return;
   }
+  kanbn = scoped;
 
   // Get the index and make sure it has some columns
   let index;
@@ -487,7 +490,7 @@ module.exports = async args => {
             filter.value
           );
         }
-        findTasks(filters, !otherAnswers.nonquiet, otherAnswers.json);
+        findTasks(filters, !otherAnswers.nonquiet, otherAnswers.json, !!args['all-boards']);
       })
       .catch(error => {
         utility.error(error);
@@ -499,6 +502,6 @@ module.exports = async args => {
 
   // Otherwise create task non-interactively
   } else {
-    findTasks(filters, args.quiet, args.json);
+    findTasks(filters, args.quiet, args.json, !!args['all-boards']);
   }
 };

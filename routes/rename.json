@@ -9,11 +9,19 @@
       "interactive"
     ],
     "string": [
-      "name"
+      "name",
+      "board"
     ],
     "alias": {
-      "interactive": ["i"],
-      "name": ["n"]
+      "interactive": [
+        "i"
+      ],
+      "name": [
+        "n"
+      ],
+      "board": [
+        "b"
+      ]
     }
   },
   "controller": "./src/controller/rename",

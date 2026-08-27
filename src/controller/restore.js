@@ -1,16 +1,29 @@
-const kanbn = require('../main');
+const workspace = require('../main');
 const utility = require('../utility');
+
+// The board this command targets - set from --board before anything else runs
+let kanbn = workspace;
 
 /**
  * Restore a task from the archive
  * @param {string} taskId
  * @param {string|null} columnName
  */
-function restoreTask(taskId, columnName) {
+function restoreTask(taskId, columnName, singleBoard) {
   kanbn
-  .restoreTask(taskId, columnName)
+  .restoreTask(taskId, columnName, singleBoard)
   .then(taskId => {
     console.log(`Restored task "${taskId}" from the archive`);
+
+    // A task is restored to every board it was on when it was archived. A board that has since been
+    // deleted is skipped rather than failing the restore, but the user should hear about it
+    const missing = kanbn.lastRestoreWarnings || [];
+    if (missing.length) {
+      console.log(
+        `Couldn't restore "${taskId}" to ${missing.length === 1 ? 'board' : 'boards'} ` +
+        `${missing.map(slug => `"${slug}"`).join(', ')} - no longer ${missing.length === 1 ? 'exists' : 'exist'}`
+      );
+    }
   })
   .catch(error => {
     utility.error(error);
@@ -19,11 +32,12 @@ function restoreTask(taskId, columnName) {
 
 module.exports = async args => {
 
-  // Make sure kanbn has been initialised
-  if (!await kanbn.initialised()) {
-    utility.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
+  // Work out which board this command targets
+  const scoped = await utility.resolveBoard(workspace, args);
+  if (scoped === null) {
     return;
   }
+  kanbn = scoped;
 
   // Get the task that we're archiving
   const taskId = args._[1];
@@ -56,6 +70,7 @@ module.exports = async args => {
     }
   }
 
-  // Archive task
-  restoreTask(taskId, columnName);
+  // Restore the task. Without --board it goes back to every board it was on when it was archived;
+  // with --board it goes only to that one
+  restoreTask(taskId, columnName, !!args.board);
 };

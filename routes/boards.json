@@ -1,0 +1,30 @@
+{
+  "name": "Boards",
+  "commands": [
+    "boards"
+  ],
+  "args": {
+    "boolean": [
+      "json",
+      "tasks",
+      "all",
+      "force"
+    ],
+    "string": [
+      "rename",
+      "delete",
+      "name"
+    ],
+    "alias": {
+      "json": ["j"],
+      "tasks": ["t"],
+      "all": ["a"],
+      "force": ["f"],
+      "rename": ["r"],
+      "delete": ["d"],
+      "name": ["n"]
+    }
+  },
+  "controller": "./src/controller/boards",
+  "help": "./docs/commands/boards.txt"
+}
