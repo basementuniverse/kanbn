@@ -167,6 +167,17 @@ module.exports = (() => {
     },
 
     /**
+     * Coerce a terminal width into a usable number. The terminal width is unavailable when stdout
+     * isn't a TTY (i.e. when the output is piped or redirected), so fall back to a default
+     * @param {any} width The reported terminal width
+     * @param {number} [fallback=80] The width to use when the reported width is unusable
+     * @return {number} A usable terminal width
+     */
+    terminalWidth(width, fallback = 80) {
+      return Number.isInteger(width) && width > 0 ? width : fallback;
+    },
+
+    /**
      * Zip 2 arrays together, i.e. ([1, 2, 3], [a, b, c]) => [[1, a], [2, b], [3, c]]
      * @param {any[]} a
      * @param {any[]} b

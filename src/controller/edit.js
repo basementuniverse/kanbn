@@ -3,7 +3,7 @@ const utility = require('../utility');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
 const chrono = require('chrono-node');
-const getGitUsername = require('git-user-name');
+const getGitUsername = require('../git-user-name');
 
 inquirer.registerPrompt('datepicker', require('inquirer-datepicker'));
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));

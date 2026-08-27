@@ -18,7 +18,7 @@ function showTask(taskId, json = false) {
         marked.setOptions({
           renderer: new markedTerminalRenderer(),
         });
-        console.log(marked(parseTask.json2md(task)));
+        console.log(marked.parse(parseTask.json2md(task)));
       }
     })
     .catch((error) => {

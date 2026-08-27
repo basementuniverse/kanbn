@@ -178,7 +178,7 @@ module.exports = (() => {
           borderChars: 'lightRounded',
           borderAttr: { color: 'grey' },
           textAttr: { color: 'white', bgColor: 'default' },
-          width: term.width,
+          width: utility.terminalWidth(term.width),
           fit: true
         }
       );

@@ -1786,11 +1786,16 @@ class Kanbn {
       throw new Error(`A task with id "${taskId}" is already in the index`);
     }
 
+    // Stamp every date this call writes with the same timestamp, so that the created date and the
+    // column-linked dates can't disagree by a millisecond
+    const now = new Date();
+
     // Set the created date
-    taskData = setTaskMetadata(taskData, "created", new Date());
+    taskData = setTaskMetadata(taskData, "created", now);
 
     // Add initial history event
     taskData = appendTaskHistory(taskData, {
+      date: now,
       type: 'created',
       column: columnName,
       fromProgress: 0,
@@ -1798,7 +1803,7 @@ class Kanbn {
     });
 
     // Update task metadata dates
-    taskData = updateColumnLinkedCustomFields(index, taskData, columnName);
+    taskData = updateColumnLinkedCustomFields(index, taskData, columnName, now);
     await this.saveTask(taskPath, taskData);
 
     // Add the task to the index
@@ -1933,14 +1938,19 @@ class Kanbn {
       throw new Error(`Column "${columnName}" doesn't exist`);
     }
 
+    // Stamp every date this call writes with the same timestamp, so that the updated date and the
+    // history event it records can't disagree by a millisecond
+    const now = new Date();
+
     // Set the updated date
-    taskData = setTaskMetadata(taskData, "updated", new Date());
+    taskData = setTaskMetadata(taskData, "updated", now);
 
     // Add history for progress changes only
     const originalProgress = getTaskMetadata(originalTaskData, 'progress') || 0;
     const updatedProgress = getTaskMetadata(taskData, 'progress') || 0;
     if (originalProgress !== updatedProgress) {
       taskData = appendTaskHistory(taskData, {
+        date: now,
         type: 'progress',
         fromProgress: originalProgress,
         toProgress: updatedProgress
@@ -3194,14 +3204,19 @@ class Kanbn {
     let actualColumnName = columnName || getTaskMetadata(taskData, "column") || columns[0];
     taskData = setTaskMetadata(taskData, "column", undefined);
 
+    // Stamp every date this call writes with the same timestamp, so that the history event and the
+    // column-linked dates can't disagree by a millisecond
+    const now = new Date();
+
     // Add history event
     taskData = appendTaskHistory(taskData, {
+      date: now,
       type: 'restored',
       toColumn: actualColumnName
     });
 
     // Update task metadata dates and save task
-    taskData = updateColumnLinkedCustomFields(index, taskData, actualColumnName);
+    taskData = updateColumnLinkedCustomFields(index, taskData, actualColumnName, now);
     await this.saveTask(taskPath, taskData);
 
     // Add the task to the column and save the index

@@ -127,7 +127,7 @@ module.exports = async args => {
 
       // Render chart
       const PADDING = '     ';
-      const width = Math.max(1, term.width - (PADDING.length + 1));
+      const width = Math.max(1, utility.terminalWidth(term.width) - (PADDING.length + 1));
 
       const plots = [];
       for (const s of data.series) {

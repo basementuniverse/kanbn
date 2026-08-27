@@ -1,7 +1,7 @@
 const kanbn = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
-const getGitUsername = require('git-user-name');
+const getGitUsername = require('../git-user-name');
 
 /**
  * Add a comment interactively
