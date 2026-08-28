@@ -29,7 +29,38 @@ The project description should appear below the title. The description can be of
 
 Below the description there should be one or more level-2 headings. The 'Options' name is reserved for project options.
 
-All level-2 headings (except for 'Options') will be treated as columns. Columns should only contain a list of links to task markdown files.
+All level-2 headings (except for 'Options') will be treated as columns.
+
+## Column contents
+
+A column tracks a task when it contains a **markdown link** to that task's file:
+
+```markdown
+## Todo
+
+- [my-task](tasks/my-task.md)
+```
+
+That link is the only thing kanbn reads as a task. Any other line in a column - a bare title, a checkbox item, a note, a paragraph - is left exactly as you wrote it and ignored by every command:
+
+```markdown
+## Todo
+
+- [my-task](tasks/my-task.md)
+- remember to check the staging deploy
+- [ ] buy milk
+```
+
+These lines are content, not tasks. They have no id, no metadata and no dates, they can't collide with a task of the same name, and they count towards nothing: not the board, not `kanbn status`, not workload, burndown, gantt or sprints. They are preserved when kanbn saves the board file, and stay in the column they were written in - though a line isn't anchored to the task above it, so sorting a column can move tasks around it.
+
+`kanbn validate` lists them, so they can't hide. It reports two cases more loudly, because both mean a task silently isn't being tracked:
+
+- a line that looks like a task link with a typo in it, e.g. a missing closing bracket;
+- a line naming a task file that exists but isn't written as a link, e.g. `- my-task`.
+
+_Note: before version 2.2.0 a bare task id in a column (`- my-task`) was treated as a task reference. It no longer is - only links are. Run `kanbn validate` to find any, and write them as links._
+
+If a column references a task file that doesn't exist, kanbn skips that task and carries on rather than failing - this happens routinely when a board file and a task file arrive in different commits. `kanbn board` says how many tasks were skipped, and `kanbn validate` names them.
 
 ## Project options
 
@@ -37,7 +68,7 @@ The 'Options' heading should be followed by a code block containing YAML. The 'y
 
 Project options will be merged with YAML front-matter if any is present.
 
-*Note: when the index is saved, all project options will be placed into YAML front-matter. The 'Options' heading is still supported for backwards-compatibility.*
+_Note: when the index is saved, all project options will be placed into YAML front-matter. The 'Options' heading is still supported for backwards-compatibility._
 
 ```yaml
 hiddenColumns:
@@ -105,7 +136,7 @@ A list of column names. When a task is created in or dragged into one of these c
 
 A list of column names. When a task is created in or dragged into one of these columns, the task's `completed` date will be set to the current time, unless the task already has a `completed` date.
 
-Note that these columns control when the date is *written*. They don't decide whether a task counts as complete - that comes from the date itself. See [Task state](#task-state) below.
+Note that these columns control when the date is _written_. They don't decide whether a task counts as complete - that comes from the date itself. See [Task state](#task-state) below.
 
 ### `startedField`
 
@@ -205,13 +236,13 @@ progress
 {...customFields}
 ```
 
-*Note: referencing a variable that isn't in the list above (or a custom field that isn't declared in `customFields`) will print "Unable to build task template" instead of rendering the board.*
+_Note: referencing a variable that isn't in the list above (or a custom field that isn't declared in `customFields`) will print "Unable to build task template" instead of rendering the board._
 
 The default task template is `^+^_${overdue ? '^R' : ''}${name}^: ${created ? ('\\n^-^/' + created) : ''}`.
 
 This string can contain markup sequences. See [terminal-kit](https://github.com/cronvel/terminal-kit/blob/21607fb51749853dd9193c6aaf205b14c63b2768/doc/markup.md#markup) for markup reference.
 
-*Note: custom fields can also be interpolated into the task template, but only if they are defined in `customFields` (see below).*
+_Note: custom fields can also be interpolated into the task template, but only if they are defined in `customFields` (see below)._
 
 ### `dateFormat`
 
@@ -234,6 +265,7 @@ An array of custom metadata fields, where each field should have `name` and `typ
 Run `kanbn add --help`, `kanbn edit --help`, `kanbn find --help` and `kanbn sort --help` for more information.
 
 Valid types are:
+
 - `boolean`
 - `date`
 - `number`
@@ -253,8 +285,8 @@ If the custom field has `updateDate` set to `always`, the field will be updated 
 
 Here's an example of how this could be used:
 
-* Assume we have added a column called `Testing`
-* In `index.md` (or `kanbn.json` / `kanbn.yml` if using a separate configuration file), we have:
+- Assume we have added a column called `Testing`
+- In `index.md` (or `kanbn.json` / `kanbn.yml` if using a separate configuration file), we have:
   ```
   customFields:
     - name: testedAt
@@ -263,16 +295,16 @@ Here's an example of how this could be used:
   testedAtColumns:
     - Testing
   ```
-* When a task is moved into the `Testing` column and the task doesn't already have a `testedAt` value in its metadata, this value will be automatically populated with the current date/time.
+- When a task is moved into the `Testing` column and the task doesn't already have a `testedAt` value in its metadata, this value will be automatically populated with the current date/time.
 
 ## Task state
 
 Whether a task has started or been completed is decided by its metadata dates, and nothing else:
 
-* a task has started if its `started` field is set (or whichever field `startedField` names);
-* a task is complete if its `completed` field is set (or whichever field `completedField` names).
+- a task has started if its `started` field is set (or whichever field `startedField` names);
+- a task is complete if its `completed` field is set (or whichever field `completedField` names).
 
-The column a task sits in doesn't make it started or complete. Columns listed in `startedColumns` and `completedColumns` cause those dates to be *written* when a task is moved through the CLI or the VSCode extension, but the dates are what everything else reads: `kanbn status`, `kanbn find`, progress, burndown charts and gantt charts.
+The column a task sits in doesn't make it started or complete. Columns listed in `startedColumns` and `completedColumns` cause those dates to be _written_ when a task is moved through the CLI or the VSCode extension, but the dates are what everything else reads: `kanbn status`, `kanbn find`, progress, burndown charts and gantt charts.
 
 This matters when a task is moved **outside** of kanbn - by editing the index file by hand, or through a git merge. No date is written in that case, so the task keeps whatever state its metadata already described. `kanbn validate` reports tasks whose dates and columns disagree, and `kanbn validate --fix` fills in the missing dates, taking them from the task's history where possible.
 

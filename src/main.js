@@ -162,6 +162,17 @@ function getTrackedTaskIds(index, columnName = null) {
 }
 
 /**
+ * Check whether a line in a column looks like a task link with a typo in it, e.g. a missing closing
+ * bracket. A checkbox item (`- [ ] ...`) is an ordinary line rather than a broken link
+ * @param {string} raw The raw line
+ * @return {boolean} True if the line looks like a malformed task link
+ */
+function looksLikeMalformedTaskLink(raw) {
+  const text = String(raw).replace(/^\s*(?:[-*+]|\d+\.)\s+/, "");
+  return /^\[/.test(text) && !/^\[[ xX]\]/.test(text);
+}
+
+/**
    * Get a task path from the id
    * @param {string} tasksPath The path to the tasks folder
    * @param {string} taskId The task id
@@ -416,8 +427,11 @@ function sortColumnInIndex(index, tasks, columnName, sorters) {
   // Sort the tasks in the target column using their flattened sort fields
   tasks = sortTasksWithFields(index, tasks, sorters);
 
-  // Save the list of tasks back to the index
-  index.columns[columnName] = tasks.map((task) => task.id);
+  // Save the list of tasks back to the index. A task whose file is missing can't be loaded, so it
+  // isn't in the sorted list - keep it in the column rather than dropping it from the board
+  const sortedTaskIds = tasks.map((task) => task.id);
+  const unsortedTaskIds = index.columns[columnName].filter((taskId) => sortedTaskIds.indexOf(taskId) === -1);
+  index.columns[columnName] = [...sortedTaskIds, ...unsortedTaskIds];
   return index;
 }
 
@@ -1978,9 +1992,84 @@ class Kanbn {
     const result = [];
     const trackedTasks = getTrackedTaskIds(index, columnName);
     for (let taskId of trackedTasks) {
-      result.push(await this.loadTask(taskId));
+      try {
+        result.push(await this.loadTask(taskId));
+      } catch (error) {
+
+        // A board referencing a task file that doesn't exist is a broken reference, not a reason to
+        // fail: it happens whenever a board file and a task file arrive in different commits. Skip
+        // it and carry on - findMissingTaskFiles() and validate report it. Anything else (an
+        // unreadable or unparseable file) still throws, because that is a file with contents that
+        // can't be trusted rather than a file that isn't there
+        if (!(await this.taskFileExists(taskId))) {
+          continue;
+        }
+        throw error;
+      }
     }
     return result;
+  }
+
+  /**
+   * Find tasks that this board references but which have no task file
+   * @param {?object} [index=null] The index object, or null to load it
+   * @return {Promise<object[]>} A list of {task, column} for each missing task file
+   */
+  async findMissingTaskFiles(index = null) {
+    if (index === null) {
+      index = await this.getIndex();
+    }
+    const missing = [];
+    for (const [columnName, taskIds] of Object.entries(index.columns)) {
+      for (const taskId of taskIds) {
+        if (!(await this.taskFileExists(taskId))) {
+          missing.push({ task: taskId, column: columnName });
+        }
+      }
+    }
+    return missing;
+  }
+
+  /**
+   * Find lines in this board's columns that aren't task links. These are preserved verbatim and
+   * ignored by every command, but a line that looks like it was meant to be a task link is worth
+   * pointing out - it's the one way a task can silently stop being tracked
+   * @param {?object} [index=null] The index object, or null to load it
+   * @return {Promise<object[]>} A list of warnings, each with a board, column, type and message
+   */
+  async findColumnContentWarnings(index = null) {
+    if (index === null) {
+      index = await this.getIndex();
+    }
+    const boardSlug = await this.resolveBoardSlug();
+    const warnings = [];
+    for (const [columnName, entries] of Object.entries(index.columnContent || {})) {
+      for (const entry of entries) {
+
+        // A line that starts with link punctuation was probably meant to be a task link and has a
+        // typo in it, which would otherwise look exactly like a task that has vanished from the
+        // board. A checkbox item is an ordinary line, not a broken link
+        let type = "non-task-line";
+        let message = `column "${columnName}" contains a line that isn't a task link: ${entry.raw}`;
+        if (looksLikeMalformedTaskLink(entry.raw)) {
+          type = "malformed-task-link";
+          message = `column "${columnName}" contains a line that looks like a malformed task link: ${entry.raw}`;
+
+          // A line naming a task file that exists is almost certainly a task the user expects to be
+          // tracked, written without the link. It isn't, and this is the only warning that says so
+        } else if (
+          (await this.taskFileExists(entry.text)) ||
+          (await this.taskFileExists(utility.getTaskId(entry.text)))
+        ) {
+          type = "untracked-task-line";
+          message =
+            `column "${columnName}" contains a line naming a task file that exists, but it isn't a ` +
+            `link so the task isn't tracked: ${entry.raw}`;
+        }
+        warnings.push({ board: boardSlug, column: columnName, type, text: entry.text, message });
+      }
+    }
+    return warnings;
   }
 
   /**

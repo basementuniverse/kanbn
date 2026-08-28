@@ -29,11 +29,34 @@ declare type boardSummary = board & {
   modified: Date | null
 };
 
+declare type columnContentEntry = {
+  position: number,
+  text: string,
+  raw: string,
+  block?: boolean
+};
+
 declare type index = {
   name: string,
   description: string,
   options: Record<string, any>,
-  columns: Record<string, string[]>
+  columns: Record<string, string[]>,
+
+  // Lines in a column that aren't task links. Preserved verbatim and ignored by everything else
+  columnContent?: Record<string, columnContentEntry[]>
+};
+
+declare type missingTaskFile = {
+  task: string,
+  column: string
+};
+
+declare type columnContentWarning = {
+  board: string,
+  column: string,
+  type: 'non-task-line' | 'untracked-task-line' | 'malformed-task-link',
+  text: string,
+  message: string
 };
 
 declare type subTask = {
@@ -345,12 +368,25 @@ export class Kanbn {
    */
   loadTask(taskId: string): Promise<object>;
   /**
-   * Load all tracked tasks and return an array of task objects
+   * Load all tracked tasks and return an array of task objects. A task the index references but
+   * which has no task file is skipped rather than throwing - see findMissingTaskFiles()
    * @param {object} index The index object
    * @param {?string} [columnName=null] The optional column name to filter tasks by
    * @return {Promise<object[]>} All tracked tasks
    */
   loadAllTrackedTasks(index: object, columnName?: string | null): Promise<object[]>;
+  /**
+   * Find tasks that this board references but which have no task file
+   * @param {?object} [index=null] The index object, or null to load it
+   * @return {Promise<missingTaskFile[]>} A list of the missing tasks and the columns they're in
+   */
+  findMissingTaskFiles(index?: object | null): Promise<missingTaskFile[]>;
+  /**
+   * Find lines in this board's columns that aren't task links
+   * @param {?object} [index=null] The index object, or null to load it
+   * @return {Promise<columnContentWarning[]>} A list of warnings
+   */
+  findColumnContentWarnings(index?: object | null): Promise<columnContentWarning[]>;
   /**
    * Load a task file from the archive and parse it to an object
    * @param {string} taskId The task id

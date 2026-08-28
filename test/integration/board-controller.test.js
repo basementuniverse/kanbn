@@ -98,6 +98,27 @@ QUnit.test('Show the board should hint about tasks whose dates disagree with the
   assert.contains(output, /kanbn validate --fix/);
 });
 
+QUnit.test('Show the board should hint about tasks with no task file', async assert => {
+  mockConfig.missingTaskFiles = [{ task: 'test-task-3', column: 'Column 1' }];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['board'], kanbn);
+    await capture.waitFor(() => out.some(s => /no task file/.test(s)));
+  });
+
+  assert.contains(output, /1 task has no task file and was skipped/);
+  assert.contains(output, /kanbn validate/);
+});
+
+QUnit.test('The missing task file hint should be suppressed for JSON output', async assert => {
+  mockConfig.missingTaskFiles = [{ task: 'test-task-3', column: 'Column 1' }];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['board', '--json'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.notOk(/no task file/.test(output));
+});
+
 QUnit.test('The date drift hint should be suppressed for JSON output', async assert => {
   mockConfig.dateDrift = [
     {

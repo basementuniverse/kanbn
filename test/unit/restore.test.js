@@ -53,7 +53,7 @@ QUnit.test('Restore non-existing task should throw "archived task not found" err
 QUnit.test('Restore task with duplicate indexed task should throw "already indexed" error', async assert => {
   mockFileSystem({
     '.kanbn': {
-      'index.md': '# Test Project\n\n## Test Column\n\n- test-task-1',
+      'index.md': '# Test Project\n\n## Test Column\n\n- [test-task-1](tasks/test-task-1.md)',
       'tasks': {
         'test-task-1.md': '# Test Task 1'
       },
@@ -110,7 +110,8 @@ QUnit.test('Restore task with no columns in the index should throw "no columns" 
 QUnit.test('Restore task to original column', async assert => {
   mockFileSystem({
     '.kanbn': {
-      'index.md': '# Test Project\n\n## Test Column 1\n\n- test-task-1\n\n## Test Column 2',
+      'index.md': '# Test Project\n\n## Test Column 1\n\n- [test-task-1](tasks/test-task-1.md)\n\n' +
+        '## Test Column 2',
       'tasks': {
         'test-task-1.md': '# Test Task 1'
       },
@@ -132,7 +133,8 @@ QUnit.test('Restore task to original column', async assert => {
 QUnit.test('Restore task to first column', async assert => {
   mockFileSystem({
     '.kanbn': {
-      'index.md': '# Test Project\n\n## Test Column 1\n\n- test-task-1\n\n## Test Column 2',
+      'index.md': '# Test Project\n\n## Test Column 1\n\n- [test-task-1](tasks/test-task-1.md)\n\n' +
+        '## Test Column 2',
       'tasks': {
         'test-task-1.md': '# Test Task 1'
       },
@@ -154,7 +156,8 @@ QUnit.test('Restore task to first column', async assert => {
 QUnit.test('Restore task to specified column', async assert => {
   mockFileSystem({
     '.kanbn': {
-      'index.md': '# Test Project\n\n## Test Column 1\n\n- test-task-1\n\n## Test Column 2',
+      'index.md': '# Test Project\n\n## Test Column 1\n\n- [test-task-1](tasks/test-task-1.md)\n\n' +
+        '## Test Column 2',
       'tasks': {
         'test-task-1.md': '# Test Task 1'
       },

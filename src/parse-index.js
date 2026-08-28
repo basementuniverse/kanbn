@@ -172,6 +172,126 @@ function validateOptions(options) {
 }
 
 /**
+ * Get the task id from a column list item, or null if the item isn't a task link
+ *
+ * A task link is a list item that begins with a markdown link, e.g. `- [task-id](tasks/task-id.md)`.
+ * Anything else - a bare title, a checkbox item, a note - is content that this file preserves but
+ * doesn't interpret
+ * @param {object} item A list item token
+ * @return {?string} The task id, or null if this item isn't a task link
+ */
+function taskIdFromListItem(item) {
+  const block = item.tokens && item.tokens[0];
+  const inline = block && block.tokens && block.tokens[0];
+  return inline && inline.type === 'link' ? inline.text : null;
+}
+
+/**
+ * Remove trailing whitespace from a markdown token's raw source, keeping any internal line breaks so
+ * that multi-line items survive a read/write cycle intact
+ * @param {string} raw
+ * @return {string}
+ */
+function trimRaw(raw) {
+  return String(raw).replace(/\s+$/, '');
+}
+
+/**
+ * Split a column's markdown into the task ids it references and everything else it contains
+ *
+ * Every top-level token is considered, not just the first list: a single line using a different
+ * bullet character splits one list into several, and reading only the first one silently dropped
+ * every task after it. Content that isn't a task link is recorded with the position it occupied so
+ * that it can be written back where the user put it
+ * @param {string} markdown The column's markdown content
+ * @return {{taskIds: string[], content: object[]}}
+ */
+function parseColumnContent(markdown) {
+  const taskIds = [], content = [];
+  if (!markdown) {
+    return { taskIds, content };
+  }
+  let position = 0;
+  for (const token of marked.lexer(markdown)) {
+    if (token.type === 'space') {
+      continue;
+    }
+    if (token.type === 'list') {
+      for (const item of token.items) {
+        const taskId = taskIdFromListItem(item);
+        if (taskId === null) {
+          content.push({ position, text: item.text.trim(), raw: trimRaw(item.raw) });
+        } else {
+          taskIds.push(taskId);
+        }
+        position++;
+      }
+      continue;
+    }
+
+    // A paragraph, quote, code block or anything else that isn't a list is content as well. It's
+    // written back surrounded by blank lines so that it doesn't merge into a neighbouring list
+    content.push({
+      position,
+      text: ('text' in token ? String(token.text) : trimRaw(token.raw)).trim(),
+      raw: trimRaw(token.raw),
+      block: true
+    });
+    position++;
+  }
+  return { taskIds, content };
+}
+
+/**
+ * Rebuild a column's markdown from its task ids and preserved content
+ * @param {string[]} taskIds
+ * @param {object[]} content
+ * @return {string} The column's markdown content
+ */
+function buildColumnContent(taskIds, content) {
+  const lines = taskIds.map(taskId => `- [${taskId}](tasks/${taskId}.md)`);
+
+  // Positions were recorded against the column as it was read. Tasks move, so a position can end up
+  // past the end of the column - clamping keeps the line in the column it was written in
+  for (const entry of [...content].sort((a, b) => a.position - b.position)) {
+    lines.splice(
+      Math.min(entry.position, lines.length),
+      0,
+      entry.block ? `\n${entry.raw}\n` : entry.raw
+    );
+  }
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+/**
+ * Validate the preserved column content object
+ * @param {object} columnContent
+ */
+function validateColumnContent(columnContent) {
+  const result = validate(columnContent, {
+    type: 'object',
+    patternProperties: {
+      '^[\w ]+$': {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            'position': { type: 'number' },
+            'text': { type: 'string' },
+            'raw': { type: 'string' },
+            'block': { type: 'boolean' }
+          },
+          required: ['position', 'raw']
+        }
+      }
+    }
+  });
+  if (result.errors.length) {
+    throw new Error(result.errors.map(error => `${error.property} ${error.message}`).join('\n'));
+  }
+}
+
+/**
  * Validate the columns object
  * @param {object} columns
  */
@@ -198,7 +318,7 @@ module.exports = {
    * @return {object}
    */
   md2json(data) {
-    let name = '', description = '', options = {}, columns = {};
+    let name = '', description = '', options = {}, columns = {}, columnContent = {};
     try {
 
       // Check data type
@@ -256,26 +376,32 @@ module.exports = {
 
       // Parse columns
       const columnNames = Object.keys(index).filter(column => ['raw', 'Options', name].indexOf(column) === -1);
-      if (columnNames.length) {
-        columns = Object.fromEntries(columnNames.map(columnName => {
-          try {
-            return [
-              columnName,
-              index[columnName].content
-                ? marked.lexer(index[columnName].content)[0].items.map(item => item.tokens[0].tokens[0].text)
-                : []
-            ];
-          } catch (error) {
-            throw new Error(`column "${columnName}" must contain a list`);
-          }
-        }));
+      for (const columnName of columnNames) {
+        let parsed = null;
+        try {
+          parsed = parseColumnContent(index[columnName].content);
+        } catch (error) {
+          throw new Error(`unable to parse column "${columnName}" (${error.message})`);
+        }
+        columns[columnName] = parsed.taskIds;
+
+        // Anything in the column that isn't a task link is kept verbatim rather than rejected, so
+        // that a hand-written note or a mistyped link is preserved instead of being thrown away the
+        // next time the board is saved. Nothing else in kanbn reads it
+        if (parsed.content.length) {
+          columnContent[columnName] = parsed.content;
+        }
       }
     } catch (error) {
       throw new Error(`Unable to parse index: ${error.message}`);
     }
 
     // Assemble index object
-    return { name, description, options, columns };
+    const result = { name, description, options, columns };
+    if (Object.keys(columnContent).length) {
+      result.columnContent = columnContent;
+    }
+    return result;
   },
 
   /**
@@ -323,11 +449,13 @@ module.exports = {
       }
       validateColumns(data.columns);
 
-      // Add columns
+      // Add columns, putting any preserved non-task content back where it was found
+      const columnContent = 'columnContent' in data && data.columnContent !== null ? data.columnContent : {};
+      validateColumnContent(columnContent);
       for (let column in data.columns) {
         result.push(
           `## ${column}`,
-          data.columns[column].map(task => `- [${task}](tasks/${task}.md)`).join('\n')
+          buildColumnContent(data.columns[column], column in columnContent ? columnContent[column] : [])
         );
       }
     } catch (error) {

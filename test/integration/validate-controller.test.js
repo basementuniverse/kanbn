@@ -43,6 +43,101 @@ QUnit.test('Validate with no problems should print "Everything OK"', async asser
   assert.deepEqual(mockConfig.output, { save: false });
 });
 
+QUnit.test('Validate should report lines in columns that are not task links', async assert => {
+  mockConfig.columnContentWarnings = [
+    {
+      board: 'index',
+      column: 'Column 1',
+      type: 'non-task-line',
+      text: 'Buy milk',
+      message: 'column "Column 1" contains a line that isn\'t a task link: - Buy milk'
+    }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /1 line in a column isn't a task link/);
+  assert.contains(output, /Column 1: Buy milk/);
+});
+
+QUnit.test('Validate should report a line that looks like a malformed task link', async assert => {
+  mockConfig.columnContentWarnings = [
+    {
+      board: 'index',
+      column: 'Column 1',
+      type: 'malformed-task-link',
+      text: '[test-task-1](tasks/test-task-1.md',
+      message: 'column "Column 1" contains a line that looks like a malformed task link'
+    }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /1 line looks like a .*malformed task link/);
+});
+
+QUnit.test('Validate should report a line naming a task file that exists', async assert => {
+  mockConfig.columnContentWarnings = [
+    {
+      board: 'index',
+      column: 'Column 1',
+      type: 'untracked-task-line',
+      text: 'test-task-1',
+      message: 'column "Column 1" contains a line naming a task file that exists'
+    }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /1 line names a task file that exists/);
+  assert.contains(output, /Column 1: test-task-1/);
+});
+
+QUnit.test('Validate with the json flag should carry column content warnings', async assert => {
+  mockConfig.columnContentWarnings = [
+    {
+      board: 'index',
+      column: 'Column 1',
+      type: 'non-task-line',
+      text: 'Buy milk',
+      message: 'column "Column 1" contains a line that isn\'t a task link: - Buy milk'
+    }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate', '--json'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  const result = JSON.parse(output);
+  assert.deepEqual(result.drift, []);
+  assert.equal(result.warnings.length, 1);
+  assert.equal(result.warnings[0].type, 'non-task-line');
+});
+
+QUnit.test('Validate with the fix flag should still report column content warnings', async assert => {
+  mockConfig.columnContentWarnings = [
+    {
+      board: 'index',
+      column: 'Column 1',
+      type: 'malformed-task-link',
+      text: '[test-task-1](tasks/test-task-1.md',
+      message: 'column "Column 1" contains a line that looks like a malformed task link'
+    }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate', '--fix'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /malformed task link/);
+});
+
 QUnit.test('Validate with the save flag should pass save to kanbn.validate', async assert => {
   await capture.stdout(async out => {
     await mockArgv(['validate', '--save'], kanbn);

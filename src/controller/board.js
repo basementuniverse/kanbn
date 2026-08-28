@@ -24,16 +24,25 @@ module.exports = async args => {
     return;
   }
 
-  // Load and hydrate all tracked tasks
-  const tasks = (await kanbn.loadAllTrackedTasks(index)).map(
-    task => kanbn.hydrateTask(index, task)
-  );
+  // Load and hydrate all tracked tasks. A task the board references but which has no task file is
+  // skipped rather than fatal, and reported by the hint below
+  let tasks, missingTaskFiles;
+  try {
+    tasks = (await kanbn.loadAllTrackedTasks(index)).map(
+      task => kanbn.hydrateTask(index, task)
+    );
+    missingTaskFiles = await kanbn.findMissingTaskFiles(index);
+  } catch (error) {
+    utility.error(error);
+    return;
+  }
 
   // Show the board
   board
   .show(index, tasks, args.view, args.json)
   .then(async () => {
     const verbose = !args.json && kanbn.isVerbose(index);
+    utility.showMissingTaskFilesHint(missingTaskFiles, verbose);
     utility.showDateDriftHint(kanbn.getDateDrift(index, tasks), verbose);
     utility.showBoardCountHint(await workspace.listBoards(), verbose);
   })

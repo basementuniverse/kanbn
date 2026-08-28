@@ -31,6 +31,50 @@ function showDrift(drift, json) {
 }
 
 /**
+ * Show lines in columns that aren't task links. These are preserved and ignored, so this is
+ * information rather than a problem - except for a line that looks like a task link with a typo in
+ * it, which is the one way a task can silently stop being tracked
+ * @param {object[]} warnings
+ */
+function showColumnContentWarnings(warnings) {
+  if (!warnings.length) {
+    return;
+  }
+  const malformed = warnings.filter(w => w.type === 'malformed-task-link');
+  const untracked = warnings.filter(w => w.type === 'untracked-task-line');
+  const other = warnings.filter(w => w.type === 'non-task-line');
+  if (malformed.length) {
+    console.log(utility.replaceTags(
+      `${malformed.length} ${malformed.length === 1 ? 'line looks' : 'lines look'} like a ` +
+      `{b}malformed task link{b} and ${malformed.length === 1 ? 'is' : 'are'} not being tracked:`
+    ));
+    for (const warning of malformed) {
+      console.log(`  ${warning.column}: ${warning.text}`);
+    }
+  }
+  if (untracked.length) {
+    console.log(utility.replaceTags(
+      `${untracked.length} ${untracked.length === 1 ? 'line names' : 'lines name'} a task file that ` +
+      `exists but ${untracked.length === 1 ? 'is' : 'are'} {b}not written as a link{b}, so ` +
+      `${untracked.length === 1 ? 'it isn\'t' : 'they aren\'t'} tracked:`
+    ));
+    for (const warning of untracked) {
+      console.log(`  ${warning.column}: ${warning.text}`);
+    }
+  }
+  if (other.length) {
+    console.log(
+      other.length === 1
+        ? "1 line in a column isn't a task link (preserved, but ignored):"
+        : `${other.length} lines in columns aren't task links (preserved, but ignored):`
+    );
+    for (const warning of other) {
+      console.log(`  ${warning.column}: ${warning.text}`);
+    }
+  }
+}
+
+/**
  * Show warnings about a multi-board workspace
  * @param {object[]} warnings
  */
@@ -89,6 +133,16 @@ module.exports = async args => {
     }
   }
 
+  // Report lines in columns that aren't task links. Unlike the warnings above these apply to any
+  // workspace, so they're gathered whether or not it has more than one board
+  let columnContentWarnings = [];
+  try {
+    columnContentWarnings = await kanbn.findColumnContentWarnings();
+  } catch (error) {
+    utility.error(error);
+    return;
+  }
+
   // Backfill missing started and completed dates
   if (args.fix) {
     let fixed;
@@ -99,6 +153,10 @@ module.exports = async args => {
       return;
     }
     if (!fixed.length) {
+      if (!args.json && columnContentWarnings.length) {
+        showColumnContentWarnings(columnContentWarnings);
+        return;
+      }
       console.log('Everything OK, nothing to fix');
       return;
     }
@@ -124,9 +182,11 @@ module.exports = async args => {
   if (args.json) {
 
     // A multi-board workspace has warnings to report as well as drift, so JSON output carries both.
-    // With a single board it stays the bare drift list it has always been
-    if (multiBoard) {
-      console.log(JSON.stringify({ drift, warnings: boardWarnings }, null, 2));
+    // With a single board it stays the bare drift list it has always been - unless there are
+    // warnings, which have nowhere to go in a bare drift list and are worth more than the shape
+    const warnings = [...boardWarnings, ...columnContentWarnings];
+    if (multiBoard || warnings.length) {
+      console.log(JSON.stringify({ drift, warnings }, null, 2));
       return;
     }
     if (drift.length) {
@@ -139,8 +199,9 @@ module.exports = async args => {
   if (drift.length) {
     showDrift(drift, false);
   }
+  showColumnContentWarnings(columnContentWarnings);
   showBoardWarnings(boardWarnings);
-  if (drift.length || boardWarnings.length) {
+  if (drift.length || boardWarnings.length || columnContentWarnings.length) {
     return;
   }
   console.log('Everything OK');

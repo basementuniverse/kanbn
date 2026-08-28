@@ -149,6 +149,22 @@ module.exports = (() => {
     },
 
     /**
+     * Show a hint about tasks that a board references but which have no task file. These are skipped
+     * rather than fatal, so the hint is the only sign that the board is showing less than it lists
+     * @param {object[]} missing Missing task entries from kanbn.findMissingTaskFiles()
+     * @param {boolean} show False to suppress the hint
+     */
+    showMissingTaskFilesHint(missing, show = true) {
+      if (!show || !missing.length) {
+        return;
+      }
+      const summary =
+        `${missing.length} ${missing.length === 1 ? 'task has' : 'tasks have'} no task file and ` +
+        `${missing.length === 1 ? 'was' : 'were'} skipped`;
+      console.log(this.replaceTags(`\n{d}${summary} - run{d} {b}kanbn validate{b} {d}for details{d}`));
+    },
+
+    /**
      * Show a hint about tasks whose dates don't match the column they're in. Hints are suppressed
      * for machine-readable output and when the board sets verbose to false
      * @param {object[]} drift Drift entries from kanbn.getDateDrift()

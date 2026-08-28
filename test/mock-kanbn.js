@@ -63,6 +63,8 @@ function defaults() {
     validateResult: true,
     dateDrift: [],
     fixedDateDrift: [],
+    missingTaskFiles: [],
+    columnContentWarnings: [],
     sprintData: {
       name: 'Test Sprint',
       start: new Date('2026-01-01T00:00:00.000Z')
@@ -390,6 +392,14 @@ const kanbn = {
       allBoards: true
     };
     return config.searchResults;
+  },
+  async findMissingTaskFiles(index = null) {
+    failIfConfigured('findMissingTaskFiles');
+    return config.missingTaskFiles;
+  },
+  async findColumnContentWarnings(index = null) {
+    failIfConfigured('findColumnContentWarnings');
+    return config.columnContentWarnings;
   },
   async findDateDrift() {
     failIfConfigured('findDateDrift');

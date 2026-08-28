@@ -5,6 +5,11 @@ Validate kanbn index file and all task files, and report any formatting errors.
 If the files are valid, this also reports tasks whose started/completed dates don't match the column
 they're in - which usually means the task was moved by hand or by a merge, rather than through kanbn.
 
+It also lists any line in a column that isn't a task link. Those lines are kept in the board file and
+ignored by every other command, so this is information rather than a problem - except for a line that
+looks like a task link with a typo in it, or one naming a task file that exists, both of which mean a
+task isn't being tracked when it probably should be.
+
 Options:
   {b}kanbn validate --save{b}
     Re-save the index and task files. This will ensure that all index column sorting settings are applied and that all tasks are formatted correctly.
@@ -20,7 +25,9 @@ Options:
 
   {b}kanbn validate --json{b}
   {b}kanbn validate -j{b}
-    Output validation errors in JSON format.
+    Output validation errors in JSON format. When there is nothing to report beyond date drift this
+    is the bare list of drift entries; when there are warnings as well - or the workspace has more
+    than one board - it is an object with {b}drift{b} and {b}warnings{b} keys.
 
   {b}kanbn validate --board "board-slug"{b}
   {b}kanbn validate -b "board-slug"{b}

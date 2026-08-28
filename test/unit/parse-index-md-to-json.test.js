@@ -42,16 +42,7 @@ Invalid options
 `,
     error: /invalid options content/
   },
-  {
-    md: `
-# ${TEST_NAME}
 
-## ${TEST_COLUMN_1}
-
-Invalid column contents
-`,
-    error: new RegExp(`column "${TEST_COLUMN_1}" must contain a list`)
-  },
   {
     md: `---
 Invalid Options
@@ -176,6 +167,9 @@ validOptions: test
     }
   },
   {
+
+    // Only a markdown link is a task reference. A bare list item is content: it's kept so that it
+    // survives a read/write cycle, but it isn't a task
     md: `
 # ${TEST_NAME}
 
@@ -190,9 +184,12 @@ ${TEST_DESCRIPTION}
       description: TEST_DESCRIPTION,
       options: {},
       columns: {
+        [TEST_COLUMN_1]: []
+      },
+      columnContent: {
         [TEST_COLUMN_1]: [
-          TEST_TASK_1,
-          TEST_TASK_2
+          { position: 0, text: TEST_TASK_1, raw: `- ${TEST_TASK_1}` },
+          { position: 1, text: TEST_TASK_2, raw: `- ${TEST_TASK_2}` }
         ]
       }
     }
@@ -221,8 +218,12 @@ ${TEST_DESCRIPTION}
           TEST_TASK_2
         ],
         [TEST_COLUMN_2]: [
-          TEST_TASK_1,
-          TEST_TASK_2
+          TEST_TASK_1
+        ]
+      },
+      columnContent: {
+        [TEST_COLUMN_2]: [
+          { position: 1, text: TEST_TASK_2, raw: `- ${TEST_TASK_2}` }
         ]
       }
     }

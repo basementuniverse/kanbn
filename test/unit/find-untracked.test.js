@@ -8,7 +8,8 @@ QUnit.module('findUntrackedTasks tests', {
   beforeEach() {
     mockFileSystem({
       '.kanbn': {
-        'index.md': '# Test Project\n\n## Test Column 1\n\n- test-task-1\n\n## Test Column 2\n\n- test-task-2',
+        'index.md': '# Test Project\n\n## Test Column 1\n\n- [test-task-1](tasks/test-task-1.md)\n\n' +
+          '## Test Column 2\n\n- [test-task-2](tasks/test-task-2.md)',
         'tasks': {
           'test-task-1.md': '# Test Task 1',
           'test-task-2.md': '# Test Task 2',
