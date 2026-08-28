@@ -7,6 +7,7 @@ const utility = require("./utility");
 const yaml = require("yamljs");
 const humanizeDuration = require("humanize-duration");
 const rimraf = require("rimraf");
+const gitUser = require("./git-user");
 
 const DEFAULT_FOLDER_NAME = ".kanbn";
 const DEFAULT_INDEX_FILE_NAME = "index.md";
@@ -27,6 +28,7 @@ const WORKSPACE_SCOPED_OPTIONS = [
   "defaultBoard",
   "boards",
   "customFields",
+  "contributors",
   "dateFormat",
   "defaultTaskWorkload",
   "taskWorkloadTags",
@@ -375,13 +377,95 @@ function setTaskMetadata(taskData, property, value) {
 }
 
 /**
+ * Normalise a contributors option into a consistent object form
+ *
+ * A contributor can be written as a bare name or as an object, and both mean the same thing - the
+ * shorthand is what most workspaces will ever need, and requiring `- name: gordon` for a bare name
+ * is the kind of ceremony that stops an optional feature being adopted. Everything downstream sees
+ * the object form
+ * @param {any} contributors The raw contributors option
+ * @return {object[]} The normalised contributors
+ */
+function normaliseContributors(contributors) {
+  if (!Array.isArray(contributors)) {
+    return [];
+  }
+  const result = [];
+  for (const contributor of contributors) {
+    const source = typeof contributor === "string" ? { name: contributor } : contributor;
+    if (source === null || typeof source !== "object" || typeof source.name !== "string") {
+      continue;
+    }
+    const name = source.name.trim();
+    if (!name) {
+      continue;
+    }
+    const normalised = {
+      name,
+      displayName: typeof source.displayName === "string" && source.displayName ? source.displayName : name,
+      aliases: Array.isArray(source.aliases)
+        ? source.aliases.filter((alias) => typeof alias === "string" && alias.trim()).map((alias) => alias.trim())
+        : [],
+    };
+    if (typeof source.email === "string" && source.email) {
+      normalised.email = source.email;
+    }
+
+    // Purely presentational, for avatar chips in a UI. Kanbn stores and serves it, and never
+    // interprets it
+    if (typeof source.colour === "string" && source.colour) {
+      normalised.colour = source.colour;
+    }
+    result.push(normalised);
+  }
+  return result;
+}
+
+/**
+ * Find the contributor a value refers to, matching against the canonical name, the display name and
+ * any aliases, case-insensitively
+ * @param {object[]} contributors Normalised contributors
+ * @param {?string} value The value to look up
+ * @return {?object} The matching contributor, or null if there isn't one
+ */
+function matchContributor(contributors, value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+  const needle = value.trim().toLowerCase();
+  return (
+    contributors.find(
+      (contributor) =>
+        contributor.name.toLowerCase() === needle ||
+        contributor.displayName.toLowerCase() === needle ||
+        contributor.aliases.some((alias) => alias.toLowerCase() === needle)
+    ) || null
+  );
+}
+
+/**
+ * Find the contributor with a given email address, case-insensitively
+ * @param {object[]} contributors Normalised contributors
+ * @param {?string} email The email address to look up
+ * @return {?object} The matching contributor, or null if there isn't one
+ */
+function matchContributorEmail(contributors, email) {
+  if (typeof email !== "string" || !email.trim()) {
+    return null;
+  }
+  const needle = email.trim().toLowerCase();
+  return contributors.find((contributor) => (contributor.email || "").toLowerCase() === needle) || null;
+}
+
+/**
  * Append a structured history event to a task
  * @param {object} taskData The task object
  * @param {object} historyEvent The history event payload
  * @param {?string} [boardSlug=null] The board the event happened on, or null for the main board
+ * @param {?string} [author=null] The user the event is attributed to, or null for no attribution
  * @return {object} The modified task object
  */
-function appendTaskHistory(taskData, historyEvent, boardSlug = null) {
+function appendTaskHistory(taskData, historyEvent, boardSlug = null, author = null) {
   if (!('history' in taskData) || taskData.history === null) {
     taskData.history = [];
   }
@@ -391,7 +475,10 @@ function appendTaskHistory(taskData, historyEvent, boardSlug = null) {
 
     // Events on the main board carry no board key, so a single-board workspace writes exactly the
     // history it always has
-    ...(boardSlug === null ? {} : { board: boardSlug })
+    ...(boardSlug === null ? {} : { board: boardSlug }),
+
+    // Likewise, a machine with no resolvable user writes no author key at all
+    ...(author ? { author } : {})
   });
   return taskData;
 }
@@ -1835,6 +1922,76 @@ class Kanbn {
   }
 
   /**
+   * Normalise a contributors option into a consistent object form. Exposed so that callers holding
+   * an index object (the VSCode extension, for one) don't have to reimplement the shorthand rules
+   * @param {any} contributors The raw contributors option
+   * @return {object[]} The normalised contributors
+   */
+  normaliseContributors(contributors) {
+    return normaliseContributors(contributors);
+  }
+
+  /**
+   * Get the workspace's contributors, normalised to the object form
+   *
+   * Contributors are advisory: they're a convenience list, not an access control list, and nothing
+   * anywhere validates `assigned` or a comment `author` against them
+   * @return {Promise<object[]>} The normalised contributors, or an empty array if none are declared
+   */
+  async getContributors() {
+    return normaliseContributors((await this.getWorkspaceOptions()).contributors);
+  }
+
+  /**
+   * Find the contributor a value refers to, matching against the canonical name, the display name
+   * and any aliases, case-insensitively
+   * @param {?string} value The value to look up
+   * @return {Promise<?object>} The matching contributor, or null if there isn't one
+   */
+  async findContributor(value) {
+    return matchContributor(await this.getContributors(), value);
+  }
+
+  /**
+   * Work out who the current user is, as the value that would be written into `assigned` or a
+   * comment `author`
+   *
+   * In order, first match wins:
+   *  1. the KANBN_USER environment variable, used verbatim
+   *  2. `git config user.email` matched against a contributor's email
+   *  3. `git config user.name` matched against a contributor's name, display name or aliases
+   *  4. `git config user.name` as-is
+   *  5. null
+   *
+   * With no contributors declared this is exactly what the git username has always been, so a
+   * workspace that ignores contributors sees no change. With contributors declared it canonicalises:
+   * a machine whose git says "Gordon Larrigan" writes "gordon", because that's what the workspace has
+   * agreed to call him
+   * @return {Promise<?string>} The current user, or null if there's nothing to go on
+   */
+  async currentUser() {
+    // An explicitly set user is used exactly as given - it's the escape hatch for a machine whose
+    // git identity is wrong, or which has none
+    const envUser = (process.env.KANBN_USER || "").trim();
+    if (envUser) {
+      return envUser;
+    }
+
+    const contributors = await this.getContributors();
+    if (contributors.length) {
+      const byEmail = matchContributorEmail(contributors, gitUser.email());
+      if (byEmail !== null) {
+        return byEmail.name;
+      }
+      const byName = matchContributor(contributors, gitUser.name());
+      if (byName !== null) {
+        return byName.name;
+      }
+    }
+    return gitUser.name();
+  }
+
+  /**
    * Get the options a secondary board inherits from the workspace. A config file is workspace-level
    * by construction, so all of it is inherited; the main board's front matter is that board's own
    * file, so only the workspace-scoped keys in it are
@@ -2918,7 +3075,7 @@ class Kanbn {
       column: columnName,
       fromProgress: 0,
       toProgress: getTaskMetadata(taskData, 'progress') || 0
-    }, await this.historyBoard());
+    }, await this.historyBoard(), await this.currentUser());
 
     // Update task metadata dates
     taskData = updateColumnLinkedCustomFields(index, taskData, columnName, now);
@@ -2970,7 +3127,7 @@ class Kanbn {
       date: now,
       type: 'added',
       column: columnName
-    }, await this.historyBoard());
+    }, await this.historyBoard(), await this.currentUser());
 
     // Update task metadata dates
     taskData = updateColumnLinkedCustomFields(index, taskData, columnName, now);
@@ -3153,7 +3310,7 @@ class Kanbn {
         type: 'progress',
         fromProgress: originalProgress,
         toProgress: updatedProgress
-      });
+      }, null, await this.currentUser());
     }
 
     // Save task
@@ -3315,7 +3472,7 @@ class Kanbn {
         type: 'moved',
         fromColumn: currentColumnName,
         toColumn: columnName
-      }, await this.historyBoard());
+      }, await this.historyBoard(), await this.currentUser());
     }
 
     // Update task metadata dates
@@ -3380,7 +3537,7 @@ class Kanbn {
       taskData = appendTaskHistory(taskData, {
         type: 'removed',
         fromColumn: columnName
-      }, await this.historyBoard());
+      }, await this.historyBoard(), await this.currentUser());
       await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
     }
 
@@ -3948,6 +4105,129 @@ class Kanbn {
             message: `history events name board "${historyEvent.board}", which doesn't exist`
           });
         }
+      }
+    }
+    return warnings;
+  }
+
+  /**
+   * Collect every distinct value used in an `assigned` field or a comment `author` across the
+   * workspace's task files, along with where each one is used
+   *
+   * Tasks are workspace-scoped - a task file can be referenced by several boards - so this reads the
+   * task folder rather than any one board. Task files that don't parse are skipped: this is a
+   * reporting helper, and `kanbn validate` is where a broken file gets reported
+   * @return {Promise<Map<string, object>>} A map of value to usage entry
+   */
+  async collectContributorValues() {
+    if (!(await this.workspaceInitialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+    const values = new Map();
+    const record = (value, taskId, field) => {
+      if (typeof value !== "string" || !value.trim()) {
+        return;
+      }
+      const key = value.trim();
+      if (!values.has(key)) {
+        values.set(key, { value: key, assigned: 0, comments: 0, tasks: new Set() });
+      }
+      const entry = values.get(key);
+      entry[field]++;
+      entry.tasks.add(taskId);
+    };
+    for (const taskPath of await glob(`${await this.getTaskFolderPath()}/*.md`)) {
+      const taskId = path.parse(taskPath).name;
+      let taskData = null;
+      try {
+        taskData = await this.loadTask(taskId);
+      } catch (error) {
+        continue;
+      }
+      record(getTaskMetadata(taskData, "assigned"), taskId, "assigned");
+      for (const comment of taskData.comments || []) {
+        record(comment.author, taskId, "comments");
+      }
+    }
+    return values;
+  }
+
+  /**
+   * Report how the workspace's contributors are actually used, and which names are in use that the
+   * contributors list doesn't know about
+   *
+   * The second half is the point: adopting contributors in a workspace with 200 existing tasks
+   * otherwise means grepping. This is read-only - rewriting "Gordon" to "gordon" across every task
+   * file is a bulk mutation and belongs to its own command, with its own dry run
+   * @return {Promise<{contributors: object[], unknown: object[]}>} Usage per known contributor, and
+   * every value in use that isn't one
+   */
+  async getContributorUsage() {
+    const contributors = await this.getContributors();
+    const values = await this.collectContributorValues();
+    const usage = contributors.map((contributor) => ({
+      ...contributor,
+      assigned: 0,
+      comments: 0,
+      tasks: new Set(),
+      spellings: []
+    }));
+    const unknown = [];
+    for (const entry of [...values.values()].sort((a, b) => a.value.localeCompare(b.value))) {
+      const result = {
+        value: entry.value,
+        assigned: entry.assigned,
+        comments: entry.comments,
+        tasks: [...entry.tasks].sort()
+      };
+      const contributor = matchContributor(contributors, entry.value);
+      if (contributor === null) {
+        unknown.push(result);
+        continue;
+      }
+      const target = usage.find((u) => u.name === contributor.name);
+      target.assigned += entry.assigned;
+      target.comments += entry.comments;
+
+      // Counted as a set, so a task naming the same person twice under two spellings is one task
+      for (const taskId of entry.tasks) {
+        target.tasks.add(taskId);
+      }
+      target.spellings.push(result);
+    }
+    return {
+      contributors: usage.map((contributor) => ({ ...contributor, tasks: contributor.tasks.size })),
+      unknown
+    };
+  }
+
+  /**
+   * Find tasks whose assigned user or comment author isn't a known contributor
+   *
+   * Contributors are advisory, so this is a warning and never an error: `assigned` and `author` stay
+   * free text, and a name that isn't in the list is written, read and filtered exactly as before.
+   * Nothing is reported at all when the workspace declares no contributors
+   * @return {Promise<object[]>} A list of warnings
+   */
+  async findContributorWarnings() {
+    const contributors = await this.getContributors();
+    if (!contributors.length) {
+      return [];
+    }
+    const warnings = [];
+    for (const entry of [...(await this.collectContributorValues()).values()].sort((a, b) =>
+      a.value.localeCompare(b.value)
+    )) {
+      if (matchContributor(contributors, entry.value) !== null) {
+        continue;
+      }
+      for (const taskId of [...entry.tasks].sort()) {
+        warnings.push({
+          task: taskId,
+          type: "unknown-contributor",
+          value: entry.value,
+          message: `"${entry.value}" isn't a known contributor`
+        });
       }
     }
     return warnings;
@@ -4570,7 +4850,7 @@ class Kanbn {
    * @param {string} author The comment author
    * @return {Promise<string>} The task id
    */
-  async comment(taskId, text, author) {
+  async comment(taskId, text, author = "") {
     // Check if this folder has been initialised
     if (!(await this.initialised())) {
       throw new Error("Not initialised in this folder");
@@ -4598,7 +4878,10 @@ class Kanbn {
     const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
     taskData.comments.push({
       text,
-      author,
+
+      // An author is optional, and a machine with no resolvable user has none. Serialising null
+      // fails schema validation, so the task could never be written back
+      author: author || "",
       date: new Date(),
     });
 
@@ -4680,7 +4963,7 @@ class Kanbn {
     taskData = appendTaskHistory(taskData, {
       type: 'archived',
       fromColumn: taskColumn
-    });
+    }, null, await this.currentUser());
 
     // Save the task inside the archive folder
     await this.saveTask(archivedTaskPath, taskData);
@@ -4774,7 +5057,7 @@ class Kanbn {
       date: now,
       type: 'restored',
       toColumn: actualColumnName
-    });
+    }, null, await this.currentUser());
 
     // Update task metadata dates and save task
     taskData = updateColumnLinkedCustomFields(index, taskData, actualColumnName, now);

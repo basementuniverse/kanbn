@@ -43,6 +43,7 @@ Where <command> is one of:
   restore ....... Restore a task from the archive
   remove-all .... Remove the kanbn board and all tasks
   history ....... Show task history
+  contributors .. List the workspace's contributors
 
 For more help with commands, try:
 

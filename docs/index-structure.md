@@ -139,6 +139,14 @@ customFields:
     type: 'date'
 {customFieldName}Columns:
   - {Column name}
+contributors:
+  - gordon
+  - name: dave
+    displayName: Dave Smith
+    email: dave@example.com
+    aliases:
+      - Dave Smith
+    colour: '#7c5cff'
 ```
 
 ### `hiddenColumns`
@@ -315,6 +323,16 @@ Here's an example of how this could be used:
     - Testing
   ```
 - When a task is moved into the `Testing` column and the task doesn't already have a `testedAt` value in its metadata, this value will be automatically populated with the current date/time.
+
+### `contributors`
+
+An optional list of the people who work on this workspace. Each entry is either a bare name or an object with a required `name` and optional `displayName`, `email`, `aliases` and `colour`.
+
+`contributors` is **workspace-scoped**: like `customFields`, it belongs in `kanbn.json` / `kanbn.yml`, or in the main board's front matter when there is no configuration file, and every board inherits it. A secondary board that declares its own is reported by `kanbn validate` and ignored.
+
+Contributors are **advisory**. `assigned` and comment `author` remain free text and are never validated against the list, never rejected and never rewritten. What the list buys you is a canonical spelling for each person, an autocomplete in the interactive prompts, `@me` in filters, and `kanbn contributors --usage` to find the spellings already in use.
+
+See [Contributors](contributors.md) for the full description, and `kanbn contributors --help`.
 
 ## Task state
 

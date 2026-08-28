@@ -35,7 +35,8 @@ Options:
 
   {b}kanbn add --assigned "name"{b}
   {b}kanbn add -a "name"{b}
-    Create a new task and set the assigned user name. If this option is left blank, the current git username will be used.
+    Create a new task and set the assigned user name. If this option is left blank, the task is assigned to the current user.
+    The current user comes from KANBN_USER or your git identity, canonicalised against the {b}contributors{b} list if the workspace has one - see {b}kanbn contributors --help{b}.
 
   {b}kanbn add --sub-task "sub-task"{b}
   {b}kanbn add -s "sub-task"{b}

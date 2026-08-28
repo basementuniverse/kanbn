@@ -112,6 +112,30 @@ function validateOptions(options) {
           required: ['name', 'type']
         }
       },
+      'contributors': {
+        type: 'array',
+        items: {
+          oneOf: [
+
+            // A bare name, which is all most workspaces ever need
+            { type: 'string' },
+            {
+              type: 'object',
+              properties: {
+                'name': { type: 'string' },
+                'displayName': { type: 'string' },
+                'email': { type: 'string' },
+                'aliases': {
+                  type: 'array',
+                  items: { type: 'string' }
+                },
+                'colour': { type: 'string' }
+              },
+              required: ['name']
+            }
+          ]
+        }
+      },
       'views': {
         type: 'array',
         items: {

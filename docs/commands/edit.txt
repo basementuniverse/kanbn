@@ -34,7 +34,8 @@ Options:
     Modify a task's progress. This should be a number between 0 (not started) and 1 (complete).
 
   {b}kanbn edit "task-id" --assigned "name"{b}
-    Modify a task assigned user name. If this option is left blank, the current git username will be used.
+    Modify a task assigned user name. If this option is left blank, the task is assigned to the current user.
+    The current user comes from KANBN_USER or your git identity, canonicalised against the {b}contributors{b} list if the workspace has one - see {b}kanbn contributors --help{b}.
 
   {b}kanbn edit "task-id" --remove-sub-task "sub-task"{b}
     Remove a sub-task.

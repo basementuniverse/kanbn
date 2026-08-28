@@ -70,6 +70,36 @@ QUnit.test('Find with string filters should pass them through', async assert => 
   });
 });
 
+QUnit.test('Find with "@me" as the assigned filter should expand it to the current user', async assert => {
+  mockConfig.currentUser = 'gordon';
+  await capture.stdout(async out => {
+    await mockArgv(['find', '--assigned', '@me'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.deepEqual(mockConfig.output.filters, { assigned: 'gordon' });
+});
+
+QUnit.test('Find with "@me" among several assigned filters should expand only that one', async assert => {
+  mockConfig.currentUser = 'gordon';
+  await capture.stdout(async out => {
+    await mockArgv(['find', '--assigned', '@me', '--assigned', 'dave'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.deepEqual(mockConfig.output.filters, { assigned: ['gordon', 'dave'] });
+});
+
+QUnit.test('Find with "@me" and no current user should print an error', async assert => {
+  mockConfig.currentUser = null;
+  const output = await capture.stderr(async () => {
+    await mockArgv(['find', '--assigned', '@me'], kanbn);
+  });
+
+  assert.contains(output, /Unable to work out who you are/);
+  assert.strictEqual(mockConfig.output, null);
+});
+
 QUnit.test('Find with a repeated filter should collect the values into an array', async assert => {
   await capture.stdout(async out => {
     await mockArgv(['find', '-t', 'one', '-t', 'two'], kanbn);

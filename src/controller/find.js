@@ -351,6 +351,15 @@ module.exports = async args => {
     }
   }
 
+  // Expand "@me" in the assigned filter
+  if ('assigned' in filters) {
+    const assigned = await utility.expandCurrentUser(kanbn, filters.assigned);
+    if (assigned === null) {
+      return;
+    }
+    filters.assigned = assigned;
+  }
+
   // Check and convert numeric filters
   if ('count-sub-tasks' in filters) {
     if (!convertNumericFilters(filters, 'count-sub-tasks')) {

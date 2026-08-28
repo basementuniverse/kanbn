@@ -166,6 +166,7 @@ Some options describe the workspace rather than a single board:
 | `hiddenColumns`, `startedColumns`, `completedColumns`, `startedField`, `completedField`, `columnSorting`, `views`, `taskTemplate`, `verbose` | Board |
 | `sprints` | Workspace, overridable per board |
 | `customFields` | Workspace — task files are shared, so a field defined on one board must parse on all |
+| `contributors` | Workspace — `assigned: gordon` has to mean the same person on every board that references the task |
 | `defaultTaskWorkload`, `taskWorkloadTags` | Workspace — workload is a property of the task, not the board |
 | `dateFormat` | Workspace only — dates should read identically everywhere |
 | `mainFolder`, `indexFile`, `taskFolder`, `archiveFolder`, `defaultBoard`, `boards` | Workspace only — layout, meaningless in a board file |

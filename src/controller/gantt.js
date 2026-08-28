@@ -324,10 +324,13 @@ module.exports = async args => {
   kanbn = scoped;
   const index = await kanbn.getIndex();
 
-  // Get assigned
+  // Get assigned, expanding "@me" to the current user
   let assigned = null;
   if (args.assigned) {
-    assigned = utility.strArg(args.assigned);
+    assigned = await utility.expandCurrentUser(kanbn, utility.strArg(args.assigned));
+    if (assigned === null) {
+      return;
+    }
   }
 
   // Get columns

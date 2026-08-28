@@ -66,6 +66,20 @@ QUnit.test('Add a comment with blank text throw "blank text" error', async asser
   );
 });
 
+QUnit.test('Add a comment with no author should save the task', async assert => {
+  const TEST_TEXT = 'Test comment...';
+
+  // A machine with no git identity has no author to offer, and the comment used to be built with a
+  // null author, which failed schema validation and left the task unwritable
+  await kanbn.comment('task-1', TEST_TEXT, null);
+
+  // An empty author isn't written to the file at all, so the comment reads back without one
+  const comments = (await kanbn.getTask('task-1')).comments;
+  assert.equal(comments.length, 1);
+  assert.equal(comments[0].text, TEST_TEXT);
+  assert.notOk(comments[0].author);
+});
+
 QUnit.test('Add a comment to a task', async assert => {
   const BASE_PATH = await kanbn.getMainFolder();
   const TEST_TEXT = 'Test comment...';

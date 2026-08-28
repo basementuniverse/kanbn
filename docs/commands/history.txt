@@ -20,6 +20,7 @@ Options:
     If two or more dates are provided, show history from the earliest to latest date.
 
   {b}kanbn history --assigned "user"{b}
+  {b}kanbn history --assigned @me{b}
   {b}kanbn history -a "user"{b}
     Filter for tasks assigned to a specific user.
 

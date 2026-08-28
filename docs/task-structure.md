@@ -100,7 +100,11 @@ An array of tags to apply to this task.
 
 ### `assigned`
 
-The name of the user this task is assigned to.
+The name of the user this task is assigned to. This is free text: any string is a valid assignee, and Kanbn never rejects or rewrites one.
+
+A workspace can declare a list of [contributors](contributors.md), which gives each person a canonical spelling, autocompletes this field in the interactive prompts and lets `kanbn find --assigned @me` work. Contributors are advisory — `assigned` stays free text either way, and a name that isn't in the list is still perfectly valid.
+
+A task has one assignee. `assigned` is a single string in the schema, the filters, the board template and the reporting commands, and there is no multiple-assignee form.
 
 ### `progress`
 
@@ -150,6 +154,8 @@ The `depends-on` relation type is reserved for gantt scheduling. It means the cu
 
 An array of comments, where each comment has an `author` and `date` property, and some text.
 
+`author` is free text, exactly like [`assigned`](#assigned), and it is optional — a comment added on a machine with no resolvable user has an empty author rather than failing to save. When the workspace declares [contributors](contributors.md), the default author is the canonical name for the current user.
+
 ## History
 
 An optional array of structured lifecycle events used for richer timeline reporting (including burndown).
@@ -168,7 +174,8 @@ Notes:
 
 - History entries are stored in the reserved `## History` section as list items.
 - `date` should be an ISO timestamp.
-- Additional fields (for example `author`) are preserved if present.
+- Every event carries an optional `author`, naming the [current user](contributors.md#the-current-user) at the time it happened. The key is omitted entirely when there is no resolvable user, so a machine with no git identity writes exactly the history it always has.
+- Any other additional field is preserved if present.
 - An event type this version of Kanbn doesn't recognise is preserved and skipped rather than rejected, so a task file written by a newer version stays readable.
 
 ### Board attribution

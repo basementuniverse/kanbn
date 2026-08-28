@@ -219,3 +219,22 @@ QUnit.test('Gantt should pass parsed CLI arguments to kanbn.gantt', async assert
 	assert.equal(mockConfig.output.dates.length, 1);
 	assert.equal(mockConfig.output.dates[0].toISOString().substr(0, 10), '2026-01-01');
 });
+
+QUnit.test('Gantt with "@me" should expand it to the current user', async assert => {
+	mockConfig.currentUser = 'gordon';
+	await capture.stdout(async () => {
+		await mockArgv(['gantt', '--json', '--assigned', '@me'], kanbn);
+	});
+
+	assert.equal(mockConfig.output.assigned, 'gordon');
+});
+
+QUnit.test('Gantt with "@me" and no current user should print an error', async assert => {
+	mockConfig.currentUser = null;
+	const output = await capture.stderr(async () => {
+		await mockArgv(['gantt', '--json', '--assigned', '@me'], kanbn);
+	});
+
+	assert.contains(output, /Unable to work out who you are/);
+	assert.strictEqual(mockConfig.output, null);
+});

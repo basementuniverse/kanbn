@@ -1,7 +1,6 @@
 const workspace = require('../main');
 const utility = require('../utility');
 const inquirer = require('inquirer');
-const getGitUsername = require('../git-user-name');
 
 // The board this command targets - set from --board before anything else runs
 let kanbn = workspace;
@@ -88,7 +87,10 @@ module.exports = async args => {
   if (args.author && typeof args.author === 'string') {
     commentAuthor = utility.strArg(args.author);
   } else {
-    commentAuthor = getGitUsername();
+
+    // Nobody at all is a legitimate answer on a machine with no git identity, and an empty author is
+    // what a comment without one looks like
+    commentAuthor = (await kanbn.currentUser()) || '';
   }
 
   // Add comment interactively

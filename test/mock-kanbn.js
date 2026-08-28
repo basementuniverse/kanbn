@@ -67,6 +67,10 @@ function defaults() {
     missingTaskFiles: [],
     columnContentWarnings: [],
     simpleTasks: [],
+    contributors: [],
+    contributorUsage: { contributors: [], unknown: [] },
+    contributorWarnings: [],
+    currentUser: null,
     sprintData: {
       name: 'Test Sprint',
       start: new Date('2026-01-01T00:00:00.000Z')
@@ -445,6 +449,29 @@ const kanbn = {
   async findColumnContentWarnings(index = null) {
     failIfConfigured('findColumnContentWarnings');
     return config.columnContentWarnings;
+  },
+  normaliseContributors: (...args) => realKanbn.normaliseContributors(...args),
+  async getContributors() {
+    failIfConfigured('getContributors');
+    return realKanbn.normaliseContributors(config.contributors);
+  },
+  async findContributor(value) {
+    return (await kanbn.getContributors()).find(
+      contributor => contributor.name.toLowerCase() === String(value).trim().toLowerCase() ||
+        contributor.aliases.some(alias => alias.toLowerCase() === String(value).trim().toLowerCase())
+    ) || null;
+  },
+  async currentUser() {
+    failIfConfigured('currentUser');
+    return config.currentUser;
+  },
+  async getContributorUsage() {
+    failIfConfigured('getContributorUsage');
+    return config.contributorUsage;
+  },
+  async findContributorWarnings() {
+    failIfConfigured('findContributorWarnings');
+    return config.contributorWarnings;
   },
   async findDateDrift() {
     failIfConfigured('findDateDrift');

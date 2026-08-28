@@ -3,7 +3,6 @@ const utility = require('../utility');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
 const chrono = require('chrono-node');
-const getGitUsername = require('../git-user-name');
 
 // The board this command targets - set from --board before anything else runs
 let kanbn = workspace;
@@ -18,9 +17,11 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
  * @param {string[]} taskIds
  * @param {string} columnName
  * @param {string[]} columnNames
+ * @param {?string} currentUser
+ * @param {object[]} contributors
  * @return {Promise<any>}
  */
-async function interactive(taskData, taskIds, columnName, columnNames) {
+async function interactive(taskData, taskIds, columnName, columnNames, currentUser, contributors) {
   const dueDateExists = (
     'metadata' in taskData &&
     'due' in taskData.metadata &&
@@ -226,13 +227,12 @@ async function interactive(taskData, taskIds, columnName, columnNames) {
       default: false,
       when: answers => !assignedExists
     },
-    {
-      type: 'input',
+    utility.assignedPrompt({
       name: 'assigned',
       message: 'Assigned to:',
-      default: assignedExists ? taskData.metadata.assigned : getGitUsername(),
+      default: assignedExists ? taskData.metadata.assigned : (currentUser || ''),
       when: answers => answers.setAssigned || answers.editAssigned === 'edit'
-    },
+    }, contributors),
     {
       type: 'recursive',
       name: 'addSubTasks',
@@ -598,10 +598,12 @@ module.exports = async args => {
     if (!('metadata' in taskData)) {
       taskData.metadata = {};
     }
-    const gitUsername = getGitUsername();
     if (args.assigned === true) {
-      if (gitUsername) {
-        taskData.metadata.assigned = gitUsername;
+
+      // A bare --assigned means "me", canonicalised against the contributors list if there is one
+      const currentUser = await kanbn.currentUser();
+      if (currentUser) {
+        taskData.metadata.assigned = currentUser;
       }
     } else {
       taskData.metadata.assigned = utility.strArg(args.assigned);
@@ -829,7 +831,14 @@ module.exports = async args => {
 
   // Update task interactively
   if (args.interactive) {
-    interactive(taskData, taskIds, columnName, columnNames)
+    interactive(
+      taskData,
+      taskIds,
+      columnName,
+      columnNames,
+      await kanbn.currentUser(),
+      await kanbn.getContributors()
+    )
     .then(answers => {
 
       // Name

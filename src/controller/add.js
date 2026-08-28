@@ -3,7 +3,6 @@ const utility = require('../utility');
 const inquirer = require('inquirer');
 const fuzzy = require('fuzzy');
 const chrono = require('chrono-node');
-const getGitUsername = require('../git-user-name');
 
 // The boards this command targets - set from --board before anything else runs
 let kanbn = workspace;
@@ -19,9 +18,11 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
  * @param {string[]} taskIds
  * @param {string} columnName
  * @param {string[]} columnNames
+ * @param {?string} currentUser
+ * @param {object[]} contributors
  * @return {Promise<any>}
  */
-async function interactiveCreateTask(taskData, taskIds, columnName, columnNames) {
+async function interactiveCreateTask(taskData, taskIds, columnName, columnNames, currentUser, contributors) {
   const dueDateExists = (
     'metadata' in taskData &&
     'due' in taskData.metadata &&
@@ -127,13 +128,12 @@ async function interactiveCreateTask(taskData, taskIds, columnName, columnNames)
       default: false,
       when: answers => !assignedExists
     },
-    {
-      type: 'input',
+    utility.assignedPrompt({
       name: 'assigned',
       message: 'Assigned to:',
-      default: assignedExists ? taskData.metadata.assigned : getGitUsername(),
+      default: assignedExists ? taskData.metadata.assigned : (currentUser || ''),
       when: answers => answers.setAssigned || assignedExists
-    },
+    }, contributors),
     {
       type: 'recursive',
       name: 'subTasks',
@@ -400,10 +400,12 @@ module.exports = async args => {
 
   // Assigned
   if (args.assigned) {
-    const gitUsername = getGitUsername();
     if (args.assigned === true) {
-      if (gitUsername) {
-        taskData.metadata.assigned = gitUsername;
+
+      // A bare --assigned means "me", canonicalised against the contributors list if there is one
+      const currentUser = await kanbn.currentUser();
+      if (currentUser) {
+        taskData.metadata.assigned = currentUser;
       }
     } else {
       taskData.metadata.assigned = utility.strArg(args.assigned);
@@ -508,7 +510,14 @@ module.exports = async args => {
 
   // Create task interactively
   if (args.interactive) {
-    interactiveCreateTask(taskData, taskIds, columnName, columnNames)
+    interactiveCreateTask(
+      taskData,
+      taskIds,
+      columnName,
+      columnNames,
+      await kanbn.currentUser(),
+      await kanbn.getContributors()
+    )
     .then(answers => {
       taskData.name = answers.name;
       if ('description' in answers) {

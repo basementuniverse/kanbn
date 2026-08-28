@@ -156,6 +156,27 @@ QUnit.test('Editing the assigned user', async assert => {
   assert.strictEqual(output.taskData.metadata.assigned, 'Sam');
 });
 
+QUnit.test('The assigned prompt should autocomplete over the contributors', async assert => {
+  mockConfig.contributors = ['gordon', { name: 'dave', aliases: ['Dave Smith'] }];
+  await editInteractively({ editAssigned: 'edit', assigned: 'dave' });
+
+  const prompt = fakeInquirer.questions[0].find(question => question.name === 'assigned');
+  assert.strictEqual(prompt.type, 'autocomplete');
+
+  // Free text is still accepted - contributors are advisory, never an enum
+  assert.strictEqual(prompt.suggestOnly, true);
+  assert.deepEqual(await prompt.source({}, 'gor'), ['gordon']);
+});
+
+QUnit.test('The assigned prompt should be free text when no contributors are declared', async assert => {
+  await editInteractively({ editAssigned: 'edit', assigned: 'Sam' });
+
+  assert.strictEqual(
+    fakeInquirer.questions[0].find(question => question.name === 'assigned').type,
+    'input'
+  );
+});
+
 QUnit.test('Adding sub-tasks', async assert => {
   const output = await editInteractively({
     addSubTasks: [

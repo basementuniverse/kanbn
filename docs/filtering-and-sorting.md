@@ -41,7 +41,7 @@ filters:
 | `due` | `--due`, `-e` | date | `due` metadata |
 | `plannedStart` | `--plannedStart` | date | `plannedStart` metadata |
 | `plannedFinish` | `--plannedFinish` | date | `plannedFinish` metadata |
-| `assigned` | `--assigned` | string | `assigned` metadata (empty string if unset) |
+| `assigned` | `--assigned` | string | `assigned` metadata (empty string if unset). `@me` on the command line expands to the [current user](contributors.md#the-current-user) |
 | `workload` | `--workload` | number | The task's [calculated workload](index-structure.md#taskworkloadtags) |
 | `progress` | `--progress` | number | The task's [calculated progress](task-structure.md#progress) |
 | `sub-task` | `--sub-task`, `-s` | string | All sub-tasks, one per line, as `[ ] text` or `[x] text` |
@@ -59,6 +59,8 @@ Custom fields must be declared in the [`customFields`](index-structure.md#custom
 A task that doesn't have the metadata field being filtered on never matches a date filter or a custom field filter. Missing `assigned` is treated as an empty string, missing `tags`/sub-tasks/relations/comments are treated as empty.
 
 *Note: `hiddenColumns` only affects the board. `kanbn find` still returns tasks in hidden columns unless you filter them out with `column`.*
+
+`@me` is substituted where the argument is parsed, so it works for `kanbn find --assigned @me` and for the simpler `--assigned` options on `kanbn burndown`, `kanbn gantt` and `kanbn history`. It is never interpreted when *setting* a value, and never inside a task file. If Kanbn can't work out who you are, `@me` is an error rather than a filter that quietly matches everything.
 
 ### String filters
 

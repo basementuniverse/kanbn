@@ -53,6 +53,23 @@ columnSorting:
 
 dateFormat: yyyy-mm-dd
 
+# The people who work on this workspace. A contributor can be a bare name or an
+# object; `name` is the value written into a task's `assigned` field and a
+# comment's `author`, and `aliases` catch the other spellings that mean the same
+# person. The list is advisory - `assigned` stays free text and is never
+# validated against it. Run `kanbn contributors --usage` to see which spellings
+# are already in use. See docs/contributors.md.
+contributors:
+  - name: Ana
+    email: ana@example.com
+    aliases:
+      - ana
+      - Ana Ruiz
+  - name: Ben
+    email: ben@example.com
+    aliases:
+      - ben
+
 # Custom fields (team, storyPoints, ...) can be interpolated here because they
 # are declared in customFields above. See docs/index-structure.md for the full
 # list of available variables.

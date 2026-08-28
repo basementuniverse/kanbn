@@ -1,3 +1,5 @@
+const fuzzy = require('fuzzy');
+
 module.exports = (() => {
   const tags = {
     b: 'bold',
@@ -219,6 +221,62 @@ module.exports = (() => {
         `\n{d}${summary}${fixable ? ' - run{d} {b}kanbn validate --fix{b}' : '{d}'}` +
         (fixable ? ` {d}to fill in the missing ${fixable === 1 ? 'date' : 'dates'}{d}` : '')
       ));
+    },
+
+    /**
+     * Build the prompt definition for a task's assigned user
+     *
+     * With contributors configured this is an autocomplete over the list, which is where the typo
+     * mitigation comes from; without them it's the free-text input it has always been. Free text is
+     * accepted either way - contributors are advisory, never an enum, so a name that isn't in the
+     * list is still a perfectly good answer
+     * @param {object} options The prompt properties to merge in, i.e. name, message, default, when
+     * @param {object[]} contributors The workspace's normalised contributors
+     * @return {object} A prompt definition
+     */
+    assignedPrompt(options, contributors) {
+      if (!contributors.length) {
+        return { type: 'input', ...options };
+      }
+
+      // Suggestions are the canonical names, because that's the value written into the task file
+      const names = contributors.map(contributor => contributor.name);
+      return {
+        type: 'autocomplete',
+        suggestOnly: true,
+        source: (answers, input) => Promise.resolve(
+          fuzzy.filter(input || '', names).map(result => result.string)
+        ),
+        ...options
+      };
+    },
+
+    /**
+     * Expand "@me" in a filter value to the current user
+     *
+     * The substitution is kept here, at the argument-parsing boundary: "@me" means something when
+     * filtering and nothing at all when setting a value, and a literal "@me" in a task file is
+     * nonsense nobody needs supported
+     * @param {object} kanbn The board-scoped Kanbn instance
+     * @param {string|string[]} value The filter value from the arguments
+     * @return {Promise<string|string[]|null>} The expanded value, or null if "@me" can't be resolved
+     */
+    async expandCurrentUser(kanbn, value) {
+      const isMe = v => typeof v === 'string' && v.trim() === '@me';
+      const values = this.arrayArg(value);
+      if (!values.some(isMe)) {
+        return value;
+      }
+      const currentUser = await kanbn.currentUser();
+      if (!currentUser) {
+        this.error(
+          "Unable to work out who you are, so {b}@me{b} can't be resolved\n" +
+          'Set {b}KANBN_USER{b}, or set a git username with {b}git config user.name "your name"{b}'
+        );
+        return null;
+      }
+      const expanded = values.map(v => (isMe(v) ? currentUser : v));
+      return Array.isArray(value) ? expanded : expanded[0];
     },
 
     /**

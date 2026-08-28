@@ -211,3 +211,22 @@ QUnit.test('A metadata event with no date value should print without details', a
 
 	assert.contains(output, /2026-01-05 \| task-1 \| metadata\.assigned\n/);
 });
+
+QUnit.test('History with "@me" should expand it to the current user', async assert => {
+	mockConfig.currentUser = 'gordon';
+	await capture.stdout(async () => {
+		await mockArgv(['history', '--json', '--assigned', '@me'], kanbn);
+	});
+
+	assert.equal(mockConfig.output.assigned, 'gordon');
+});
+
+QUnit.test('History with "@me" and no current user should print an error', async assert => {
+	mockConfig.currentUser = null;
+	const output = await capture.stderr(async () => {
+		await mockArgv(['history', '--json', '--assigned', '@me'], kanbn);
+	});
+
+	assert.contains(output, /Unable to work out who you are/);
+	assert.strictEqual(mockConfig.output, null);
+});

@@ -1,0 +1,58 @@
+{b}kanbn contributors{b}
+
+List the people who work on this workspace, and say which of them Kanbn thinks you are.
+
+Contributors are an optional, workspace-scoped list declared in {b}kanbn.yml{b} / {b}kanbn.json{b}, or
+in the main board's front matter:
+
+  contributors:
+    - gordon
+    - dave
+    - name: sam
+      displayName: Sam Vimes
+      email: sam@example.com
+      aliases:
+        - Samuel Vimes
+        - samv
+      colour: '#7c5cff'
+
+A contributor can be a bare name or an object; only {b}name{b} is required, and it is the value
+written into a task's {b}assigned{b} field or a comment's {b}author{b}.
+
+Contributors are {b}advisory{b}. {b}assigned{b} and {b}author{b} stay free text and are never
+validated against the list, never rejected and never rewritten - the list makes the common case one
+keystroke instead of a retyped name, and makes the names a workspace uses discoverable.
+
+{b}The current user{b}
+
+Kanbn resolves "you" in this order, first match wins:
+
+  1. the {b}KANBN_USER{b} environment variable, used exactly as given
+  2. {b}git config user.email{b} matched against a contributor's {b}email{b}
+  3. {b}git config user.name{b} matched against a contributor's {b}name{b}, {b}displayName{b} or
+     {b}aliases{b}, ignoring case
+  4. {b}git config user.name{b} as-is
+  5. nobody
+
+That value is what {b}kanbn add --assigned{b} and {b}kanbn edit --assigned{b} write when given no
+value, what a comment's author defaults to, and what {b}@me{b} expands to in
+{b}kanbn find --assigned{b}, {b}kanbn burndown --assigned{b}, {b}kanbn gantt --assigned{b} and
+{b}kanbn history --assigned{b}.
+
+Steps 2 and 3 are what canonicalise: on a machine whose git username is "Gordon Larrigan", a
+workspace listing {b}gordon{b} with that name as an alias writes {b}gordon{b} into the task file.
+With no contributors declared, this is exactly the git username Kanbn has always used.
+
+Options:
+  {b}kanbn contributors --usage{b}
+  {b}kanbn contributors -u{b}
+    Show how many tasks and comments each contributor appears in, and every name used in a task that
+    isn't a known contributor. This is how you adopt contributors in an existing workspace: it tells
+    you what to put in the list, and which spellings to add as aliases.
+
+    It is read-only. Nothing is rewritten - renaming "Gordon" to "gordon" across every task file is a
+    bulk mutation and isn't done here.
+
+  {b}kanbn contributors --json{b}
+  {b}kanbn contributors -j{b}
+    Output the contributor list, or the usage report, in JSON format.

@@ -78,7 +78,7 @@ Options:
     The date can be in (almost) any format.
 
   {b}kanbn find --assigned "name"{b}
-    Find tasks assigned to a specific user. Use "^$" to find unassigned tasks.
+    Find tasks assigned to a specific user. Use "^$" to find unassigned tasks, and {b}@me{b} for tasks assigned to you.
 
   {b}kanbn find --workload N{b}
     Find tasks with a specific calculated workload.

@@ -14,6 +14,7 @@ Options:
     Output raw data instead of rendering a chart. The data will be returned in JSON format.
 
   {b}kanbn gantt --assigned "user"{b}
+  {b}kanbn gantt --assigned @me{b}
   {b}kanbn gantt -a "user"{b}
     Filter for tasks that are assigned to a particular user.
 

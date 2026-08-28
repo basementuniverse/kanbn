@@ -122,6 +122,25 @@ QUnit.test('Burndown should pass parsed CLI arguments to kanbn.burndown', async 
 	assert.equal(mockConfig.output.normalise, 'minutes');
 });
 
+QUnit.test('Burndown with "@me" should expand it to the current user', async assert => {
+	mockConfig.currentUser = 'gordon';
+	await capture.stdout(async () => {
+		await mockArgv(['burndown', '--json', '--assigned', '@me'], kanbn);
+	});
+
+	assert.equal(mockConfig.output.assigned, 'gordon');
+});
+
+QUnit.test('Burndown with "@me" and no current user should print an error', async assert => {
+	mockConfig.currentUser = null;
+	const output = await capture.stderr(async () => {
+		await mockArgv(['burndown', '--json', '--assigned', '@me'], kanbn);
+	});
+
+	assert.contains(output, /Unable to work out who you are/);
+	assert.strictEqual(mockConfig.output, null);
+});
+
 // The chart is sized from the terminal width, which is undefined when stdout isn't a tty, so give
 // the terminal a fixed width for the rendering tests
 function withTerminalWidth(width, block) {

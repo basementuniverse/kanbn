@@ -287,3 +287,23 @@ QUnit.test('Add all untracked tasks to the index', async assert => {
 
   assert.contains(output, /Added 2 tasks to column "Column 1"/);
 });
+
+QUnit.test('Add a task with a bare --assigned should assign it to the current user', async assert => {
+  mockConfig.currentUser = 'gordon';
+  await capture.stdout(async out => {
+    await mockArgv(['add', '-n', 'Test task', '--assigned'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.strictEqual(mockConfig.output.taskData.metadata.assigned, 'gordon');
+});
+
+QUnit.test('Add a task with a bare --assigned and no current user should leave it unassigned', async assert => {
+  mockConfig.currentUser = null;
+  await capture.stdout(async out => {
+    await mockArgv(['add', '-n', 'Test task', '--assigned'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.strictEqual('assigned' in mockConfig.output.taskData.metadata, false);
+});

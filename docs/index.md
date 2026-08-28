@@ -10,6 +10,7 @@ To get started quickly, check out the [Quick Start](quick-start.md) guide.
 - [Index Structure](index-structure.md) — the board file and all project options
 - [Task Structure](task-structure.md) — task files, metadata, sub-tasks, relations, comments and history
 - [Multiple Boards](multiple-boards.md) — several boards over one shared pool of tasks
+- [Contributors](contributors.md) — an optional list of who works on a workspace, and who "you" are
 - [Views](views.md) — custom board layouts, columns and lanes
 - [Filtering and Sorting](filtering-and-sorting.md) — the filter and sorter model shared by `find`, `sort` and views
 - [Advanced Configuration](advanced-configuration.md)
@@ -24,7 +25,7 @@ The [`example`](../example) directory contains ready-to-run workspaces:
 | [`example/basic`](../example/basic) | A typical board: columns, tags, workload, sprints |
 | [`example/views`](../example/views) | Views, lanes, filters and sorters |
 | [`example/boards`](../example/boards) | Multiple boards over one shared pool of tasks, with per-board state fields |
-| [`example/advanced`](../example/advanced) | A `kanbn.yml` config file, custom fields, column sorting and a custom task template |
+| [`example/advanced`](../example/advanced) | A `kanbn.yml` config file, custom fields, contributors, column sorting and a custom task template |
 
 Run any Kanbn command from inside one of those directories to try it out.
 

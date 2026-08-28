@@ -68,6 +68,21 @@ boards:
       - Ideas
 ```
 
+## Contributors
+
+`contributors` is workspace-scoped too: an optional list of the people who work on this workspace, used to canonicalise `assigned` and comment `author` values and to answer "who is the current user?".
+
+```yaml
+contributors:
+  - gordon
+  - name: dave
+    email: dave@example.com
+    aliases:
+      - Dave Smith
+```
+
+It is advisory — nothing is ever validated against it. See [Contributors](contributors.md).
+
 Note that `indexFile` also sets the **main board's slug**: with `indexFile: board.md`, the main board's slug is `board`, and `main` / `default` still resolve to it.
 
 Where a configuration file exists, everything in it is inherited by every board — it is workspace-level by construction, so a board-scoped option declared there is a deliberate statement about all boards. Where there is no configuration file, the workspace options live in the main board's front matter, and only the workspace-scoped ones propagate; `startedColumns`, `views` and the rest stay with the main board.

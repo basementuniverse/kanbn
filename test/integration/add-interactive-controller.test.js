@@ -123,6 +123,47 @@ QUnit.test('Create a task interactively with an assigned user', async assert => 
   assert.strictEqual(output.taskData.metadata.assigned, 'Alex');
 });
 
+QUnit.test('The assigned prompt should default to the current user', async assert => {
+  mockConfig.currentUser = 'gordon';
+  const output = await addInteractively({ name: 'Interactive task', setAssigned: true });
+
+  assert.strictEqual(output.taskData.metadata.assigned, 'gordon');
+});
+
+QUnit.test('The assigned prompt should autocomplete over the contributors', async assert => {
+  mockConfig.contributors = ['gordon', { name: 'dave', aliases: ['Dave Smith'] }];
+  mockConfig.currentUser = 'gordon';
+  const { controller, inquirer } = mockInquirer.loadController(
+    CONTROLLER,
+    [{ name: 'Interactive task', setAssigned: true }]
+  );
+  await capture.stdout(async () => {
+    await controller({ _: ['add'], interactive: true });
+    await capture.waitFor(() => mockConfig.output !== null);
+  });
+
+  const prompt = inquirer.questions[0].find(question => question.name === 'assigned');
+  assert.strictEqual(prompt.type, 'autocomplete');
+
+  // Free text is still accepted - contributors are advisory, never an enum
+  assert.strictEqual(prompt.suggestOnly, true);
+  assert.deepEqual(await prompt.source({}, 'dav'), ['dave']);
+});
+
+QUnit.test('The assigned prompt should be free text when no contributors are declared', async assert => {
+  const { controller, inquirer } = mockInquirer.loadController(
+    CONTROLLER,
+    [{ name: 'Interactive task', setAssigned: true, assigned: 'Alex' }]
+  );
+  await capture.stdout(async () => {
+    await controller({ _: ['add'], interactive: true });
+    await capture.waitFor(() => mockConfig.output !== null);
+  });
+
+  assert.strictEqual(inquirer.questions[0].find(question => question.name === 'assigned').type, 'input');
+  assert.strictEqual(mockConfig.output.taskData.metadata.assigned, 'Alex');
+});
+
 QUnit.test('Create a task interactively with sub-tasks', async assert => {
   const output = await addInteractively({
     name: 'Interactive task',

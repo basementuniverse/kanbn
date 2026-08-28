@@ -10,7 +10,8 @@ Options:
 
   {b}kanbn comment "task-id" --author "name"{b}
   {b}kanbn comment "task-id" -a "name"{b}
-    Set the comment author. If this option is left blank or omitted, the current git username will be used.
+    Set the comment author. If this option is left blank or omitted, the current user is used, and the comment has no author at all if there isn't one.
+    The current user comes from KANBN_USER or your git identity, canonicalised against the {b}contributors{b} list if the workspace has one - see {b}kanbn contributors --help{b}.
 
   {b}kanbn comment "task-id" --text "text"{b}
   {b}kanbn comment "task-id" -t "text"{b}

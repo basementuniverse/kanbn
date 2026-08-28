@@ -319,3 +319,40 @@ QUnit.test('Drift that cannot be fixed should not suggest the fix flag', async a
   assert.contains(output, /1 task has dates that don't match its column/);
   assert.strictEqual(output.join('').indexOf('--fix'), -1);
 });
+
+QUnit.test('Validate should report names that are not known contributors', async assert => {
+  mockConfig.contributorWarnings = [
+    { task: 'test-task-1', type: 'unknown-contributor', value: 'Gordon', message: '"Gordon" isn\'t a known contributor' },
+    { task: 'test-task-2', type: 'unknown-contributor', value: 'Gordon', message: '"Gordon" isn\'t a known contributor' }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /1 name is used in tasks but isn't a known contributor/);
+  assert.contains(output, /Gordon: test-task-1, test-task-2/);
+  assert.contains(output, /kanbn contributors --usage/);
+});
+
+QUnit.test('Validate should include contributor warnings in JSON output', async assert => {
+  mockConfig.contributorWarnings = [
+    { task: 'test-task-1', type: 'unknown-contributor', value: 'Gordon', message: '"Gordon" isn\'t a known contributor' }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate', '--json'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  const result = JSON.parse(output.join(''));
+  assert.deepEqual(result.warnings, mockConfig.contributorWarnings);
+});
+
+QUnit.test('Validate with no contributor warnings should say everything is OK', async assert => {
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /Everything OK/);
+});

@@ -60,6 +60,29 @@ QUnit.test('Add a comment', async assert => {
   assert.strictEqual(mockConfig.output.text, 'Test comment');
 });
 
+QUnit.test('Add a comment with no author should default to the current user', async assert => {
+  mockConfig.currentUser = 'gordon';
+  await capture.stdout(async out => {
+    await mockArgv(['comment', 'test-task-1', '-t', 'Test comment'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.strictEqual(mockConfig.output.author, 'gordon');
+});
+
+QUnit.test('Add a comment on a machine with no current user should leave the author empty', async assert => {
+
+  // A null author used to be written straight into the comment, which failed schema validation and
+  // left the task unwritable
+  mockConfig.currentUser = null;
+  await capture.stdout(async out => {
+    await mockArgv(['comment', 'test-task-1', '-t', 'Test comment'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.strictEqual(mockConfig.output.author, '');
+});
+
 QUnit.test('Add a comment with an author', async assert => {
   await capture.stdout(async out => {
     await mockArgv(['comment', 'test-task-1', '-t', 'Test comment', '-a', 'Test Author'], kanbn);

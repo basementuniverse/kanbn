@@ -1,0 +1,18 @@
+{
+  "name": "Contributors",
+  "commands": [
+    "contributors"
+  ],
+  "args": {
+    "boolean": [
+      "json",
+      "usage"
+    ],
+    "alias": {
+      "json": ["j"],
+      "usage": ["u"]
+    }
+  },
+  "controller": "./src/controller/contributors",
+  "help": "./docs/commands/contributors.txt"
+}

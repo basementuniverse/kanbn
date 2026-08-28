@@ -75,6 +75,35 @@ function showColumnContentWarnings(warnings) {
 }
 
 /**
+ * Show tasks whose assigned user or comment author isn't a known contributor. These are advisory:
+ * contributors are a convenience list, not an enum, and every one of these tasks works exactly as it
+ * always has
+ * @param {object[]} warnings
+ */
+function showContributorWarnings(warnings) {
+  if (!warnings.length) {
+    return;
+  }
+
+  // One line per name rather than per task, because "Gordon appears in 12 tasks" is the useful shape
+  const byValue = new Map();
+  for (const warning of warnings) {
+    if (!byValue.has(warning.value)) {
+      byValue.set(warning.value, []);
+    }
+    byValue.get(warning.value).push(warning.task);
+  }
+  console.log(utility.replaceTags(
+    `${byValue.size} ${byValue.size === 1 ? 'name is' : 'names are'} used in tasks but ` +
+    `${byValue.size === 1 ? "isn't" : "aren't"} a {b}known contributor{b}:`
+  ));
+  for (const [value, tasks] of byValue) {
+    console.log(`  ${value}: ${tasks.join(', ')}`);
+  }
+  console.log(utility.replaceTags('Run {b}kanbn contributors --usage{b} for more detail.'));
+}
+
+/**
  * Show warnings about a multi-board workspace
  * @param {object[]} warnings
  */
@@ -143,6 +172,16 @@ module.exports = async args => {
     return;
   }
 
+  // Report names used in tasks that the contributors list doesn't know about. A workspace with no
+  // contributors declared has none of these, so its output is exactly what it always was
+  let contributorWarnings = [];
+  try {
+    contributorWarnings = await kanbn.findContributorWarnings();
+  } catch (error) {
+    utility.error(error);
+    return;
+  }
+
   // Backfill missing started and completed dates
   if (args.fix) {
     let fixed;
@@ -153,8 +192,9 @@ module.exports = async args => {
       return;
     }
     if (!fixed.length) {
-      if (!args.json && columnContentWarnings.length) {
+      if (!args.json && (columnContentWarnings.length || contributorWarnings.length)) {
         showColumnContentWarnings(columnContentWarnings);
+        showContributorWarnings(contributorWarnings);
         return;
       }
       console.log('Everything OK, nothing to fix');
@@ -184,7 +224,7 @@ module.exports = async args => {
     // A multi-board workspace has warnings to report as well as drift, so JSON output carries both.
     // With a single board it stays the bare drift list it has always been - unless there are
     // warnings, which have nowhere to go in a bare drift list and are worth more than the shape
-    const warnings = [...boardWarnings, ...columnContentWarnings];
+    const warnings = [...boardWarnings, ...columnContentWarnings, ...contributorWarnings];
     if (multiBoard || warnings.length) {
       console.log(JSON.stringify({ drift, warnings }, null, 2));
       return;
@@ -200,8 +240,9 @@ module.exports = async args => {
     showDrift(drift, false);
   }
   showColumnContentWarnings(columnContentWarnings);
+  showContributorWarnings(contributorWarnings);
   showBoardWarnings(boardWarnings);
-  if (drift.length || boardWarnings.length || columnContentWarnings.length) {
+  if (drift.length || boardWarnings.length || columnContentWarnings.length || contributorWarnings.length) {
     return;
   }
   console.log('Everything OK');

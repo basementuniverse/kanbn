@@ -342,3 +342,13 @@ QUnit.test('A custom field value should be set on the task metadata', async asse
 
   assert.strictEqual(mockConfig.output.taskData.metadata.points, 5);
 });
+
+QUnit.test('Edit a task with a bare --assigned should assign it to the current user', async assert => {
+  mockConfig.currentUser = 'gordon';
+  await capture.stdout(async out => {
+    await mockArgv(['edit', 'test-task-1', '--assigned'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.strictEqual(mockConfig.output.taskData.metadata.assigned, 'gordon');
+});

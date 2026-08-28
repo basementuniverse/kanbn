@@ -30,6 +30,7 @@ Options:
     Filter for tasks in a particular column. This option can be repeated to include multiple columns.
 
   {b}kanbn burndown --assigned "user"{b}
+  {b}kanbn burndown --assigned @me{b}
   {b}kanbn burndown -a "user"{b}
     Filter for tasks that are assigned to a particular user.
 

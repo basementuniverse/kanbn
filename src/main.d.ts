@@ -110,6 +110,38 @@ declare type sprint = {
   description?: string
 };
 
+declare type contributor = {
+  name: string,
+  displayName: string,
+  aliases: string[],
+  email?: string,
+  colour?: string
+};
+
+declare type contributorSpelling = {
+  value: string,
+  assigned: number,
+  comments: number,
+  tasks: string[]
+};
+
+declare type contributorUsage = {
+  contributors: (contributor & {
+    assigned: number,
+    comments: number,
+    tasks: number,
+    spellings: contributorSpelling[]
+  })[],
+  unknown: contributorSpelling[]
+};
+
+declare type contributorWarning = {
+  task: string,
+  type: 'unknown-contributor',
+  value: string,
+  message: string
+};
+
 export class Kanbn {
   constructor(root?: any, options?: { board?: string, caches?: any });
   ROOT: string;
@@ -245,6 +277,35 @@ export class Kanbn {
    * Load the workspace options along with where they came from
    */
   loadWorkspaceOptions(): Promise<{ options: Record<string, any>, fromConfig: boolean }>;
+  /**
+   * Normalise a contributors option into a consistent object form
+   */
+  normaliseContributors(contributors: any): contributor[];
+  /**
+   * Get the workspace's contributors, normalised to the object form
+   */
+  getContributors(): Promise<contributor[]>;
+  /**
+   * Find the contributor a value refers to, matching name, display name and aliases
+   */
+  findContributor(value: string | null): Promise<contributor | null>;
+  /**
+   * Work out who the current user is: KANBN_USER, then a contributor matched by git email or git
+   * name, then the git username, then null
+   */
+  currentUser(): Promise<string | null>;
+  /**
+   * Collect every distinct `assigned` and comment `author` value used across the workspace's tasks
+   */
+  collectContributorValues(): Promise<Map<string, { value: string, assigned: number, comments: number, tasks: Set<string> }>>;
+  /**
+   * Report how contributors are used, and which names in use aren't known contributors
+   */
+  getContributorUsage(): Promise<contributorUsage>;
+  /**
+   * Find tasks whose assigned user or comment author isn't a known contributor
+   */
+  findContributorWarnings(): Promise<contributorWarning[]>;
   /**
    * Get the options a secondary board inherits from the workspace
    */
@@ -604,7 +665,7 @@ export class Kanbn {
    * @param {string} author The comment author
    * @return {Promise<string>} The task id
    */
-  comment(taskId: string, text: string, author: string): Promise<string>;
+  comment(taskId: string, text: string, author?: string): Promise<string>;
   /**
    * Return a list of archived tasks
    * @return {Promise<string[]>} A list of archived task ids
