@@ -6,6 +6,34 @@ const inquirer = require('inquirer');
 let kanbn = workspace;
 
 /**
+ * Remove a simple task - a line in a column that isn't a task link. There is no file to delete and
+ * nothing to archive: the line is the whole of it
+ * @param {string} input
+ * @param {boolean} force True to skip the confirmation prompt
+ */
+async function removeSimpleTask(input, force) {
+  if (!force) {
+    const answers = await inquirer.prompt([
+      {
+        type: 'confirm',
+        message: 'Are you sure you want to remove this simple task?',
+        name: 'sure',
+        default: false
+      }
+    ]);
+    if (!answers.sure) {
+      return;
+    }
+  }
+  try {
+    const removed = await kanbn.deleteSimpleTask(input);
+    console.log(`Removed simple task "${removed.text}" from column "${removed.column}"`);
+  } catch (error) {
+    utility.error(error);
+  }
+}
+
+/**
  * Remove a task
  * @param {string} taskId
  * @param {boolean} removeFile True if the task file should be deleted as well as the index entry
@@ -50,11 +78,19 @@ module.exports = async args => {
     return;
   }
 
-  // Make sure the task exists
+  // Make sure the task exists. A task file always wins, so a simple task is only looked for when
+  // nothing has this task id
   try {
     await kanbn.taskExists(taskId);
   } catch (error) {
-    utility.error(error);
+    if (await kanbn.taskFileExists(taskId)) {
+      utility.error(error);
+      return;
+    }
+    const simpleTask = await utility.resolveSimpleTask(kanbn, taskId, error);
+    if (simpleTask !== null) {
+      await removeSimpleTask(taskId, !!args.force);
+    }
     return;
   }
 

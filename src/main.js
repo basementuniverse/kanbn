@@ -162,6 +162,66 @@ function getTrackedTaskIds(index, columnName = null) {
 }
 
 /**
+ * Check whether a preserved column content entry is a simple task: a single-line list item, rather
+ * than a block of prose or an empty line. Only these can be addressed from the CLI
+ * @param {object} entry A column content entry
+ * @return {boolean} True if the entry is a simple task
+ */
+function isSimpleTask(entry) {
+  return !entry.block && !!entry.text && entry.text.indexOf("\n") === -1;
+}
+
+/**
+ * Remove a preserved column content entry from a column. Positions are unique within a column, so
+ * they identify an entry
+ * @param {object} index The index object
+ * @param {string} columnName The column to remove from
+ * @param {number} position The entry's position
+ * @return {object} The modified index object
+ */
+function removeColumnContent(index, columnName, position) {
+  if (!index.columnContent || !(columnName in index.columnContent)) {
+    return index;
+  }
+  index.columnContent[columnName] = index.columnContent[columnName].filter(
+    (entry) => entry.position !== position
+  );
+  if (!index.columnContent[columnName].length) {
+    delete index.columnContent[columnName];
+  }
+  if (!Object.keys(index.columnContent).length) {
+    delete index.columnContent;
+  }
+  return index;
+}
+
+/**
+ * Add a preserved column content entry to a column
+ * @param {object} index The index object
+ * @param {string} columnName The column to add to
+ * @param {object} entry The entry to add
+ * @param {?number} [position=null] The position to add it at, or the end of the column if null
+ * @return {object} The modified index object
+ */
+function addColumnContent(index, columnName, entry, position = null) {
+  if (!index.columnContent) {
+    index.columnContent = {};
+  }
+  if (!(columnName in index.columnContent)) {
+    index.columnContent[columnName] = [];
+  }
+
+  // A position counts every entry in the column, tasks and content alike, so the end of the column
+  // is past both of them
+  const columnLength = index.columns[columnName].length + index.columnContent[columnName].length;
+  index.columnContent[columnName].push({
+    ...entry,
+    position: position === null ? columnLength : Math.max(Math.min(position, columnLength), 0),
+  });
+  return index;
+}
+
+/**
  * Check whether a line in a column looks like a task link with a typo in it, e.g. a missing closing
  * bracket. A checkbox item (`- [ ] ...`) is an ordinary line rather than a broken link
  * @param {string} raw The raw line
@@ -2028,6 +2088,182 @@ class Kanbn {
       }
     }
     return missing;
+  }
+
+  /**
+   * Get this board's simple tasks - lines in a column that aren't task links. A simple task has a
+   * title and a column and nothing else: no id, no metadata, no dates, and no presence in any of
+   * kanbn's reporting. It can be moved, removed, or promoted into a real task
+   *
+   * When an input string is given, this returns the simple tasks matching it. Real tasks always win,
+   * so callers should resolve a task id first and only fall back to this when nothing matched
+   * @param {?string} [input=null] A title to match, or null for every simple task on this board
+   * @param {?object} [index=null] The index object, or null to load it
+   * @return {Promise<object[]>} The matching simple tasks, each with a column, position and text
+   */
+  async findSimpleTasks(input = null, index = null) {
+    if (index === null) {
+      index = await this.getIndex();
+    }
+    const simpleTasks = [];
+    for (const [columnName, entries] of Object.entries(index.columnContent || {})) {
+      for (const entry of entries) {
+        if (isSimpleTask(entry)) {
+          simpleTasks.push({ column: columnName, position: entry.position, text: entry.text, raw: entry.raw });
+        }
+      }
+    }
+    if (input === null) {
+      return simpleTasks;
+    }
+
+    // Match on the title exactly first, then ignoring case, then on the slugified title, so that
+    // `kanbn move "Buy milk"` and `kanbn move buy-milk` both find the same line
+    const matchers = [
+      (simpleTask) => simpleTask.text === input,
+      (simpleTask) => simpleTask.text.toLowerCase() === String(input).toLowerCase(),
+      (simpleTask) => utility.getTaskId(simpleTask.text) === utility.getTaskId(String(input)),
+    ];
+    for (const matcher of matchers) {
+      const matches = simpleTasks.filter(matcher);
+      if (matches.length) {
+        return matches;
+      }
+    }
+    return [];
+  }
+
+  /**
+   * Resolve a string to exactly one simple task on this board, or throw
+   * @param {string} input The title to match
+   * @param {?object} [index=null] The index object, or null to load it
+   * @return {Promise<object>} The matching simple task
+   */
+  async getSimpleTask(input, index = null) {
+    const matches = await this.findSimpleTasks(input, index);
+    if (!matches.length) {
+      throw new Error(`No simple task found matching "${input}"`);
+    }
+
+    // Two lines with the same title are two different lines, and picking one of them silently would
+    // eventually move or delete the wrong one
+    if (matches.length > 1) {
+      throw new Error(
+        `"${input}" matches ${matches.length} simple tasks (${matches
+          .map((match) => `"${match.text}" in ${match.column}`)
+          .join(", ")})`
+      );
+    }
+    return matches[0];
+  }
+
+  /**
+   * Move a simple task to another column on this board
+   * @param {string} input The title to match
+   * @param {string} columnName The column to move it to
+   * @param {?number} [position=null] The position in the target column, or the end of it if null
+   * @return {Promise<object>} The simple task that was moved, with the column it came from
+   */
+  async moveSimpleTask(input, columnName, position = null) {
+    let index = await this.getIndex();
+    if (!(columnName in index.columns)) {
+      throw new Error(`Column "${columnName}" doesn't exist`);
+    }
+    const simpleTask = await this.getSimpleTask(input, index);
+    index = removeColumnContent(index, simpleTask.column, simpleTask.position);
+    index = addColumnContent(index, columnName, { text: simpleTask.text, raw: simpleTask.raw }, position);
+    await this.saveIndex(index);
+    return { ...simpleTask, toColumn: columnName };
+  }
+
+  /**
+   * Move a simple task from this board onto another one. A simple task is content in a board file
+   * rather than a shared task file, so this moves the line: it leaves this board and joins the other
+   * @param {string} input The title to match
+   * @param {string} targetSlug The board to move it to
+   * @param {?string} [columnName=null] The column on the target board, or its first column if null
+   * @param {?number} [position=null] The position in the target column, or the end of it if null
+   * @return {Promise<object>} The simple task that was moved, with the board and column it went to
+   */
+  async moveSimpleTaskToBoard(input, targetSlug, columnName = null, position = null) {
+    const target = this.board(targetSlug);
+    const targetBoardSlug = await target.resolveBoardSlug();
+    if (!(await target.initialised())) {
+      throw new Error(`Board "${targetBoardSlug}" doesn't exist`);
+    }
+    if (targetBoardSlug === (await this.resolveBoardSlug())) {
+      throw new Error(`Simple task "${input}" is already on board "${targetBoardSlug}"`);
+    }
+    let index = await this.getIndex();
+    const simpleTask = await this.getSimpleTask(input, index);
+    let targetIndex = await target.getIndex();
+    const targetColumnNames = Object.keys(targetIndex.columns);
+    if (!targetColumnNames.length) {
+      throw new Error(`Board "${targetBoardSlug}" has no columns`);
+    }
+    const targetColumn = columnName === null ? targetColumnNames[0] : columnName;
+    if (!(targetColumn in targetIndex.columns)) {
+      throw new Error(`Column "${targetColumn}" doesn't exist on board "${targetBoardSlug}"`);
+    }
+
+    // Write the target board first: a line that ends up on both boards is visible and easy to fix,
+    // where a line removed from one board and never added to the other is gone
+    targetIndex = addColumnContent(
+      targetIndex,
+      targetColumn,
+      { text: simpleTask.text, raw: simpleTask.raw },
+      position
+    );
+    await target.saveIndex(targetIndex);
+    index = removeColumnContent(index, simpleTask.column, simpleTask.position);
+    await this.saveIndex(index);
+    return { ...simpleTask, toBoard: targetBoardSlug, toColumn: targetColumn };
+  }
+
+  /**
+   * Remove a simple task from this board. There is no file to delete and nothing to archive - the
+   * line is the whole of it
+   * @param {string} input The title to match
+   * @return {Promise<object>} The simple task that was removed
+   */
+  async deleteSimpleTask(input) {
+    let index = await this.getIndex();
+    const simpleTask = await this.getSimpleTask(input, index);
+    index = removeColumnContent(index, simpleTask.column, simpleTask.position);
+    await this.saveIndex(index);
+    return simpleTask;
+  }
+
+  /**
+   * Turn a simple task into a real task file, in the column it was already in. The created date is
+   * the moment of promotion: a line carries no history, so there is no earlier date to know
+   * @param {string} input The title to match
+   * @param {?string} [columnName=null] The column to create the task in, or its own column if null
+   * @return {Promise<string>} The id of the task that was created
+   */
+  async promoteSimpleTask(input, columnName = null) {
+    const index = await this.getIndex();
+    const simpleTask = await this.getSimpleTask(input, index);
+    const targetColumn = columnName === null ? simpleTask.column : columnName;
+    if (!(targetColumn in index.columns)) {
+      throw new Error(`Column "${targetColumn}" doesn't exist`);
+    }
+
+    // Check for a clash before writing anything, so that a promotion that can't happen doesn't take
+    // the line with it
+    const taskId = utility.getTaskId(simpleTask.text);
+    if (await this.taskFileExists(taskId)) {
+      throw new Error(`A task with id "${taskId}" already exists`);
+    }
+    if (taskInIndex(index, taskId)) {
+      throw new Error(`A task with id "${taskId}" is already in the index`);
+    }
+
+    // Create the task first: a leftover line beside a real task is reported by validate and is easy
+    // to fix, where a line deleted for a task that was never created is gone
+    await this.createTask({ name: simpleTask.text }, targetColumn);
+    await this.saveIndex(removeColumnContent(await this.getIndex(), simpleTask.column, simpleTask.position));
+    return taskId;
   }
 
   /**

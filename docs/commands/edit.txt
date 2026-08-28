@@ -83,3 +83,8 @@ Options:
   {b}kanbn edit "task-id" -b "board-slug"{b}
     Target a board other than the main one. Falls back to the KANBN_BOARD environment variable and
     then to the defaultBoard option. See {b}kanbn boards{b} for the list of boards.
+
+  {b}kanbn edit "Buy milk"{b}
+    Editing a simple task - a line in a column that isn't a task link - promotes it to a real task
+    file first, and then applies the edit. The new task is created in the column the line was in,
+    with a created date as of the promotion. There is no way back.

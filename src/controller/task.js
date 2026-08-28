@@ -53,10 +53,21 @@ module.exports = async (args) => {
     return;
   }
 
-  // Make sure the task exists
+  // Make sure the task exists. A line in a column that isn't a task link has no task file to show,
+  // so say what it is and how to turn it into one rather than reporting a missing file
   try {
     await kanbn.taskExists(taskId);
   } catch (error) {
+    if (!(await kanbn.taskFileExists(taskId))) {
+      const matches = await kanbn.findSimpleTasks(taskId);
+      if (matches.length === 1) {
+        utility.error(
+          `"${matches[0].text}" is a simple task in column "${matches[0].column}" - it has no task file\n` +
+          `Run {b}kanbn edit "${matches[0].text}"{b} to promote it to a task`
+        );
+        return;
+      }
+    }
     utility.error(error);
     return;
   }

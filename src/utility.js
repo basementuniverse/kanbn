@@ -149,6 +149,43 @@ module.exports = (() => {
     },
 
     /**
+     * Resolve a string to exactly one simple task on a board, for the commands that accept one.
+     * Real tasks always win, so this should only be called once no task has matched
+     * @param {object} kanbn The board-scoped Kanbn instance
+     * @param {string} input The title to match
+     * @param {Error|string} taskError The error to report if nothing matches, i.e. the error the
+     * command would have printed before simple tasks existed
+     * @param {?object[]} [matches=null] Matches already found, to save looking them up again
+     * @return {Promise<?object>} The matching simple task, or null if the error has been reported
+     */
+    async resolveSimpleTask(kanbn, input, taskError, matches = null) {
+      if (matches === null) {
+        try {
+          matches = await kanbn.findSimpleTasks(input);
+        } catch (error) {
+          this.error(error);
+          return null;
+        }
+      }
+      if (!matches.length) {
+        this.error(taskError);
+        return null;
+      }
+
+      // Two lines with the same title are two different lines. Picking one of them silently would
+      // eventually move or delete the wrong one
+      if (matches.length > 1) {
+        this.error(
+          `"${input}" matches ${matches.length} simple tasks:\n` +
+          matches.map(match => `  "${match.text}" in column "${match.column}"`).join('\n') +
+          '\nEdit the board file directly, or rename one of them'
+        );
+        return null;
+      }
+      return matches[0];
+    },
+
+    /**
      * Show a hint about tasks that a board references but which have no task file. These are skipped
      * rather than fatal, so the hint is the only sign that the board is showing less than it lists
      * @param {object[]} missing Missing task entries from kanbn.findMissingTaskFiles()

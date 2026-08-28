@@ -77,6 +77,41 @@ async function addTaskToBoard(taskId, columnName, boardSlug, verbose) {
   }
 }
 
+/**
+ * Move a simple task to another column on the board it's on
+ * @param {object} boardKanbn The board-scoped Kanbn instance
+ * @param {string} input
+ * @param {?string} columnName The column to move to, or null to leave it where it is
+ * @param {?number} position
+ */
+async function moveSimpleTask(boardKanbn, input, columnName, position) {
+  try {
+    const moved = await boardKanbn.moveSimpleTask(input, columnName, position);
+    console.log(`Moved simple task "${moved.text}" to column "${moved.toColumn}"`);
+  } catch (error) {
+    utility.error(error);
+  }
+}
+
+/**
+ * Move a simple task onto another board
+ * @param {object} sourceKanbn The board the simple task is on
+ * @param {string} input
+ * @param {string} targetSlug
+ * @param {?string} columnName
+ * @param {?number} position
+ */
+async function moveSimpleTaskToBoard(sourceKanbn, input, targetSlug, columnName, position) {
+  try {
+    const moved = await sourceKanbn.moveSimpleTaskToBoard(input, targetSlug, columnName, position);
+    console.log(
+      `Moved simple task "${moved.text}" to column "${moved.toColumn}" on board "${moved.toBoard}"`
+    );
+  } catch (error) {
+    utility.error(error);
+  }
+}
+
 module.exports = async args => {
 
   // Work out which board this command targets
@@ -105,6 +140,53 @@ module.exports = async args => {
   if (!columnNames.length) {
     utility.error('No columns defined in the index\nTry running {b}kanbn init -c "column name"{b}');
     return;
+  }
+
+  // Re-use sprint option for position
+  let newPosition = args.position || args.p;
+  if (newPosition) {
+    newPosition = parseInt(utility.trimLeftEscapeCharacters(newPosition));
+    if (isNaN(newPosition)) {
+      utility.error('Position value must be numeric');
+      return;
+    }
+  } else {
+    newPosition = null;
+  }
+
+  // A task file always wins, so a simple task - a line in a column that isn't a task link - is only
+  // looked for when nothing has this task id. Falling through leaves every existing error unchanged
+  if (!(await kanbn.taskFileExists(taskId))) {
+    const targetColumn = args.column ? utility.strArg(args.column) : null;
+    const matches = await kanbn.findSimpleTasks(taskId);
+    if (matches.length) {
+      const simpleTask = await utility.resolveSimpleTask(kanbn, taskId, null, matches);
+      if (simpleTask !== null) {
+        await moveSimpleTask(
+          kanbn,
+          taskId,
+          targetColumn === null ? simpleTask.column : targetColumn,
+          newPosition
+        );
+      }
+      return;
+    }
+
+    // A simple task lives in one board file rather than in a shared task file, so `-b` names the
+    // board it is moving to rather than the board it is on
+    if (args.board) {
+      const sourceKanbn = await workspace.boardFromArgs({});
+      if ((await sourceKanbn.findSimpleTasks(taskId)).length) {
+        await moveSimpleTaskToBoard(
+          sourceKanbn,
+          taskId,
+          await kanbn.resolveBoardSlug(),
+          targetColumn,
+          newPosition
+        );
+        return;
+      }
+    }
   }
 
   // Moving a task on a board it isn't on yet adds it there, so that pulling work onto a board is one
@@ -157,16 +239,6 @@ module.exports = async args => {
 
   // Re-use sprint option for position
   const currentPosition = index.columns[currentColumnName].indexOf(taskId);
-  let newPosition = args.position || args.p;
-  if (newPosition) {
-    newPosition = parseInt(utility.trimLeftEscapeCharacters(newPosition));
-    if (isNaN(newPosition)) {
-      utility.error('Position value must be numeric');
-      return;
-    }
-  } else {
-    newPosition = null;
-  }
 
   // Get a list of sorted columns
   const sortedColumnNames = 'columnSorting' in index.options ? Object.keys(index.options.columnSorting) : [];

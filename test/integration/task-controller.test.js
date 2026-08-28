@@ -56,6 +56,17 @@ QUnit.test('View a task that does not exist', async assert => {
   assert.contains(output, /No task file found with id "test-task-1"/);
 });
 
+QUnit.test('View a simple task should say what it is and how to promote it', async assert => {
+  mockConfig.taskExists = false;
+  mockConfig.simpleTasks = [{ column: 'Column 1', position: 1, text: 'Buy milk', raw: '- Buy milk' }];
+  const output = await capture.stderr(async () => {
+    await mockArgv(['task', 'Buy milk'], kanbn);
+  });
+
+  assert.contains(output, /"Buy milk" is a simple task in column "Column 1"/);
+  assert.contains(output, /kanbn edit "Buy milk"/);
+});
+
 QUnit.test('View a task should render the task as markdown', async assert => {
   const output = await capture.stdout(async out => {
     await mockArgv(['task', 'test-task-1'], kanbn);

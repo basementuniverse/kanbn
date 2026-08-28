@@ -56,6 +56,23 @@ module.exports = (() => {
   }
 
   /**
+   * Render the simple tasks in a column - lines in the board file that aren't task links. They have
+   * no fields to interpolate and take no part in filtering or sorting, so they're shown dimmed at
+   * the end of the column, and only in the default layout where the columns on screen are the
+   * columns in the file
+   * @param {object} index
+   * @param {string} columnName
+   * @return {string[]} The rendered simple tasks
+   */
+  function getSimpleTaskStrings(index, columnName) {
+    return ((index.columnContent || {})[columnName] || [])
+      .filter(entry => !entry.block && !!entry.text && entry.text.indexOf('\n') === -1)
+
+      // A caret starts a markup sequence in terminal-kit, so any in the user's own text are escaped
+      .map(entry => `^-${entry.text.replace(/\^/g, '^^')}^:`);
+  }
+
+  /**
    * Get a column heading with icons
    * @param {object} index
    * @param {string} columnName
@@ -166,7 +183,13 @@ module.exports = (() => {
       table.push(board.headings.map(heading => heading.heading));
       board.lanes.forEach(lane => table.push(
         [lane.name],
-        lane.columns.map(column => column.map(task => getTaskString(index, task)).join(TASK_SEPARATOR))
+        lane.columns.map((column, i) => {
+          const cell = column.map(task => getTaskString(index, task));
+          if (view === null) {
+            cell.push(...getSimpleTaskStrings(index, board.headings[i].name));
+          }
+          return cell.join(TASK_SEPARATOR);
+        })
       ));
 
       // Display as a table

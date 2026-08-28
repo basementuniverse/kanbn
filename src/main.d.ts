@@ -51,6 +51,13 @@ declare type missingTaskFile = {
   column: string
 };
 
+declare type simpleTask = {
+  column: string,
+  position: number,
+  text: string,
+  raw: string
+};
+
 declare type columnContentWarning = {
   board: string,
   column: string,
@@ -387,6 +394,60 @@ export class Kanbn {
    * @return {Promise<columnContentWarning[]>} A list of warnings
    */
   findColumnContentWarnings(index?: object | null): Promise<columnContentWarning[]>;
+  /**
+   * Get this board's simple tasks - lines in a column that aren't task links. Real tasks always win,
+   * so callers should resolve a task id first and only fall back to this when nothing matched
+   * @param {?string} [input=null] A title to match, or null for every simple task on this board
+   * @param {?object} [index=null] The index object, or null to load it
+   * @return {Promise<simpleTask[]>} The matching simple tasks
+   */
+  findSimpleTasks(input?: string | null, index?: object | null): Promise<simpleTask[]>;
+  /**
+   * Resolve a string to exactly one simple task on this board, or throw
+   * @param {string} input The title to match
+   * @param {?object} [index=null] The index object, or null to load it
+   * @return {Promise<simpleTask>} The matching simple task
+   */
+  getSimpleTask(input: string, index?: object | null): Promise<simpleTask>;
+  /**
+   * Move a simple task to another column on this board
+   * @param {string} input The title to match
+   * @param {string} columnName The column to move it to
+   * @param {?number} [position=null] The position in the target column, or the end of it if null
+   * @return {Promise<simpleTask & { toColumn: string }>} The simple task that was moved
+   */
+  moveSimpleTask(
+    input: string,
+    columnName: string,
+    position?: number | null
+  ): Promise<simpleTask & { toColumn: string }>;
+  /**
+   * Move a simple task from this board onto another one
+   * @param {string} input The title to match
+   * @param {string} targetSlug The board to move it to
+   * @param {?string} [columnName=null] The column on the target board, or its first column if null
+   * @param {?number} [position=null] The position in the target column, or the end of it if null
+   * @return {Promise<simpleTask & { toBoard: string, toColumn: string }>} The simple task that moved
+   */
+  moveSimpleTaskToBoard(
+    input: string,
+    targetSlug: string,
+    columnName?: string | null,
+    position?: number | null
+  ): Promise<simpleTask & { toBoard: string, toColumn: string }>;
+  /**
+   * Remove a simple task from this board
+   * @param {string} input The title to match
+   * @return {Promise<simpleTask>} The simple task that was removed
+   */
+  deleteSimpleTask(input: string): Promise<simpleTask>;
+  /**
+   * Turn a simple task into a real task file
+   * @param {string} input The title to match
+   * @param {?string} [columnName=null] The column to create the task in, or its own column if null
+   * @return {Promise<string>} The id of the task that was created
+   */
+  promoteSimpleTask(input: string, columnName?: string | null): Promise<string>;
   /**
    * Load a task file from the archive and parse it to an object
    * @param {string} taskId The task id

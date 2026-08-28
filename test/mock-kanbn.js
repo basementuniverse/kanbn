@@ -1,6 +1,7 @@
 // Required before mock-require swaps out src/main, so the pure helpers below can delegate to the
 // real implementations instead of reimplementing index/task transformations
 const realKanbn = require('../src/main');
+const utility = require('../src/utility');
 
 const TEST_INDEX = {
   name: 'Test Project',
@@ -65,6 +66,7 @@ function defaults() {
     fixedDateDrift: [],
     missingTaskFiles: [],
     columnContentWarnings: [],
+    simpleTasks: [],
     sprintData: {
       name: 'Test Sprint',
       start: new Date('2026-01-01T00:00:00.000Z')
@@ -392,6 +394,49 @@ const kanbn = {
       allBoards: true
     };
     return config.searchResults;
+  },
+  async findSimpleTasks(input = null, index = null) {
+    failIfConfigured('findSimpleTasks');
+    if (input === null) {
+      return config.simpleTasks;
+    }
+    return config.simpleTasks.filter(
+      simpleTask => simpleTask.text === input ||
+        utility.getTaskId(simpleTask.text) === utility.getTaskId(String(input))
+    );
+  },
+  async getSimpleTask(input, index = null) {
+    const matches = await this.findSimpleTasks(input, index);
+    if (!matches.length) {
+      throw new Error(`No simple task found matching "${input}"`);
+    }
+    return matches[0];
+  },
+  async moveSimpleTask(input, columnName, position = null) {
+    config.output = { simpleTask: input, column: columnName, position };
+    failIfConfigured('moveSimpleTask');
+    const simpleTask = await this.getSimpleTask(input);
+    return { ...simpleTask, toColumn: columnName };
+  },
+  async moveSimpleTaskToBoard(input, targetSlug, columnName = null, position = null) {
+    config.output = { simpleTask: input, board: targetSlug, column: columnName, position };
+    failIfConfigured('moveSimpleTaskToBoard');
+    const simpleTask = await this.getSimpleTask(input);
+    return { ...simpleTask, toBoard: targetSlug, toColumn: columnName };
+  },
+  async deleteSimpleTask(input) {
+    config.output = { simpleTask: input, removed: true };
+    failIfConfigured('deleteSimpleTask');
+    return this.getSimpleTask(input);
+  },
+  async promoteSimpleTask(input, columnName = null) {
+    failIfConfigured('promoteSimpleTask');
+    const simpleTask = await this.getSimpleTask(input);
+
+    // Promotion creates the task, so everything after it in a controller sees a real task
+    config.taskExists = true;
+    config.simpleTasks = config.simpleTasks.filter(t => t !== simpleTask);
+    return utility.getTaskId(simpleTask.text);
   },
   async findMissingTaskFiles(index = null) {
     failIfConfigured('findMissingTaskFiles');

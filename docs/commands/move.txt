@@ -30,3 +30,14 @@ Options:
   {b}kanbn move "task-id" -b "board-slug" --no-add{b}
     Refuse to move a task that isn't on the target board, instead of adding it.
     The main board never adds implicitly: moving an untracked task there is an error either way.
+
+
+Simple tasks - lines in a column that aren't task links - can be moved too, by title:
+
+  {b}kanbn move "Buy milk" -c "Done"{b}
+    Move a simple task to another column. The title matches exactly, ignoring case, or slugified.
+    A real task with the same id always wins. Leave off {b}-c{b} to reposition it in its own column.
+
+  {b}kanbn move "Buy milk" -b "board-slug" -c "column"{b}
+    Move a simple task onto another board. A simple task is content in one board file rather than a
+    shared task file, so this moves the line: it leaves this board and joins the other one.

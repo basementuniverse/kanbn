@@ -58,6 +58,65 @@ QUnit.test('Move a task that does not exist', async assert => {
   assert.contains(output, /No task file found with id "test-task-1"/);
 });
 
+QUnit.test('Move a simple task to another column', async assert => {
+  mockConfig.taskExists = false;
+  mockConfig.simpleTasks = [{ column: 'Column 1', position: 1, text: 'Buy milk', raw: '- Buy milk' }];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['move', 'Buy milk', '-c', 'Column 2'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /Moved simple task "Buy milk" to column "Column 2"/);
+  assert.deepEqual(mockConfig.output, { simpleTask: 'Buy milk', column: 'Column 2', position: null });
+});
+
+QUnit.test('Move a simple task found by its slugified title', async assert => {
+  mockConfig.taskExists = false;
+  mockConfig.simpleTasks = [{ column: 'Column 1', position: 1, text: 'Buy milk', raw: '- Buy milk' }];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['move', 'buy-milk', '-c', 'Column 2'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /Moved simple task "Buy milk"/);
+});
+
+QUnit.test('Move a simple task with no column should leave it where it is', async assert => {
+  mockConfig.taskExists = false;
+  mockConfig.simpleTasks = [{ column: 'Column 1', position: 1, text: 'Buy milk', raw: '- Buy milk' }];
+  await capture.stdout(async out => {
+    await mockArgv(['move', 'Buy milk'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.deepEqual(mockConfig.output, { simpleTask: 'Buy milk', column: 'Column 1', position: null });
+});
+
+QUnit.test('Moving an ambiguous simple task should list the candidates', async assert => {
+  mockConfig.taskExists = false;
+  mockConfig.simpleTasks = [
+    { column: 'Column 1', position: 1, text: 'Buy milk', raw: '- Buy milk' },
+    { column: 'Column 2', position: 0, text: 'Buy milk', raw: '- Buy milk' }
+  ];
+  const output = await capture.stderr(async () => {
+    await mockArgv(['move', 'Buy milk', '-c', 'Column 2'], kanbn);
+  });
+
+  assert.contains(output, /matches 2 simple tasks/);
+  assert.contains(output, /in column "Column 1"/);
+});
+
+QUnit.test('A real task should win over a simple task with the same title', async assert => {
+  mockConfig.taskExists = true;
+  mockConfig.simpleTasks = [{ column: 'Column 1', position: 1, text: 'test-task-1', raw: '- test-task-1' }];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['move', 'test-task-1', '-c', 'Column 2'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /Moved task "test-task-1" to column "Column 2"/);
+});
+
 QUnit.test('Move a task when there are no columns in the index', async assert => {
   mockConfig.index = {
     name: 'Test Project',

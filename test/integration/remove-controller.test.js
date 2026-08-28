@@ -49,6 +49,28 @@ QUnit.test('Remove a task that does not exist', async assert => {
   assert.contains(output, /No task file found with id "test-task-1"/);
 });
 
+QUnit.test('Remove a simple task with the force flag', async assert => {
+  mockConfig.taskExists = false;
+  mockConfig.simpleTasks = [{ column: 'Column 1', position: 1, text: 'Buy milk', raw: '- Buy milk' }];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['remove', 'Buy milk', '-f'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /Removed simple task "Buy milk" from column "Column 1"/);
+  assert.deepEqual(mockConfig.output, { simpleTask: 'Buy milk', removed: true });
+});
+
+QUnit.test('Removing a simple task that does not match anything should report the task error', async assert => {
+  mockConfig.taskExists = false;
+  mockConfig.simpleTasks = [{ column: 'Column 1', position: 1, text: 'Buy milk', raw: '- Buy milk' }];
+  const output = await capture.stderr(async () => {
+    await mockArgv(['remove', 'something-else', '-f'], kanbn);
+  });
+
+  assert.contains(output, /No task file found with id "something-else"/);
+});
+
 QUnit.test('Remove a task with the force flag should not prompt for confirmation', async assert => {
   const output = await capture.stdout(async out => {
     await mockArgv(['remove', 'test-task-1', '-f'], kanbn);

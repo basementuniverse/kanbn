@@ -12,3 +12,7 @@ Options:
   {b}kanbn task "task-id" -b "board-slug"{b}
     Target a board other than the main one. Falls back to the KANBN_BOARD environment variable and
     then to the defaultBoard option. See {b}kanbn boards{b} for the list of boards.
+
+  {b}kanbn task "Buy milk"{b}
+    A simple task - a line in a column that isn't a task link - has no task file to show, so this
+    reports which column it's in and how to promote it.

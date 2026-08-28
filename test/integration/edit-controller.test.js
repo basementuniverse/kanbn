@@ -78,6 +78,18 @@ QUnit.test('Edit a task that does not exist', async assert => {
   assert.contains(output, /No task file found with id "test-task-1"/);
 });
 
+QUnit.test('Editing a simple task should promote it first', async assert => {
+  mockConfig.taskExists = false;
+  mockConfig.simpleTasks = [{ column: 'Column 1', position: 1, text: 'Buy milk', raw: '- Buy milk' }];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['edit', 'Buy milk', '-d', 'Some description'], kanbn);
+    await capture.waitFor(() => out.some(s => /Updated task/.test(s)));
+  });
+
+  assert.contains(output, /Promoted simple task "Buy milk" to task "buy-milk"/);
+  assert.contains(output, /Updated task "buy-milk"/);
+});
+
 QUnit.test('Edit a task when there are no columns in the index', async assert => {
   mockConfig.index.columns = {};
   const output = await capture.stderr(async () => {

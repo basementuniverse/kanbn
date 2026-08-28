@@ -466,18 +466,34 @@ module.exports = async args => {
   kanbn = scoped;
 
   // Get the task that we're editing
-  const taskId = args._[1];
+  let taskId = args._[1];
   if (!taskId) {
     utility.error('No task id specified\nTry running {b}kanbn edit "task id"{b}');
     return;
   }
 
-  // Make sure the task exists
+  // Make sure the task exists. Editing a simple task is how it becomes a real one - there is nothing
+  // to edit until it has a file - so promote it first and then edit the task that produces
   try {
     await kanbn.taskExists(taskId);
   } catch (error) {
-    utility.error(error);
-    return;
+    if (await kanbn.taskFileExists(taskId)) {
+      utility.error(error);
+      return;
+    }
+    const simpleTask = await utility.resolveSimpleTask(kanbn, taskId, error);
+    if (simpleTask === null) {
+      return;
+    }
+    try {
+      taskId = await kanbn.promoteSimpleTask(taskId);
+      console.log(utility.replaceTags(
+        `{d}Promoted simple task "${simpleTask.text}" to task "${taskId}"{d}`
+      ));
+    } catch (promoteError) {
+      utility.error(promoteError);
+      return;
+    }
   }
 
   // Get the index and make sure it has some columns

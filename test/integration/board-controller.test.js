@@ -159,6 +159,18 @@ QUnit.test('The date drift hint should be suppressed when the board is not verbo
   assert.strictEqual(output.join('').indexOf("dates that don't match"), -1);
 });
 
+QUnit.test('Simple tasks should be left out of JSON output', async assert => {
+  mockConfig.index.columnContent = {
+    'Column 1': [{ position: 1, text: 'Buy milk', raw: '- Buy milk' }]
+  };
+  const output = await capture.stdout(async out => {
+    await mockArgv(['board', '--json'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.notOk(/Buy milk/.test(output.join('')));
+});
+
 QUnit.test('Show the board as JSON', async assert => {
   const output = await capture.stdout(async out => {
     await mockArgv(['board', '--json'], kanbn);

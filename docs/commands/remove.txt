@@ -21,3 +21,7 @@ Options:
   {b}kanbn remove "task-id" --all-boards{b}
     Task files are shared between boards, so deleting one while another board still references it is
     refused. This removes the task from every board that references it, then deletes the file.
+
+  {b}kanbn remove "Buy milk"{b}
+    Remove a simple task - a line in a column that isn't a task link - by title. There is no file to
+    delete and nothing to archive, so {b}--index{b} and {b}--all-boards{b} don't apply.

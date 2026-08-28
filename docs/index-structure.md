@@ -51,7 +51,26 @@ That link is the only thing kanbn reads as a task. Any other line in a column - 
 - [ ] buy milk
 ```
 
-These lines are content, not tasks. They have no id, no metadata and no dates, they can't collide with a task of the same name, and they count towards nothing: not the board, not `kanbn status`, not workload, burndown, gantt or sprints. They are preserved when kanbn saves the board file, and stay in the column they were written in - though a line isn't anchored to the task above it, so sorting a column can move tasks around it.
+These lines are **simple tasks**. They have no id, no metadata and no dates, they can't collide with a task of the same name, and they count towards nothing: not `kanbn status`, not workload, burndown, gantt or sprints. They are preserved when kanbn saves the board file, and stay in the column they were written in - though a line isn't anchored to the task above it, so sorting a column can move tasks around it.
+
+They are shown on the board in the default layout, dimmed, at the end of their column. Views leave them out: a view filters and sorts tasks, and a simple task has no fields to filter or sort on. They are left out of `kanbn board --json` for the same reason.
+
+### Working with simple tasks
+
+Four commands accept a simple task, addressed by its title - exactly, ignoring case, or slugified, so `"Buy milk"` and `buy-milk` both work. **A real task always wins**: kanbn only looks for a simple task when no task has that id, so a line whose title matches an existing task can only be edited by hand.
+
+| Command | Effect |
+| --- | --- |
+| `kanbn move "Buy milk" -c Done` | Moves the line to another column. `-b` moves it to another board |
+| `kanbn edit "Buy milk" ...` | **Promotes** it to a real task file, then edits it as normal |
+| `kanbn remove "Buy milk"` | Deletes the line. There is no file to delete and nothing to archive |
+| `kanbn task "Buy milk"` | Says which column it's in, and how to promote it |
+
+Promotion is one-way. The new task gets a file, an id, a `created` date as of the promotion and a `created` history event naming the column the line was in. There is no way back: a task carries metadata, comments and history that a line can't hold.
+
+Two lines with the same title on one board are two different lines, so a command naming one of them reports the ambiguity rather than guessing. Two lines with the same title on *different* boards are unrelated - a simple task belongs to the board file it's written in, and nothing else.
+
+Anything that isn't a single line of a list - a paragraph, a quote, a code block - is preserved just the same, but isn't a simple task: it isn't shown on the board, and no command will move, promote or remove it.
 
 `kanbn validate` lists them, so they can't hide. It reports two cases more loudly, because both mean a task silently isn't being tracked:
 
