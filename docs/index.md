@@ -11,6 +11,7 @@ To get started quickly, check out the [Quick Start](quick-start.md) guide.
 - [Task Structure](task-structure.md) — task files, metadata, sub-tasks, relations, comments and history
 - [Multiple Boards](multiple-boards.md) — several boards over one shared pool of tasks
 - [Contributors](contributors.md) — an optional list of who works on a workspace, and who "you" are
+- [Actions](actions.md) — declarative rules that fire when a task is created, moved, updated or finished
 - [Views](views.md) — custom board layouts, columns and lanes
 - [Filtering and Sorting](filtering-and-sorting.md) — the filter and sorter model shared by `find`, `sort` and views
 - [Advanced Configuration](advanced-configuration.md)

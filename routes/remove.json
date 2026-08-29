@@ -8,7 +8,8 @@
     "boolean": [
       "force",
       "index",
-      "all-boards"
+      "all-boards",
+      "actions"
     ],
     "alias": {
       "force": [
@@ -23,7 +24,10 @@
     },
     "string": [
       "board"
-    ]
+    ],
+    "default": {
+      "actions": true
+    }
   },
   "controller": "./src/controller/remove",
   "help": "./docs/commands/remove.txt"

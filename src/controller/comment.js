@@ -45,6 +45,7 @@ function addComment(taskId, text, author) {
   .comment(taskId, text, author)
   .then(taskId => {
     console.log(`Added comment to task "${taskId}"`);
+    utility.showActionWarnings(kanbn);
   })
   .catch(error => {
     utility.error(error);

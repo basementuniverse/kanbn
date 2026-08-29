@@ -50,6 +50,7 @@ function moveTask(taskId, columnName, position = null, relative = false, add = f
   .moveTask(taskId, columnName, position, relative, add)
   .then(taskId => {
     console.log(`Moved task "${taskId}" to column "${columnName}"`);
+    utility.showActionWarnings(kanbn);
   })
   .catch(error => {
     utility.error(error);
@@ -72,6 +73,7 @@ async function addTaskToBoard(taskId, columnName, boardSlug, verbose) {
       ));
     }
     console.log(`Moved task "${taskId}" to column "${columnName}"`);
+    utility.showActionWarnings(kanbn);
   } catch (error) {
     utility.error(error);
   }

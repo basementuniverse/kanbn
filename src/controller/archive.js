@@ -13,6 +13,7 @@ function archiveTask(taskId) {
   .archiveTask(taskId)
   .then(taskId => {
     console.log(`Archived task "${taskId}"`);
+    utility.showActionWarnings(kanbn);
   })
   .catch(error => {
     utility.error(error);

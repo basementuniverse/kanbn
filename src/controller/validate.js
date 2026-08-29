@@ -104,6 +104,24 @@ function showContributorWarnings(warnings) {
 }
 
 /**
+ * Show rules that are legal but probably not what their author meant. A rule that is wrong in the
+ * file is an error rather than a warning, and is reported with the rest of them
+ * @param {object[]} warnings
+ */
+function showActionWarnings(warnings) {
+  if (!warnings.length) {
+    return;
+  }
+  console.log(utility.replaceTags(
+    `${warnings.length} ${warnings.length === 1 ? 'action rule needs' : 'action rules need'} ` +
+    'a {b}second look{b}:'
+  ));
+  for (const warning of warnings) {
+    console.log(`  ${warning.message}`);
+  }
+}
+
+/**
  * Show warnings about a multi-board workspace
  * @param {object[]} warnings
  */
@@ -172,6 +190,15 @@ module.exports = async args => {
     return;
   }
 
+  // Report action rules that work but probably don't do what their author meant
+  let actionWarnings = [];
+  try {
+    actionWarnings = await kanbn.findActionWarnings();
+  } catch (error) {
+    utility.error(error);
+    return;
+  }
+
   // Report names used in tasks that the contributors list doesn't know about. A workspace with no
   // contributors declared has none of these, so its output is exactly what it always was
   let contributorWarnings = [];
@@ -192,9 +219,10 @@ module.exports = async args => {
       return;
     }
     if (!fixed.length) {
-      if (!args.json && (columnContentWarnings.length || contributorWarnings.length)) {
+      if (!args.json && (columnContentWarnings.length || contributorWarnings.length || actionWarnings.length)) {
         showColumnContentWarnings(columnContentWarnings);
         showContributorWarnings(contributorWarnings);
+        showActionWarnings(actionWarnings);
         return;
       }
       console.log('Everything OK, nothing to fix');
@@ -224,7 +252,7 @@ module.exports = async args => {
     // A multi-board workspace has warnings to report as well as drift, so JSON output carries both.
     // With a single board it stays the bare drift list it has always been - unless there are
     // warnings, which have nowhere to go in a bare drift list and are worth more than the shape
-    const warnings = [...boardWarnings, ...columnContentWarnings, ...contributorWarnings];
+    const warnings = [...boardWarnings, ...columnContentWarnings, ...contributorWarnings, ...actionWarnings];
     if (multiBoard || warnings.length) {
       console.log(JSON.stringify({ drift, warnings }, null, 2));
       return;
@@ -241,8 +269,15 @@ module.exports = async args => {
   }
   showColumnContentWarnings(columnContentWarnings);
   showContributorWarnings(contributorWarnings);
+  showActionWarnings(actionWarnings);
   showBoardWarnings(boardWarnings);
-  if (drift.length || boardWarnings.length || columnContentWarnings.length || contributorWarnings.length) {
+  if (
+    drift.length ||
+    boardWarnings.length ||
+    columnContentWarnings.length ||
+    contributorWarnings.length ||
+    actionWarnings.length
+  ) {
     return;
   }
   console.log('Everything OK');

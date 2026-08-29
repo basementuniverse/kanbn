@@ -49,6 +49,7 @@ function removeTask(taskId, removeFile, allBoards, boardSlug, secondaryBoard) {
       `Removed task "${taskId}"${removeFile ? ' file and index entry' : ' from the index'}` +
       (secondaryBoard && !allBoards ? ` on board "${boardSlug}"` : '')
     );
+    utility.showActionWarnings(kanbn);
   })
   .catch(error => {
 

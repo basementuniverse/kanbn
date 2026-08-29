@@ -136,6 +136,42 @@ function validateOptions(options) {
           ]
         }
       },
+      'actionsFile': { type: 'string' },
+
+      // The rules themselves are only shape-checked here: what they mean is checked by
+      // actions.findRuleErrors(), which knows the event names, the verbs and this board's columns and
+      // can say what is wrong rather than which sub-schema failed
+      'actions': {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            'name': { type: 'string' },
+            'on': { type: 'string' },
+            'when': { type: 'object' },
+            'for': {
+              type: 'object',
+              properties: {
+                'related': { type: 'string' },
+                'direction': {
+                  type: 'string',
+                  enum: [
+                    'incoming',
+                    'outgoing'
+                  ]
+                },
+                'where': { type: 'object' }
+              }
+            },
+            'anyBoard': { type: 'boolean' },
+            'then': {
+              type: 'array',
+              items: { type: 'object' }
+            }
+          },
+          required: ['on', 'then']
+        }
+      },
       'views': {
         type: 'array',
         items: {

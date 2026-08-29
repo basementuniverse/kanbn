@@ -41,3 +41,9 @@ Simple tasks - lines in a column that aren't task links - can be moved too, by t
   {b}kanbn move "Buy milk" -b "board-slug" -c "column"{b}
     Move a simple task onto another board. A simple task is content in one board file rather than a
     shared task file, so this moves the line: it leaves this board and joins the other one.
+
+Boards can declare {b}actions{b} - rules that fire when a task changes, e.g. "when this enters In
+Progress, assign it to me and tag it active". See {b}docs/actions.md{b}.
+
+  {b}kanbn move --no-actions{b}
+    Run without firing any action rules. {b}KANBN_NO_ACTIONS=1{b} does the same for a whole shell.

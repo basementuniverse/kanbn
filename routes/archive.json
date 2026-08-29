@@ -6,7 +6,8 @@
   ],
   "args": {
     "boolean": [
-      "list"
+      "list",
+      "actions"
     ],
     "alias": {
       "list": [
@@ -18,7 +19,10 @@
     },
     "string": [
       "board"
-    ]
+    ],
+    "default": {
+      "actions": true
+    }
   },
   "controller": "./src/controller/archive",
   "help": "./docs/commands/archive.txt"

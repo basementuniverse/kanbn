@@ -6,7 +6,8 @@
   ],
   "args": {
     "boolean": [
-      "interactive"
+      "interactive",
+      "actions"
     ],
     "string": [
       "name",
@@ -56,6 +57,9 @@
       "board": [
         "b"
       ]
+    },
+    "default": {
+      "actions": true
     }
   },
   "controller": "./src/controller/edit",

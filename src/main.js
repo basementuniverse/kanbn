@@ -8,6 +8,7 @@ const yaml = require("yamljs");
 const humanizeDuration = require("humanize-duration");
 const rimraf = require("rimraf");
 const gitUser = require("./git-user");
+const actions = require("./actions");
 
 const DEFAULT_FOLDER_NAME = ".kanbn";
 const DEFAULT_INDEX_FILE_NAME = "index.md";
@@ -374,6 +375,36 @@ function setTaskMetadata(taskData, property, value) {
     taskData.metadata[property] = value;
   }
   return taskData;
+}
+
+/**
+ * Work out which fields an update actually changed
+ *
+ * Reserved fields are left out: `updated` changes on every update, so including it would make the
+ * payload say nothing
+ * @param {object} before The task before the update
+ * @param {object} after The task after it
+ * @return {string[]} The names of the fields that changed
+ */
+function changedFields(before, after) {
+  const fields = new Set();
+  if (before.name !== after.name) {
+    fields.add("name");
+  }
+  if (before.description !== after.description) {
+    fields.add("description");
+  }
+  const beforeMetadata = before.metadata || {};
+  const afterMetadata = after.metadata || {};
+  for (const field of new Set([...Object.keys(beforeMetadata), ...Object.keys(afterMetadata)])) {
+    if (actions.RESERVED_FIELDS.indexOf(field) !== -1) {
+      continue;
+    }
+    if (JSON.stringify(beforeMetadata[field]) !== JSON.stringify(afterMetadata[field])) {
+      fields.add(field);
+    }
+  }
+  return [...fields];
 }
 
 /**
@@ -1655,6 +1686,16 @@ function updateColumnLinkedCustomField(
   return taskData;
 }
 
+// The parts of this module the actions engine needs. Passing them in rather than requiring main.js
+// from actions.js keeps the engine free of filesystem and workspace knowledge, and free of a
+// circular require
+const ACTION_HELPERS = {
+  filterTasks,
+  getTaskMetadata,
+  setTaskMetadata,
+  appendTaskHistory
+};
+
 class Kanbn {
   ROOT = process.cwd();
   CONFIG_YAML = path.join(this.ROOT, "kanbn.yml");
@@ -1666,6 +1707,14 @@ class Kanbn {
   // Boards named in an archived task's metadata that no longer existed when it was restored, set by
   // restoreTask() for the caller to report
   lastRestoreWarnings = [];
+
+  // Rules that were skipped during the last operation, set by runActions() for the caller to report
+  lastActionWarnings = [];
+
+  // Whether scripted actions run for operations on this instance. Actions are ordinary declarative
+  // rules with no code execution, so this is a convenience for stepping around a misbehaving rule
+  // rather than a safety control
+  actionsEnabled = true;
 
   /**
    * @param {?string} [root=null] The workspace root folder
@@ -1680,6 +1729,9 @@ class Kanbn {
     }
     this.caches = options.caches || { config: null, workspaceOptions: null };
     this.boardSlug = options.board || null;
+    if (options.actions === false) {
+      this.actionsEnabled = false;
+    }
   }
 
   // Memoized config, kept in the shared cache object so that board-scoped clones don't each re-read it
@@ -1699,9 +1751,29 @@ class Kanbn {
    */
   board(slug = null) {
     if (slug === null || slug === undefined || slug === "") {
-      return this.boardSlug === null ? this : new Kanbn(this.ROOT, { caches: this.caches });
+      return this.boardSlug === null
+        ? this
+        : new Kanbn(this.ROOT, { caches: this.caches, actions: this.actionsEnabled });
     }
-    return new Kanbn(this.ROOT, { board: String(slug).trim(), caches: this.caches });
+    return new Kanbn(this.ROOT, {
+      board: String(slug).trim(),
+      caches: this.caches,
+      actions: this.actionsEnabled
+    });
+  }
+
+  /**
+   * Get an instance that runs no actions
+   *
+   * Used for the writes one operation makes on another's behalf - archiving removes the task from
+   * every board, and that removal is part of the archive, not a deletion anyone wrote a rule for
+   * @return {Kanbn} An instance with actions disabled
+   */
+  withoutActions() {
+    if (!this.actionsEnabled) {
+      return this;
+    }
+    return new Kanbn(this.ROOT, { board: this.boardSlug, caches: this.caches, actions: false });
   }
 
   /**
@@ -2825,6 +2897,328 @@ class Kanbn {
   }
 
   /**
+   * Get the action rules that apply to this board
+   *
+   * Rules layer like any other option: a config file value applies workspace-wide, a board's own
+   * front matter applies to that board. `actionsFile` points at a file holding the same list, for
+   * workspaces whose rule sets have outgrown their front matter
+   * @param {?object} [index=null] The index object, or null to load it
+   * @return {Promise<object[]>} The rules
+   */
+  async getActionRules(index = null) {
+    if (index === null) {
+      index = await this.getIndex();
+    }
+    const options = index.options || {};
+    const inlineActions = "actions" in options && options.actions !== null;
+    const actionsFile = "actionsFile" in options && options.actionsFile ? String(options.actionsFile) : null;
+
+    // One overriding or extending the other would invent a second merge rule for the sake of a case
+    // nobody needs, so having both is an error the author has to resolve
+    if (inlineActions && actionsFile !== null) {
+      throw new Error('"actions" and "actionsFile" can\'t both be set - use one or the other');
+    }
+    if (actionsFile !== null) {
+      const filePath = path.join(await this.getMainFolder(), actionsFile);
+      if (!(await exists(filePath))) {
+        throw new Error(`actionsFile "${actionsFile}" doesn't exist`);
+      }
+
+      // A rule set that quietly stops existing is worse than one that fails loudly, so an
+      // unreadable or unparseable file is an error rather than "no rules"
+      return actions.parseActionsFile(await fs.promises.readFile(filePath, { encoding: "utf-8" }), actionsFile);
+    }
+    return actions.normaliseRules(options.actions || []);
+  }
+
+  /**
+   * Check whether actions should run at all
+   * @return {boolean} True if actions are enabled
+   */
+  actionsAllowed() {
+    if (!this.actionsEnabled) {
+      return false;
+    }
+    const disabled = process.env.KANBN_NO_ACTIONS;
+    return !(disabled && disabled !== "0" && disabled !== "false");
+  }
+
+  /**
+   * Get the value to record in a history event's `board` key for another board
+   * @param {string} slug The board slug
+   * @return {Promise<?string>} The board slug, or null for the main board
+   */
+  async historyBoardFor(slug) {
+    return slug === (await this.getMainBoardSlug()) ? null : slug;
+  }
+
+  /**
+   * Run the rules that match an event and fold everything they produce into the in-memory state
+   *
+   * Nothing is written here. Every verb becomes a patch to a task or to the index that the operation
+   * was already going to write, which is what makes a rule that fails leave the workspace alone, and
+   * what makes "actions never fire actions" structural: the writes this produces are performed with
+   * no event assembly at all
+   * @param {object} params The event, the in-memory index and task, and the operation's timestamp
+   * @return {Promise<?object>} The action result, or null if no rules ran
+   */
+  async runActions({ eventTypes, index, taskId, taskData, payload, date, taskBoards = null }) {
+    this.lastActionWarnings = [];
+    if (!this.actionsAllowed()) {
+      return null;
+    }
+    const boardSlug = await this.resolveBoardSlug();
+
+    // A task on its way to being created hasn't been through the parser yet, so it has no id. The
+    // filter vocabulary and the relation graph are both keyed on it
+    if (!taskData.id) {
+      taskData.id = taskId;
+    }
+    const rules = await this.getActionRules(index);
+
+    // Archiving, restoring and deleting affect every board, so the board a command happened to be
+    // run from is an arbitrary choice of whose rules to fire. A rule elsewhere can opt in to hearing
+    // about them whoever triggered them - which is why this is collected before the early return:
+    // a board with no rules of its own can still be the one an archive was run from
+    let borrowed = [];
+    if (
+      taskBoards !== false &&
+      eventTypes.some((eventType) => actions.WORKSPACE_WIDE_EVENTS.indexOf(eventType) !== -1) &&
+      (await this.listBoards()).length > 1
+    ) {
+      borrowed = await this.borrowedActionRules(taskId, boardSlug, eventTypes, taskBoards);
+    }
+    if (!rules.length && !borrowed.length) {
+      return null;
+    }
+
+    // Configuration errors fail the operation before anything is written. Checking the whole rule
+    // set rather than just the matching rules means a typo is reported the first time any command
+    // runs, not the first time that one rule would have fired
+    if (rules.length) {
+      const context = { columns: Object.keys(index.columns) };
+      if (
+        rules.some(
+          (rule) =>
+            Array.isArray(rule.then) &&
+            rule.then.some((verb) => verb !== null && typeof verb === "object" && "addToBoard" in verb)
+        )
+      ) {
+        context.boards = (await this.listBoards()).map((board) => board.slug);
+      }
+      const errors = actions.findRuleErrors(rules, context);
+      if (errors.length) {
+        throw new Error(`Invalid actions:${errors.map((error) => `\n  ${error}`).join("")}`);
+      }
+    }
+
+    // This board's rules run first, then the ones that asked to listen from elsewhere
+    const relevant = [...rules.filter((rule) => eventTypes.indexOf(rule.on) !== -1), ...borrowed];
+    if (!relevant.length) {
+      return null;
+    }
+    const result = await actions.run({
+      rules: relevant,
+      eventTypes,
+      payload: { ...payload, board: boardSlug, boardSlug, isMainBoard: await this.isMainBoard() },
+      index,
+      task: taskData,
+      date,
+      user: await this.currentUser(),
+      boardSlug,
+      helpers: ACTION_HELPERS,
+      loadTask: async (id) => {
+        try {
+          return await this.loadTask(id);
+        } catch (error) {
+          return null;
+        }
+      },
+      loadAllTasks: async () => await this.loadAllTrackedTasks(index)
+    });
+
+    // Appended rather than replaced: collecting the rules can warn too, and those warnings matter
+    this.lastActionWarnings.push(...result.warnings);
+
+    // Board memberships and cross-task moves are recorded in the task's history the same way the
+    // equivalent manual operations are, attributed to the rule rather than to a person
+    for (const add of result.patch.boardAdds) {
+      taskData = appendTaskHistory(
+        taskData,
+        { date, type: "added", column: add.column },
+        await this.historyBoardFor(add.board),
+        add.author
+      );
+    }
+    for (const target of result.targets) {
+      for (const add of target.boardAdds) {
+        target.task = appendTaskHistory(
+          target.task,
+          { date, type: "added", column: add.column },
+          await this.historyBoardFor(add.board),
+          add.author
+        );
+      }
+      if (target.moveTo === null) {
+        continue;
+      }
+
+      // A target that isn't on this board has no row in this index to move, and a target already in
+      // the column it would be moved to is a no-op rather than an event
+      if (!taskInIndex(index, target.task.id)) {
+        this.lastActionWarnings.push(
+          `skipped moving "${target.task.id}": it isn't on board "${boardSlug}"`
+        );
+        target.moveTo = null;
+        continue;
+      }
+      const fromColumn = findTaskColumn(index, target.task.id);
+      if (fromColumn === target.moveTo.column) {
+        target.moveTo = null;
+        continue;
+      }
+      target.task = appendTaskHistory(
+        target.task,
+        { date, type: "moved", fromColumn, toColumn: target.moveTo.column },
+        await this.historyBoard(),
+        target.moveTo.author
+      );
+      target.task = setTaskMetadata(target.task, "updated", date);
+      index = removeTaskFromIndex(index, target.task.id);
+      index = addTaskToIndex(index, target.task.id, target.moveTo.column, target.moveTo.position);
+    }
+    result.index = index;
+    result.taskData = taskData;
+    return result;
+  }
+
+  /**
+   * Collect the rules on other boards that have opted in to hearing about a workspace-wide event
+   *
+   * Board membership is per-board data and can't conflict, but rule verbs write the single shared
+   * task file, where two boards' rules genuinely can. So the acting board decides what gets written
+   * by default, and a rule elsewhere has to say that it wants to listen
+   * @param {string} taskId The task the event fired for
+   * @param {string} boardSlug The acting board
+   * @param {string[]} eventTypes The events that fired
+   * @param {?string[]} [knownBoards=null] The boards this operation affects, when the index can't say
+   * @return {Promise<object[]>} The rules to run after this board's own
+   */
+  async borrowedActionRules(taskId, boardSlug, eventTypes, knownBoards = null) {
+    // A task being restored isn't on any board yet, so the caller has to say which boards it is
+    // about to rejoin. Everywhere else the index is the authority
+    const taskBoards = (knownBoards === null
+      ? Object.keys(await this.findTaskBoards(taskId))
+      : knownBoards
+    ).filter((slug) => slug !== boardSlug);
+    if (!taskBoards.length) {
+      return [];
+    }
+
+    // Board order is whatever `kanbn boards` shows, so which rule wins when two of them write the
+    // same field is at least stable and inspectable
+    const ordered = (await this.listBoards()).map((board) => board.slug).filter((slug) => taskBoards.indexOf(slug) !== -1);
+    const borrowed = [];
+    for (const slug of ordered) {
+      const otherBoard = this.board(slug);
+      let otherRules = [];
+      try {
+        otherRules = await otherBoard.getActionRules();
+      } catch (error) {
+        this.lastActionWarnings.push(`skipped board "${slug}" rules: ${error.message}`);
+        continue;
+      }
+      const listening = otherRules.filter((rule) => rule.anyBoard === true && eventTypes.indexOf(rule.on) !== -1);
+      if (!listening.length) {
+        continue;
+      }
+
+      // Another board's mistake shouldn't fail a command that didn't ask for that board. Its rules
+      // are skipped instead, and kanbn validate --all-boards reports why
+      const errors = actions.findRuleErrors(listening, {
+        columns: Object.keys((await otherBoard.getIndex()).columns)
+      });
+      if (errors.length) {
+        this.lastActionWarnings.push(`skipped board "${slug}" rules: ${errors[0]}`);
+        continue;
+      }
+      borrowed.push(...listening);
+    }
+    return borrowed;
+  }
+
+  /**
+   * Write the task files and board memberships a rule asked for
+   *
+   * These come after the operation's own writes because they are separate files: the patches were
+   * all computed before anything was written, so a failure here can't leave a half-applied rule
+   * @param {?object} result The action result, or null if no rules ran
+   * @param {string} taskId The id of the task the event fired for
+   */
+  async completeActions(result, taskId) {
+    if (result === null) {
+      return;
+    }
+    const taskFolder = await this.getTaskFolderPath();
+    for (const target of result.targets) {
+      await this.saveTask(getTaskPath(taskFolder, target.task.id), target.task);
+    }
+    const boardAdds = [
+      ...result.patch.boardAdds.map((add) => ({ ...add, taskId })),
+      ...result.targets.flatMap((target) => target.boardAdds.map((add) => ({ ...add, taskId: target.task.id })))
+    ];
+    const thisBoardSlug = await this.resolveBoardSlug();
+    for (const add of boardAdds) {
+      const slug = await this.resolveBoardSlug(add.board);
+      if (slug === thisBoardSlug) {
+        continue;
+      }
+      if (!(await this.boardExists(slug))) {
+        this.lastActionWarnings.push(`skipped adding "${add.taskId}" to board "${add.board}": no such board`);
+        continue;
+      }
+      const otherBoard = this.board(slug);
+      const otherIndex = await otherBoard.loadIndex();
+      if (!(add.column in otherIndex.columns)) {
+        this.lastActionWarnings.push(
+          `skipped adding "${add.taskId}" to board "${add.board}": no column "${add.column}"`
+        );
+        continue;
+      }
+      if (taskInIndex(otherIndex, add.taskId)) {
+        continue;
+      }
+      await otherBoard.saveIndex(addTaskToIndex(otherIndex, add.taskId, add.column));
+    }
+  }
+
+  /**
+   * Work out which derived events an operation fired
+   *
+   * `task.started` and `task.completed` aren't operations - they're transitions, computed from the
+   * state before the operation and the state it is about to write, so a rule meaning "when this is
+   * done" doesn't have to duplicate the board's column list. They're computed before any rule runs,
+   * so a rule that sets a completed date doesn't fire task.completed
+   * @param {object} index The index object
+   * @param {?object} before The task as it was, or null if it didn't exist
+   * @param {object} after The task the operation is about to write
+   * @return {string[]} The derived event types that fired
+   */
+  derivedEvents(index, before, after) {
+    const events = [];
+    if (!taskStarted(index, { ...after, metadata: before === null ? {} : before.metadata }) && taskStarted(index, after)) {
+      events.push("task.started");
+    }
+    if (
+      !taskCompleted(index, { ...after, metadata: before === null ? {} : before.metadata }) &&
+      taskCompleted(index, after)
+    ) {
+      events.push("task.completed");
+    }
+    return events;
+  }
+
+  /**
    * Check if a board exists
    * @param {string} slug The board slug
    * @return {Promise<boolean>} True if the board file exists
@@ -3183,12 +3577,34 @@ class Kanbn {
     }, await this.historyBoard(), await this.currentUser());
 
     // Update task metadata dates
+    const beforeActions = { ...taskData, metadata: {} };
     taskData = updateColumnLinkedCustomFields(index, taskData, columnName, now);
-    await this.saveTask(taskPath, taskData);
 
-    // Add the task to the index
+    // Add the task to the index before running rules, so that a rule filtering on the task's column
+    // sees the column it is being created in
     index = addTaskToIndex(index, taskId, columnName);
+
+    // Run actions and fold whatever they produce into the writes below
+    const result = await this.runActions({
+      eventTypes: ["task.created", ...this.derivedEvents(index, beforeActions, taskData)],
+      index,
+      taskId,
+      taskData,
+      payload: { column: columnName },
+      date: now
+    });
+    if (result !== null) {
+      ({ index, taskData } = result);
+      if (result.patch.moveTo !== null && result.patch.moveTo.column !== columnName) {
+        columnName = result.patch.moveTo.column;
+        index = removeTaskFromIndex(index, taskId);
+        index = addTaskToIndex(index, taskId, columnName, result.patch.moveTo.position);
+        taskData = updateColumnLinkedCustomFields(index, taskData, columnName, now);
+      }
+    }
+    await this.saveTask(taskPath, taskData);
     await this.saveIndex(index);
+    await this.completeActions(result, taskId);
     return taskId;
   }
 
@@ -3235,12 +3651,34 @@ class Kanbn {
     }, await this.historyBoard(), await this.currentUser());
 
     // Update task metadata dates
+    const beforeActions = { ...taskData, metadata: { ...taskData.metadata } };
     taskData = updateColumnLinkedCustomFields(index, taskData, columnName, now);
-    await this.saveTask(taskPath, taskData);
 
-    // Add the task to the column and save the index
+    // Add the task to the column before running rules, so that a rule filtering on the task's
+    // column sees the column it is joining
     index = addTaskToIndex(index, taskId, columnName);
+
+    // Run actions and fold whatever they produce into the writes below
+    const result = await this.runActions({
+      eventTypes: ["task.addedToBoard", ...this.derivedEvents(index, beforeActions, taskData)],
+      index,
+      taskId,
+      taskData,
+      payload: { column: columnName, board: await this.resolveBoardSlug() },
+      date: now
+    });
+    if (result !== null) {
+      ({ index, taskData } = result);
+      if (result.patch.moveTo !== null && result.patch.moveTo.column !== columnName) {
+        columnName = result.patch.moveTo.column;
+        index = removeTaskFromIndex(index, taskId);
+        index = addTaskToIndex(index, taskId, columnName, result.patch.moveTo.position);
+        taskData = updateColumnLinkedCustomFields(index, taskData, columnName, now);
+      }
+    }
+    await this.saveTask(taskPath, taskData);
     await this.saveIndex(index);
+    await this.completeActions(result, taskId);
     return taskId;
   }
 
@@ -3418,17 +3856,56 @@ class Kanbn {
       }, null, await this.currentUser());
     }
 
+    // Run actions. A task.updated rule that moves the task redirects the move this call was going
+    // to make, or makes one of its own if the caller didn't ask for a column change
+    const result = await this.runActions({
+      eventTypes: ["task.updated", ...this.derivedEvents(index, originalTaskData, taskData)],
+      index,
+      taskId,
+      taskData,
+      payload: { changedFields: changedFields(originalTaskData, taskData), unsetFields: [...unsetFields] },
+      date: now
+    });
+    let rulePosition = null;
+    if (result !== null) {
+      ({ index, taskData } = result);
+      if (result.patch.moveTo !== null) {
+        rulePosition = result.patch.moveTo.position;
+        if (columnName === null) {
+          const fromColumn = findTaskColumn(index, taskId);
+          if (fromColumn !== result.patch.moveTo.column) {
+            taskData = appendTaskHistory(
+              taskData,
+              { date: now, type: "moved", fromColumn, toColumn: result.patch.moveTo.column },
+              await this.historyBoard(),
+              result.patch.moveTo.author
+            );
+            index = removeTaskFromIndex(index, taskId);
+            index = addTaskToIndex(index, taskId, result.patch.moveTo.column, rulePosition);
+            taskData = updateColumnLinkedCustomFields(index, taskData, result.patch.moveTo.column, now);
+          }
+        } else {
+          columnName = result.patch.moveTo.column;
+        }
+      }
+    }
+
     // Save task
     await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
 
     // Move the task if we're updating the column
     if (columnName) {
-      await this.moveTask(taskId, columnName);
+      // The move is a nested operation that fires its own rules, and reports its own skips. Keep
+      // this call's warnings in front of them rather than letting the move discard them
+      const updateWarnings = [...this.lastActionWarnings];
+      await this.moveTask(taskId, columnName, rulePosition);
+      this.lastActionWarnings = [...updateWarnings, ...this.lastActionWarnings];
 
       // Otherwise save the index
     } else {
       await this.saveIndex(index);
     }
+    await this.completeActions(result, taskId);
 
     // Remove any explicitly unset metadata fields last. This has to happen after the move, because
     // moving into a started or completed column stamps the linked date fields - an explicit unset
@@ -3581,8 +4058,8 @@ class Kanbn {
     }
 
     // Update task metadata dates
+    const beforeActions = { ...taskData, metadata: { ...taskData.metadata } };
     taskData = updateColumnLinkedCustomFields(index, taskData, columnName, moveDate);
-    await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
 
     // If we're moving the task to a new position, calculate the absolute position
     const currentPosition = index.columns[currentColumnName].indexOf(taskId);
@@ -3596,7 +4073,39 @@ class Kanbn {
     // Remove the task from its current column and add it to the new column
     index = removeTaskFromIndex(index, taskId);
     index = addTaskToIndex(index, taskId, columnName, position);
+
+    // Run actions. A rule that moves the task changes the destination of the write that was already
+    // about to happen, rather than performing a second move
+    const eventTypes = this.derivedEvents(index, beforeActions, taskData);
+    if (currentColumnName !== columnName) {
+      eventTypes.unshift("task.moved");
+    }
+    const result = await this.runActions({
+      eventTypes,
+      index,
+      taskId,
+      taskData,
+      payload: { fromColumn: currentColumnName, toColumn: columnName },
+      date: moveDate
+    });
+    if (result !== null) {
+      ({ index, taskData } = result);
+      if (result.patch.moveTo !== null && result.patch.moveTo.column !== columnName) {
+        const ruleColumn = result.patch.moveTo.column;
+        taskData = appendTaskHistory(
+          taskData,
+          { date: moveDate, type: "moved", fromColumn: columnName, toColumn: ruleColumn },
+          await this.historyBoard(),
+          result.patch.moveTo.author
+        );
+        index = removeTaskFromIndex(index, taskId);
+        index = addTaskToIndex(index, taskId, ruleColumn, result.patch.moveTo.position);
+        taskData = updateColumnLinkedCustomFields(index, taskData, ruleColumn, moveDate);
+      }
+    }
+    await this.saveTask(getTaskPath(await this.getTaskFolderPath(), taskId), taskData);
     await this.saveIndex(index);
+    await this.completeActions(result, taskId);
     return taskId;
   }
 
@@ -3631,8 +4140,30 @@ class Kanbn {
       );
     }
 
-    // Remove the task from whichever column it's in
+    // Run actions before anything is removed, so that a rule's targets are selected from the task's
+    // relations while the task is still there to have them
     const columnName = findTaskColumn(index, taskId);
+    const taskFileExists = await exists(getTaskPath(await this.getTaskFolderPath(), taskId));
+    let result = null;
+    if (taskFileExists) {
+      result = await this.runActions({
+        eventTypes: ["task.deleted"],
+        index,
+        taskId,
+        taskData: await this.loadTask(taskId),
+        payload: { fromColumn: columnName, removeFile, allBoards },
+
+        // Removing a task from one board isn't a workspace-wide operation, whatever the event is
+        // called, so the other boards' rules have nothing to hear about
+        taskBoards: allBoards ? null : false,
+        date: new Date()
+      });
+      if (result !== null) {
+        index = result.index;
+      }
+    }
+
+    // Remove the task from whichever column it's in
     index = removeTaskFromIndex(index, taskId);
 
     // Record the task leaving this board, but only when the task file survives - a removed event on
@@ -3658,6 +4189,7 @@ class Kanbn {
       await fs.promises.unlink(getTaskPath(await this.getTaskFolderPath(), taskId));
     }
     await this.saveIndex(index);
+    await this.completeActions(result, taskId);
     return taskId;
   }
 
@@ -4000,6 +4532,25 @@ class Kanbn {
       return errors;
     }
 
+    // Action rules are configuration: a rule that names an unknown event or verb is wrong in the
+    // file, and an operation that meets one fails before writing anything, so it belongs here
+    // rather than in the warnings
+    try {
+      const rules = await this.getActionRules(index);
+      const context = { columns: Object.keys(index.columns) };
+      if (await this.workspaceInitialised()) {
+        context.boards = (await this.listBoards()).map((board) => board.slug);
+      }
+      for (const error of actions.findRuleErrors(rules, context)) {
+        errors.push({ task: null, errors: `actions: ${error}` });
+      }
+    } catch (error) {
+      errors.push({ task: null, errors: `actions: ${error.message}` });
+    }
+    if (errors.length) {
+      return errors;
+    }
+
     // Load & parse tasks
     const trackedTasks = getTrackedTaskIds(index);
     for (let taskId of trackedTasks) {
@@ -4307,6 +4858,31 @@ class Kanbn {
   }
 
   /**
+   * Find things about this board's action rules that are legal but probably not what the author meant
+   *
+   * Rules that are wrong in the file are errors, reported by validate(). These are the ones that
+   * work: two rules writing the same field on the same event, or a rule using @me where no user can
+   * be resolved
+   * @return {Promise<object[]>} A list of warnings
+   */
+  async findActionWarnings() {
+    if (!(await this.initialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+    let rules = [];
+    try {
+      rules = await this.getActionRules();
+    } catch (error) {
+      // A rule set that can't be read is an error rather than a warning, and validate reports it
+      return [];
+    }
+    if (!rules.length) {
+      return [];
+    }
+    return actions.findRuleWarnings(rules, { hasUser: (await this.currentUser()) !== null });
+  }
+
+  /**
    * Find tasks whose assigned user or comment author isn't a known contributor
    *
    * Contributors are advisory, so this is a warning and never an error: `assigned` and `author` stay
@@ -4324,6 +4900,12 @@ class Kanbn {
       a.value.localeCompare(b.value)
     )) {
       if (matchContributor(contributors, entry.value) !== null) {
+        continue;
+      }
+
+      // A comment written by a rule is authored by the rule, not by a person, so it is never a
+      // missing contributor
+      if (entry.value === actions.ACTION_AUTHOR_PREFIX || entry.value.startsWith(`${actions.ACTION_AUTHOR_PREFIX}/`)) {
         continue;
       }
       for (const taskId of [...entry.tasks].sort()) {
@@ -4979,19 +5561,54 @@ class Kanbn {
     }
 
     // Add the comment
-    const taskData = await this.loadTask(taskId);
+    let taskData = await this.loadTask(taskId);
     const taskPath = getTaskPath(await this.getTaskFolderPath(), taskId);
+    const now = new Date();
     taskData.comments.push({
       text,
 
       // An author is optional, and a machine with no resolvable user has none. Serialising null
       // fails schema validation, so the task could never be written back
       author: author || "",
-      date: new Date(),
+      date: now,
     });
+
+    // Run actions
+    const result = await this.runActions({
+      eventTypes: ["task.commented"],
+      index,
+      taskId,
+      taskData,
+      payload: { comment: text },
+      date: now
+    });
+    if (result !== null) {
+      ({ taskData } = result);
+      index = result.index;
+      if (result.patch.moveTo !== null) {
+        const fromColumn = findTaskColumn(index, taskId);
+        if (fromColumn !== result.patch.moveTo.column) {
+          taskData = appendTaskHistory(
+            taskData,
+            { date: now, type: "moved", fromColumn, toColumn: result.patch.moveTo.column },
+            await this.historyBoard(),
+            result.patch.moveTo.author
+          );
+          index = removeTaskFromIndex(index, taskId);
+          index = addTaskToIndex(index, taskId, result.patch.moveTo.column, result.patch.moveTo.position);
+          taskData = updateColumnLinkedCustomFields(index, taskData, result.patch.moveTo.column, now);
+        }
+      }
+    }
 
     // Save the task
     await this.saveTask(taskPath, taskData);
+
+    // Commenting doesn't touch the index, so it is only written when a rule moved something
+    if (result !== null && (result.patch.moveTo !== null || result.targets.some((target) => target.moveTo !== null))) {
+      await this.saveIndex(index);
+    }
+    await this.completeActions(result, taskId);
     return taskId;
   }
 
@@ -5065,16 +5682,35 @@ class Kanbn {
     }
 
     // Add history event. Archiving isn't board-scoped, so the event carries no board key
+    const now = new Date();
     taskData = appendTaskHistory(taskData, {
       type: 'archived',
       fromColumn: taskColumn
     }, null, await this.currentUser());
 
+    // Run actions
+    const result = await this.runActions({
+      eventTypes: ["task.archived"],
+      index,
+      taskId,
+      taskData,
+      payload: { fromColumn: taskColumn },
+      date: now
+    });
+    if (result !== null) {
+      ({ index, taskData } = result);
+      if (result.targets.some((target) => target.moveTo !== null)) {
+        await this.saveIndex(index);
+      }
+    }
+
     // Save the task inside the archive folder
     await this.saveTask(archivedTaskPath, taskData);
+    await this.completeActions(result, taskId);
 
-    // Remove the original task from every board that references it
-    await this.deleteTask(taskId, true, true);
+    // Remove the original task from every board that references it. This removal is part of the
+    // archive rather than a deletion anyone wrote a rule for, so it fires nothing
+    await this.withoutActions().deleteTask(taskId, true, true);
 
     return taskId;
   }
@@ -5164,13 +5800,38 @@ class Kanbn {
       toColumn: actualColumnName
     }, null, await this.currentUser());
 
-    // Update task metadata dates and save task
+    // Update task metadata dates
+    const beforeActions = { ...taskData, metadata: { ...taskData.metadata } };
     taskData = updateColumnLinkedCustomFields(index, taskData, actualColumnName, now);
-    await this.saveTask(taskPath, taskData);
 
-    // Add the task to the column and save the index
+    // Add the task to the column before running rules, so that a rule filtering on the task's
+    // column sees the column it is being restored to
     index = addTaskToIndex(index, taskId, actualColumnName);
+
+    // Run actions
+    const result = await this.runActions({
+      eventTypes: ["task.restored", ...this.derivedEvents(index, beforeActions, taskData)],
+      index,
+      taskId,
+      taskData,
+      payload: { toColumn: actualColumnName },
+
+      // The task isn't on any board yet, so the index can't say which boards this affects
+      taskBoards: [thisBoardSlug, ...otherBoards.map(([slug]) => slug)],
+      date: now
+    });
+    if (result !== null) {
+      ({ index, taskData } = result);
+      if (result.patch.moveTo !== null && result.patch.moveTo.column !== actualColumnName) {
+        actualColumnName = result.patch.moveTo.column;
+        index = removeTaskFromIndex(index, taskId);
+        index = addTaskToIndex(index, taskId, actualColumnName, result.patch.moveTo.position);
+        taskData = updateColumnLinkedCustomFields(index, taskData, actualColumnName, now);
+      }
+    }
+    await this.saveTask(taskPath, taskData);
     await this.saveIndex(index);
+    await this.completeActions(result, taskId);
 
     // Restore the task to every other board it was on, falling back to that board's first column if
     // the column it used to be in has since gone

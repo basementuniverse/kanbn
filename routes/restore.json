@@ -16,6 +16,12 @@
       "board": [
         "b"
       ]
+    },
+    "boolean": [
+      "actions"
+    ],
+    "default": {
+      "actions": true
     }
   },
   "controller": "./src/controller/restore",

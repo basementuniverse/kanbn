@@ -142,8 +142,26 @@ declare type contributorWarning = {
   message: string
 };
 
+declare type actionRule = {
+  name?: string,
+  on: string,
+  when?: Record<string, any>,
+  for?: {
+    related?: string,
+    direction?: 'incoming' | 'outgoing',
+    where?: Record<string, any>
+  },
+  anyBoard?: boolean,
+  then: Record<string, any>[]
+};
+
+declare type actionWarning = {
+  type: 'conflicting-actions' | 'unresolvable-user',
+  message: string
+};
+
 export class Kanbn {
-  constructor(root?: any, options?: { board?: string, caches?: any });
+  constructor(root?: any, options?: { board?: string, caches?: any, actions?: boolean });
   ROOT: string;
   CONFIG_YAML: string;
   CONFIG_JSON: string;
@@ -152,6 +170,30 @@ export class Kanbn {
    * The board this instance is scoped to, or null for the main board
    */
   boardSlug: string | null;
+  /**
+   * Rules that were skipped during the last operation, for the caller to report
+   */
+  lastActionWarnings: string[];
+  /**
+   * Whether scripted actions run for operations on this instance
+   */
+  actionsEnabled: boolean;
+  /**
+   * Get an instance that runs no actions
+   */
+  withoutActions(): Kanbn;
+  /**
+   * Get the action rules that apply to this board
+   */
+  getActionRules(index?: index | null): Promise<actionRule[]>;
+  /**
+   * Check whether actions should run at all
+   */
+  actionsAllowed(): boolean;
+  /**
+   * Find things about this board's action rules that are legal but probably not what the author meant
+   */
+  findActionWarnings(): Promise<actionWarning[]>;
   /**
    * Get a copy of this instance scoped to another board, sharing this one's cached config
    * @param {?string} [slug=null] The board slug, or null/"main"/"default" for the main board

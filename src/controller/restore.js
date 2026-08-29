@@ -14,6 +14,7 @@ function restoreTask(taskId, columnName, singleBoard) {
   .restoreTask(taskId, columnName, singleBoard)
   .then(taskId => {
     console.log(`Restored task "${taskId}" from the archive`);
+    utility.showActionWarnings(kanbn);
 
     // A task is restored to every board it was on when it was archived. A board that has since been
     // deleted is skipped rather than failing the restore, but the user should hear about it

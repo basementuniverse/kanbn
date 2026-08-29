@@ -21,3 +21,9 @@ Options:
   {b}kanbn comment "task-id" -b "board-slug"{b}
     Target a board other than the main one. Falls back to the KANBN_BOARD environment variable and
     then to the defaultBoard option. See {b}kanbn boards{b} for the list of boards.
+
+Boards can declare {b}actions{b} - rules that fire when a task changes, e.g. "when this enters In
+Progress, assign it to me and tag it active". See {b}docs/actions.md{b}.
+
+  {b}kanbn comment --no-actions{b}
+    Run without firing any action rules. {b}KANBN_NO_ACTIONS=1{b} does the same for a whole shell.

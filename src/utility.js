@@ -40,6 +40,12 @@ module.exports = (() => {
         return null;
       }
       const kanbn = await workspace.boardFromArgs(args);
+
+      // Actions are declarative rules with no code execution, so this is a way around a misbehaving
+      // rule rather than a safety control
+      if (args.actions === false || args['no-actions'] === true) {
+        kanbn.actionsEnabled = false;
+      }
       if (!await kanbn.workspaceInitialised()) {
         this.error('Kanbn has not been initialised in this folder\nTry running: {b}kanbn init{b}');
         return null;
@@ -77,7 +83,7 @@ module.exports = (() => {
 
       const targets = [];
       for (let i = 0; i < slugs.length; i++) {
-        const kanbn = await this.resolveBoard(workspace, { board: slugs[i] });
+        const kanbn = await this.resolveBoard(workspace, { board: slugs[i], actions: args.actions });
         if (kanbn === null) {
           return null;
         }
@@ -185,6 +191,23 @@ module.exports = (() => {
         return null;
       }
       return matches[0];
+    },
+
+    /**
+     * Report rules that were skipped during an operation
+     *
+     * A rule that quietly stops working is worse than no rule, so these go to stderr and aren't
+     * suppressed by verbose - the operation itself succeeded, which is why they aren't errors
+     * @param {object} kanbn The board-scoped Kanbn instance the operation ran on
+     */
+    showActionWarnings(kanbn) {
+      const warnings = (kanbn && kanbn.lastActionWarnings) || [];
+      if (!warnings.length) {
+        return;
+      }
+      for (const warning of warnings) {
+        console.error(this.replaceTags(`{d}action:{d} ${warning}`));
+      }
     },
 
     /**

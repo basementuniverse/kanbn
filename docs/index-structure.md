@@ -147,6 +147,15 @@ contributors:
     aliases:
       - Dave Smith
     colour: '#7c5cff'
+actions:
+  - name: start-work
+    on: task.moved
+    when:
+      toColumn: In Progress
+    then:
+      - assign: '@me'
+      - addTag: active
+actionsFile: ""
 ```
 
 ### `hiddenColumns`
@@ -333,6 +342,36 @@ An optional list of the people who work on this workspace. Each entry is either 
 Contributors are **advisory**. `assigned` and comment `author` remain free text and are never validated against the list, never rejected and never rewritten. What the list buys you is a canonical spelling for each person, an autocomplete in the interactive prompts, `@me` in filters, and `kanbn contributors --usage` to find the spellings already in use.
 
 See [Contributors](contributors.md) for the full description, and `kanbn contributors --help`.
+
+### `actions`
+
+A list of rules that fire when a task is created, moved, updated, commented on, archived, restored, deleted, started or completed. Each rule names an event (`on`), an optional condition (`when`), an optional set of related tasks to act on (`for`), and the verbs to apply (`then`).
+
+```yaml
+actions:
+  - name: start-work
+    on: task.moved
+    when:
+      toColumn: In Progress
+    then:
+      - assign: '@me'
+      - addTag: active
+      - removeTag: ready
+```
+
+`actions` is board-scoped: in a configuration file it applies to every board, and in a board's front matter it applies to that board alone. A board that declares its own replaces the inherited list rather than adding to it.
+
+Rules only fire during commands that change something, and nothing a rule writes ever fires another rule. See [Actions](actions.md) for the events, the verbs, the substitutions and the failure semantics.
+
+### `actionsFile`
+
+A path, relative to the `.kanbn` folder, of a file holding the same list of rules that `actions` would have held. For rule sets that have outgrown a board's front matter.
+
+```yaml
+actionsFile: actions/design.yml
+```
+
+Setting both `actions` and `actionsFile` on the same board is an error, and so is naming a file that doesn't exist or doesn't parse.
 
 ## Task state
 

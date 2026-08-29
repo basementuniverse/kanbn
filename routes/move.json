@@ -8,7 +8,8 @@
     "boolean": [
       "interactive",
       "relative",
-      "add"
+      "add",
+      "actions"
     ],
     "string": [
       "column",
@@ -33,7 +34,8 @@
       ]
     },
     "default": {
-      "add": true
+      "add": true,
+      "actions": true
     }
   },
   "controller": "./src/controller/move",

@@ -250,9 +250,11 @@ async function createTask(taskData, columnName) {
       `Created task "${taskId}" in column "${columnName}"` +
       (boardTargets.length > 1 || !first.main ? ` on board "${first.slug}"` : '')
     );
+    utility.showActionWarnings(first.kanbn);
     for (const target of rest) {
       await target.kanbn.addTaskToBoard(taskId, target.columnName);
       console.log(`Added task "${taskId}" to column "${target.columnName}" on board "${target.slug}"`);
+      utility.showActionWarnings(target.kanbn);
     }
   } catch (error) {
     utility.error(error);

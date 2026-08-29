@@ -450,6 +450,7 @@ function updateTask(taskId, taskData, columnName, unsetFields = []) {
   .updateTask(taskId, taskData, columnName, unsetFields)
   .then(taskId => {
     console.log(`Updated task "${taskId}"`);
+    utility.showActionWarnings(kanbn);
   })
   .catch(error => {
     utility.error(error);

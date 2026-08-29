@@ -89,3 +89,9 @@ Options:
     Editing a simple task - a line in a column that isn't a task link - promotes it to a real task
     file first, and then applies the edit. The new task is created in the column the line was in,
     with a created date as of the promotion. There is no way back.
+
+Boards can declare {b}actions{b} - rules that fire when a task changes, e.g. "when this enters In
+Progress, assign it to me and tag it active". See {b}docs/actions.md{b}.
+
+  {b}kanbn edit --no-actions{b}
+    Run without firing any action rules. {b}KANBN_NO_ACTIONS=1{b} does the same for a whole shell.

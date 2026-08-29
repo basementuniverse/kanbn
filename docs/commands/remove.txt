@@ -25,3 +25,9 @@ Options:
   {b}kanbn remove "Buy milk"{b}
     Remove a simple task - a line in a column that isn't a task link - by title. There is no file to
     delete and nothing to archive, so {b}--index{b} and {b}--all-boards{b} don't apply.
+
+Boards can declare {b}actions{b} - rules that fire when a task changes, e.g. "when this enters In
+Progress, assign it to me and tag it active". See {b}docs/actions.md{b}.
+
+  {b}kanbn remove --no-actions{b}
+    Run without firing any action rules. {b}KANBN_NO_ACTIONS=1{b} does the same for a whole shell.

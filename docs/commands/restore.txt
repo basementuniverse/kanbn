@@ -16,3 +16,9 @@ Options:
     Restore the task to that board only. Without this, the task goes back to every board it was on
     when it was archived, in the column it occupied on each. A board that has since been deleted is
     reported and skipped rather than failing the restore.
+
+Boards can declare {b}actions{b} - rules that fire when a task changes, e.g. "when this enters In
+Progress, assign it to me and tag it active". See {b}docs/actions.md{b}.
+
+  {b}kanbn restore --no-actions{b}
+    Run without firing any action rules. {b}KANBN_NO_ACTIONS=1{b} does the same for a whole shell.

@@ -70,6 +70,54 @@ contributors:
     aliases:
       - ben
 
+# Rules that fire when a task changes. Actions only run during commands that
+# change something - never during `board`, `find` or `burndown` - and nothing a
+# rule writes can fire another rule. `--no-actions` on any of those commands, or
+# KANBN_NO_ACTIONS=1, steps around a rule that is misbehaving.
+# See docs/actions.md.
+actions:
+  # `task.started` is a transition rather than an operation: it fires when the
+  # task wasn't started before and is now, whatever caused it. It reads
+  # startedColumns above, so adding another started column doesn't break it.
+  - name: start-work
+    on: task.started
+    then:
+      - assign: '@me'
+      - addTag: active
+      - removeTag: ready
+
+  - name: close-out
+    on: task.completed
+    then:
+      - removeTag: active
+      - setProgress: 1
+      - set: { closedBy: '@me' }
+
+  # `reviewedAt` above is stamped by the column linkage; the rule runs after it,
+  # so it can see and override anything that stamping wrote.
+  - name: flag-review
+    on: task.moved
+    when:
+      toColumn: Review
+    then:
+      - addTag: needs-review
+      - comment: 'Review requested by @me'
+
+  # `for` points the verbs at related tasks instead of this one. Children carry
+  # the `child-of` relation, so `incoming` finds them from the epic.
+  - name: epic-blocks-children
+    on: task.moved
+    when:
+      tag: epic
+      toColumn: Blocked
+    for:
+      related: child-of
+      direction: incoming
+      where:
+        is-completed: false
+    then:
+      - addTag: blocked-by-epic
+
 # Custom fields (team, storyPoints, ...) can be interpolated here because they
 # are declared in customFields above. See docs/index-structure.md for the full
 # list of available variables.

@@ -70,6 +70,8 @@ function defaults() {
     contributors: [],
     contributorUsage: { contributors: [], unknown: [] },
     contributorWarnings: [],
+    actionWarnings: [],
+    lastActionWarnings: [],
     currentUser: null,
     sprintData: {
       name: 'Test Sprint',
@@ -114,6 +116,9 @@ const kanbn = {
   async workspaceInitialised() {
     return config.initialised;
   },
+
+  // Whether actions run, set from --no-actions by utility.resolveBoard()
+  actionsEnabled: true,
 
   // Board scoping - board() records which board was asked for and hands back the same mock, so that
   // controllers can be driven with --board without the mock needing a second instance
@@ -307,6 +312,7 @@ const kanbn = {
       relative,
       add
     };
+    kanbn.lastActionWarnings = config.lastActionWarnings;
     return taskId;
   },
   async renameTask(taskId, newTaskName) {
@@ -472,6 +478,10 @@ const kanbn = {
   async findContributorWarnings() {
     failIfConfigured('findContributorWarnings');
     return config.contributorWarnings;
+  },
+  async findActionWarnings() {
+    failIfConfigured('findActionWarnings');
+    return config.actionWarnings;
   },
   async findDateDrift() {
     failIfConfigured('findDateDrift');

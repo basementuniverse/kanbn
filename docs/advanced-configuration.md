@@ -83,6 +83,23 @@ contributors:
 
 It is advisory — nothing is ever validated against it. See [Contributors](contributors.md).
 
+## Actions
+
+`actions` is a list of rules that fire when a task changes — "when this enters In Progress, assign it to me and tag it active". Unlike `contributors` it is **board-scoped**: declared in a configuration file it applies to every board, and declared in a board's front matter it applies to that board alone.
+
+```yaml
+actions:
+  - name: start-work
+    on: task.moved
+    when:
+      toColumn: In Progress
+    then:
+      - assign: '@me'
+      - addTag: active
+```
+
+Rules are declarative — Kanbn never executes anything a workspace supplies — and nothing a rule writes can fire another rule. `--no-actions` on any mutating command, or `KANBN_NO_ACTIONS=1`, steps around a rule that is misbehaving. `actionsFile` moves a long rule set out of front matter and into a file of its own. See [Actions](actions.md).
+
 Note that `indexFile` also sets the **main board's slug**: with `indexFile: board.md`, the main board's slug is `board`, and `main` / `default` still resolve to it.
 
 Where a configuration file exists, everything in it is inherited by every board — it is workspace-level by construction, so a board-scoped option declared there is a deliberate statement about all boards. Where there is no configuration file, the workspace options live in the main board's front matter, and only the workspace-scoped ones propagate; `startedColumns`, `views` and the rest stay with the main board.

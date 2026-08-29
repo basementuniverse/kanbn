@@ -43,3 +43,9 @@ workspace-scoped option in a board file, several boards stamping the same shared
 of order, a task on no board at all, history naming a board that has been deleted, and markdown
 files beside the boards that don't parse as one. These are warnings, not errors: each describes a
 workspace that still works, just not the way its author probably meant it to.
+
+Action rules are checked too. A rule that names an unknown event or verb, moves to a column that
+doesn't exist, or writes a field Kanbn manages is an {b}error{b} - the same commands that would have
+run it fail before writing anything. Rules that work but probably don't do what they look like -
+two rules writing the same field on the same event, or {b}@me{b} where no user can be resolved - are
+reported as warnings.

@@ -80,3 +80,9 @@ Examples:
     Each {b}-b{b} pairs with the {b}-c{b} in the same position; boards with no {b}-c{b} of their own
     use the first one given, and a board that hasn't got that column falls back to its first column
     with a notice. With a single board an unknown column is still an error.
+
+Boards can declare {b}actions{b} - rules that fire when a task changes, e.g. "when this enters In
+Progress, assign it to me and tag it active". See {b}docs/actions.md{b}.
+
+  {b}kanbn add --no-actions{b}
+    Run without firing any action rules. {b}KANBN_NO_ACTIONS=1{b} does the same for a whole shell.
