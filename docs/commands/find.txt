@@ -88,6 +88,28 @@ Options:
     Find tasks with a specific progress value (between 0 and 1).
     If multiple values are specified, find tasks with progress between the lowest and highest inputs.
 
+  {b}kanbn find --overdue{b}
+  {b}kanbn find --no-overdue{b}
+    Find tasks that are (or are not) overdue. A task is overdue if it has a due date in the past and
+    hasn't been completed. A task with no due date is never overdue.
+
+  {b}kanbn find --is-started{b}
+  {b}kanbn find --no-is-started{b}
+    Find tasks that do (or don't) have a started date in their metadata.
+
+  {b}kanbn find --is-completed{b}
+  {b}kanbn find --no-is-completed{b}
+    Find tasks that do (or don't) have a completed date in their metadata.
+
+  {b}kanbn find --in-started-column{b}
+  {b}kanbn find --no-in-started-column{b}
+    Find tasks that are (or aren't) in one of the board's startedColumns. If the board declares no
+    startedColumns, no task is in a started column.
+
+  {b}kanbn find --in-completed-column{b}
+  {b}kanbn find --no-in-completed-column{b}
+    Find tasks that are (or aren't) in one of the board's completedColumns.
+
   {b}kanbn find --sub-task "search term"{b}
   {b}kanbn find -s "search term"{b}
     Find tasks that have sub-tasks matching the search term.
@@ -138,6 +160,9 @@ Examples:
   {b}kanbn find --count-sub-tasks 1 --count-sub-tasks 99 --progress 0 -q{b}
     List the ids of tasks that have sub-tasks but no progress yet.
 
+  {b}kanbn find --overdue --no-in-started-column -q{b}
+    List the ids of overdue tasks that nobody has picked up yet.
+
   {b}kanbn find --board "board-slug"{b}
   {b}kanbn find -b "board-slug"{b}
     Target a board other than the main one. Falls back to the KANBN_BOARD environment variable and
@@ -146,5 +171,7 @@ Examples:
   {b}kanbn find --all-boards{b}
     Search every board in the workspace. A task on several boards appears once, annotated with the
     board and column it occupies on each. Without this, the search is scoped to the target board.
+    Computed values are evaluated per board, so a task matches {b}--in-started-column{b} if it is in
+    a started column on any of them.
     This can't be combined with {b}--sprint{b}: sprint numbers and names are relative to one board's
     list, so there is no sensible answer across several.

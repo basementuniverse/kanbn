@@ -127,6 +127,18 @@ QUnit.test('Sort a column by several fields', async assert => {
   ]);
 });
 
+QUnit.test('Sort a column by a computed field', async assert => {
+  await capture.stdout(async out => {
+    await mockArgv(['sort', 'Column 1', '--overdue', '-z', '--in-started-column'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.deepEqual(mockConfig.output.sorters, [
+    { field: 'overdue', filter: '', order: 'descending' },
+    { field: 'inStartedColumn', filter: '', order: 'ascending' }
+  ]);
+});
+
 QUnit.test('Sort a column with the save flag', async assert => {
   await capture.stdout(async out => {
     await mockArgv(['sort', 'Column 1', '--name', '--save'], kanbn);

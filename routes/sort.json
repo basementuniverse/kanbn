@@ -32,6 +32,11 @@
       "workload",
       "progress",
       "assigned",
+      "overdue",
+      "is-started",
+      "is-completed",
+      "in-started-column",
+      "in-completed-column",
       "board"
     ],
     "alias": {

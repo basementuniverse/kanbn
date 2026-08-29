@@ -343,3 +343,102 @@ QUnit.test('Sort on custom field', async assert => {
   index = await kanbn.getIndex();
   assert.deepEqual(index.columns['Column 1'], ['task-1', 'task-3', 'task-2']);
 });
+
+QUnit.test('Sort on computed boolean field', async assert => {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1',
+        metadata: {
+          due: new Date('01 January 2099 00:00:00 GMT')
+        }
+      },
+      {
+        name: 'Task 2',
+        metadata: {
+          due: new Date('01 January 2020 00:00:00 GMT')
+        }
+      },
+      {
+        name: 'Task 3'
+      }
+    ],
+    columns: {
+      'Column 1': [
+        'task-1',
+        'task-2',
+        'task-3'
+      ]
+    }
+  });
+  let index;
+
+  // Sort using default order (should be ascending, so overdue tasks come last)
+  await kanbn.sort('Column 1', [
+    {
+      field: 'overdue'
+    },
+    {
+      field: 'name'
+    }
+  ]);
+  index = await kanbn.getIndex();
+  assert.deepEqual(index.columns['Column 1'], ['task-1', 'task-3', 'task-2']);
+
+  // Sort using descending order
+  await kanbn.sort('Column 1', [
+    {
+      field: 'overdue',
+      order: 'descending'
+    },
+    {
+      field: 'name'
+    }
+  ]);
+  index = await kanbn.getIndex();
+  assert.deepEqual(index.columns['Column 1'], ['task-2', 'task-1', 'task-3']);
+});
+
+QUnit.test('Sort on computed column state field', async assert => {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1'
+      },
+      {
+        name: 'Task 2'
+      },
+      {
+        name: 'Task 3'
+      }
+    ],
+    columns: {
+      'Column 1': [
+        'task-1',
+        'task-2',
+        'task-3'
+      ]
+    },
+    options: {
+      startedColumns: ['Column 1'],
+      completedColumns: []
+    }
+  });
+
+  // Every task in the column is in a started column, so the sorter can't separate them and the
+  // tie-breaker decides the order
+  await kanbn.sort('Column 1', [
+    {
+      field: 'inStartedColumn',
+      order: 'descending'
+    },
+    {
+      field: 'name',
+      order: 'descending'
+    }
+  ]);
+  const index = await kanbn.getIndex();
+  assert.deepEqual(index.columns['Column 1'], ['task-3', 'task-2', 'task-1']);
+});

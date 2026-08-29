@@ -114,6 +114,31 @@ const searchFields = [
     name: 'Assigned',
     field: 'assigned',
     type: 'string'
+  },
+  {
+    name: 'Overdue',
+    field: 'overdue',
+    type: 'boolean'
+  },
+  {
+    name: 'Is started',
+    field: 'is-started',
+    type: 'boolean'
+  },
+  {
+    name: 'Is completed',
+    field: 'is-completed',
+    type: 'boolean'
+  },
+  {
+    name: 'In started column',
+    field: 'in-started-column',
+    type: 'boolean'
+  },
+  {
+    name: 'In completed column',
+    field: 'in-completed-column',
+    type: 'boolean'
   }
 ];
 
@@ -285,6 +310,24 @@ function convertNumericFilters(filters, filterName) {
 }
 
 /**
+ * Check that a filter holds a boolean value. Repeating a boolean option is meaningless, so the last
+ * value wins
+ * @param {object} filters The current filter object
+ * @param {string} filterName The property name for the filter
+ * @return {boolean} True if the value is a boolean
+ */
+function convertBooleanFilters(filters, filterName) {
+  const value = Array.isArray(filters[filterName])
+    ? filters[filterName][filters[filterName].length - 1]
+    : filters[filterName];
+  if (typeof value !== 'boolean') {
+    return false;
+  }
+  filters[filterName] = value;
+  return true;
+}
+
+/**
  * Convert a filter or array of filters to date values
  * @param {object} filters The current filter object
  * @param {string} filterName The property name for the filter
@@ -343,11 +386,16 @@ module.exports = async args => {
     }
   }
 
-  // Get filters from args
+  // Get filters from args. Boolean filters are checked with "in" because false is a filter value in
+  // its own right - "--no-overdue" means "not overdue", not "no overdue filter"
   const filters = {};
-  for (let filterProperty of searchFields.map(s => s.field)) {
-    if (args[filterProperty]) {
-      filters[filterProperty] = args[filterProperty];
+  for (let searchField of searchFields) {
+    if (searchField.type === 'boolean') {
+      if (searchField.field in args) {
+        filters[searchField.field] = args[searchField.field];
+      }
+    } else if (args[searchField.field]) {
+      filters[searchField.field] = args[searchField.field];
     }
   }
 
@@ -394,6 +442,20 @@ module.exports = async args => {
   if ('progress' in filters){
     if (!convertNumericFilters(filters, 'progress')) {
       utility.error('Progress filter value must be numeric');
+      return;
+    }
+  }
+
+  // Check computed boolean filters
+  for (const [filterName, label] of [
+    ['overdue', 'Overdue'],
+    ['is-started', 'Is started'],
+    ['is-completed', 'Is completed'],
+    ['in-started-column', 'In started column'],
+    ['in-completed-column', 'In completed column']
+  ]) {
+    if (filterName in filters && !convertBooleanFilters(filters, filterName)) {
+      utility.error(`${label} filter value must be a boolean`);
       return;
     }
   }

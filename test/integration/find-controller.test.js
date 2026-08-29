@@ -189,6 +189,54 @@ QUnit.test('Find with the json flag should print results as JSON', async assert 
   assert.deepEqual(JSON.parse(output.join('')), mockConfig.searchResults);
 });
 
+QUnit.test('Find with a computed boolean filter should pass it through', async assert => {
+  await capture.stdout(async out => {
+    await mockArgv(['find', '--overdue'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.deepEqual(mockConfig.output.filters, { overdue: true });
+});
+
+QUnit.test('Negating a computed boolean filter should pass false through', async assert => {
+  await capture.stdout(async out => {
+    await mockArgv(['find', '--no-in-started-column'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.deepEqual(mockConfig.output.filters, { 'in-started-column': false });
+});
+
+QUnit.test('Find without a computed boolean filter should not filter on it', async assert => {
+  await capture.stdout(async out => {
+    await mockArgv(['find', '-q'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.deepEqual(mockConfig.output.filters, {});
+});
+
+QUnit.test('Find with several computed boolean filters should pass them all through', async assert => {
+  await capture.stdout(async out => {
+    await mockArgv(['find', '--is-started', '--no-is-completed', '--in-started-column'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.deepEqual(mockConfig.output.filters, {
+    'is-started': true,
+    'is-completed': false,
+    'in-started-column': true
+  });
+});
+
+QUnit.test('Find with a non-boolean value for a computed boolean filter should print an error', async assert => {
+  const output = await capture.stderr(async () => {
+    await mockArgv(['find', '--overdue', 'not-a-boolean'], kanbn);
+  });
+
+  assert.contains(output, /Overdue filter value must be a boolean/);
+});
+
 QUnit.test('Find with a custom field filter should be type checked', async assert => {
   mockConfig.index.options.customFields = [
     {
@@ -268,6 +316,15 @@ QUnit.test('Find interactively with several filters', async assert => {
   ]);
 
   assert.deepEqual(output.filters, { name: 'Test', column: 'Column 1' });
+});
+
+QUnit.test('Find interactively with a computed boolean filter', async assert => {
+  const output = await findInteractively([
+    { type: 'Overdue', value: true },
+    { type: 'In started column', value: false }
+  ]);
+
+  assert.deepEqual(output.filters, { overdue: true, 'in-started-column': false });
 });
 
 QUnit.test('Repeating a filter interactively should collect the values into an array', async assert => {

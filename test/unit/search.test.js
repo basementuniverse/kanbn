@@ -593,3 +593,136 @@ QUnit.test('Search with boolean filter on custom field', async assert => {
   assert.equal(result.length, 2);
   assert.deepEqual(result.map(r => r.id), ['task-2', 'task-3']);
 });
+
+// Fixture used by the computed value tests below. The started/completed metadata is set explicitly
+// rather than by moving tasks, so metadata-based and column-based state can disagree
+function computedValueFixtures(options = {}) {
+  fixtures({
+    noRandom: true,
+    tasks: [
+      {
+        name: 'Task 1',
+        metadata: {
+          due: new Date('01 January 2020 00:00:00 GMT')
+        }
+      },
+      {
+        name: 'Task 2',
+        metadata: {
+          due: new Date('01 January 2099 00:00:00 GMT')
+        }
+      },
+      {
+        name: 'Task 3'
+      },
+      {
+        name: 'Task 4',
+        metadata: {
+          due: new Date('01 January 2020 00:00:00 GMT'),
+          started: new Date('02 January 2020 00:00:00 GMT')
+        }
+      },
+      {
+        name: 'Task 5',
+        metadata: {
+          due: new Date('01 January 2020 00:00:00 GMT'),
+          started: new Date('02 January 2020 00:00:00 GMT'),
+          completed: new Date('03 January 2020 00:00:00 GMT')
+        }
+      }
+    ],
+    columns: {
+      'Todo': [
+        'task-1',
+        'task-2',
+        'task-3'
+      ],
+      'In Progress': [
+        'task-4'
+      ],
+      'Done': [
+        'task-5'
+      ]
+    },
+    options: {
+      startedColumns: ['In Progress'],
+      completedColumns: ['Done'],
+      ...options
+    }
+  });
+}
+
+QUnit.test('Search with overdue filter', async assert => {
+  computedValueFixtures();
+
+  // Task 1 and task 4 are past their due date and not completed. Task 2 isn't due yet, task 3 has
+  // no due date at all, and task 5 is completed
+  let result = await kanbn.search({ overdue: true }, true);
+  assert.deepEqual(result, ['task-1', 'task-4']);
+
+  result = await kanbn.search({ overdue: false }, true);
+  assert.deepEqual(result, ['task-2', 'task-3', 'task-5']);
+});
+
+QUnit.test('Search with is-started and is-completed filters', async assert => {
+  computedValueFixtures();
+
+  let result = await kanbn.search({ 'is-started': true }, true);
+  assert.deepEqual(result, ['task-4', 'task-5']);
+
+  result = await kanbn.search({ 'is-started': false }, true);
+  assert.deepEqual(result, ['task-1', 'task-2', 'task-3']);
+
+  result = await kanbn.search({ 'is-completed': true }, true);
+  assert.deepEqual(result, ['task-5']);
+
+  result = await kanbn.search({ 'is-completed': false }, true);
+  assert.deepEqual(result, ['task-1', 'task-2', 'task-3', 'task-4']);
+});
+
+QUnit.test('Search with is-started and is-completed filters should use the configured state fields', async assert => {
+  computedValueFixtures({
+    startedField: 'designStartedAt',
+    completedField: 'designSignedOffAt'
+  });
+
+  // No task has the configured fields, so nothing counts as started or completed on this board even
+  // though several have the built-in started/completed metadata
+  assert.deepEqual(await kanbn.search({ 'is-started': true }, true), []);
+  assert.deepEqual(await kanbn.search({ 'is-completed': true }, true), []);
+});
+
+QUnit.test('Search with column state filters', async assert => {
+  computedValueFixtures();
+
+  let result = await kanbn.search({ 'in-started-column': true }, true);
+  assert.deepEqual(result, ['task-4']);
+
+  result = await kanbn.search({ 'in-completed-column': true }, true);
+  assert.deepEqual(result, ['task-5']);
+
+  result = await kanbn.search({ 'in-started-column': false, 'in-completed-column': false }, true);
+  assert.deepEqual(result, ['task-1', 'task-2', 'task-3']);
+});
+
+QUnit.test('Search with column state filters on a board with no started or completed columns', async assert => {
+  computedValueFixtures({
+    startedColumns: [],
+    completedColumns: []
+  });
+
+  // A board with no started or completed columns has no notion of either, so no task is in one
+  assert.deepEqual(await kanbn.search({ 'in-started-column': true }, true), []);
+  assert.deepEqual(await kanbn.search({ 'in-completed-column': true }, true), []);
+  assert.deepEqual(
+    await kanbn.search({ 'in-started-column': false }, true),
+    ['task-1', 'task-2', 'task-3', 'task-4', 'task-5']
+  );
+});
+
+QUnit.test('Computed value filters should combine with the other filters', async assert => {
+  computedValueFixtures();
+
+  const result = await kanbn.search({ overdue: true, column: 'Todo' }, true);
+  assert.deepEqual(result, ['task-1']);
+});

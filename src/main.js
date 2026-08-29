@@ -484,12 +484,6 @@ function appendTaskHistory(taskData, historyEvent, boardSlug = null, author = nu
 }
 
 /**
- * Check if a task is completed
- * @param {object} index
- * @param {object} task
- * @return {boolean} True if the task is in a completed column or has a completed date
- */
-/**
  * Get the name of the metadata field that holds a task's started date for this board. Boards can
  * point this at a custom date field so that several boards can track their own started/completed
  * state against the same shared task file
@@ -509,8 +503,73 @@ function getCompletedField(index) {
   return ("completedField" in index.options && index.options.completedField) || DEFAULT_COMPLETED_FIELD;
 }
 
+/**
+ * Find the column a task is currently in
+ * @param {object} index The index object
+ * @param {object} task The task object
+ * @return {?string} The column name, or null if the task isn't in the index
+ */
+function getTaskColumn(index, task) {
+  return findTaskColumn(index, task.id || utility.getTaskId(task.name));
+}
+
+/**
+ * Check if a task has been started, based on its metadata
+ * @param {object} index The index object
+ * @param {object} task The task object
+ * @return {boolean} True if the task has a started date
+ */
+function taskStarted(index, task) {
+  return getStartedField(index) in task.metadata;
+}
+
+/**
+ * Check if a task is completed, based on its metadata
+ * @param {object} index The index object
+ * @param {object} task The task object
+ * @return {boolean} True if the task has a completed date
+ */
 function taskCompleted(index, task) {
   return getCompletedField(index) in task.metadata;
+}
+
+/**
+ * Check if a task is in one of this board's started columns. A board that declares no
+ * startedColumns has no notion of work in progress, so nothing is in a started column
+ * @param {object} index The index object
+ * @param {object} task The task object
+ * @return {boolean} True if the task is in a started column
+ */
+function taskInStartedColumn(index, task) {
+  const startedColumns = "startedColumns" in index.options ? index.options.startedColumns : [];
+  const column = getTaskColumn(index, task);
+  return column !== null && startedColumns.indexOf(column) !== -1;
+}
+
+/**
+ * Check if a task is in one of this board's completed columns
+ * @param {object} index The index object
+ * @param {object} task The task object
+ * @return {boolean} True if the task is in a completed column
+ */
+function taskInCompletedColumn(index, task) {
+  const completedColumns = "completedColumns" in index.options ? index.options.completedColumns : [];
+  const column = getTaskColumn(index, task);
+  return column !== null && completedColumns.indexOf(column) !== -1;
+}
+
+/**
+ * Check if a task is overdue - i.e. it has a due date in the past and hasn't been completed. A task
+ * with no due date is never overdue, and neither is a completed task, however late it was
+ * @param {object} index The index object
+ * @param {object} task The task object
+ * @return {boolean} True if the task is overdue
+ */
+function taskOverdue(index, task) {
+  if (!("due" in task.metadata) || taskCompleted(index, task)) {
+    return false;
+  }
+  return new Date() - task.metadata.due > 0;
 }
 
 /**
@@ -541,6 +600,12 @@ function taskSortFields(index, task) {
     comments: task.comments.map((comment) => `${comment.author} ${comment.text}`).join("\n"),
     workload: taskWorkload(index, task),
     progress: taskProgress(index, task),
+    column: getTaskColumn(index, task) || "",
+    overdue: taskOverdue(index, task),
+    isStarted: taskStarted(index, task),
+    isCompleted: taskCompleted(index, task),
+    inStartedColumn: taskInStartedColumn(index, task),
+    inCompletedColumn: taskInCompletedColumn(index, task),
   };
 }
 
@@ -757,6 +822,37 @@ function filterTasks(index, tasks, filters) {
       result = false;
     }
 
+    // Overdue
+    if ("overdue" in filters && !booleanFilter(filters.overdue, taskOverdue(index, task))) {
+      result = false;
+    }
+
+    // Started, from the task's metadata
+    if ("is-started" in filters && !booleanFilter(filters["is-started"], taskStarted(index, task))) {
+      result = false;
+    }
+
+    // Completed, from the task's metadata
+    if ("is-completed" in filters && !booleanFilter(filters["is-completed"], taskCompleted(index, task))) {
+      result = false;
+    }
+
+    // In a started column on this board
+    if (
+      "in-started-column" in filters &&
+      !booleanFilter(filters["in-started-column"], taskInStartedColumn(index, task))
+    ) {
+      result = false;
+    }
+
+    // In a completed column on this board
+    if (
+      "in-completed-column" in filters &&
+      !booleanFilter(filters["in-completed-column"], taskInCompletedColumn(index, task))
+    ) {
+      result = false;
+    }
+
     // Assigned
     if (
       "assigned" in filters &&
@@ -902,6 +998,17 @@ function dateFilter(dates, input) {
 function numberFilter(filter, input) {
   filter = utility.arrayArg(filter);
   return input >= Math.min(...filter) && input <= Math.max(...filter);
+}
+
+/**
+ * Check if the input matches a boolean, or if multiple booleans are passed in, check if the input
+ * matches any of them
+ * @param {boolean|boolean[]} filter A filter boolean or array of filter booleans
+ * @param {boolean} input The value to match against
+ * @return {boolean} True if the input matches the boolean filter
+ */
+function booleanFilter(filter, input) {
+  return utility.arrayArg(filter).some((value) => !!value === !!input);
 }
 
 /**
@@ -1834,8 +1941,6 @@ class Kanbn {
     if ("due" in task.metadata) {
       const dueData = {};
 
-      // A task is overdue if it's due date is in the past and the task is not in a completed column
-      // or doesn't have a completed dates
       const completedField = getCompletedField(index);
       const completedDate = completedField in task.metadata ? task.metadata[completedField] : null;
 
@@ -1852,7 +1957,7 @@ class Kanbn {
       dueData.completed = completed;
       dueData.completedDate = completedDate;
       dueData.dueDate = task.metadata.due;
-      dueData.overdue = !completed && delta > 0;
+      dueData.overdue = taskOverdue(index, task);
       dueData.dueDelta = delta;
 
       // Prepare a due message for the task

@@ -181,6 +181,46 @@ const sorterFields = [
       '--assigned'
     ],
     filterable: true
+  },
+  {
+    name: 'Overdue',
+    field: 'overdue',
+    options: [
+      '--overdue'
+    ],
+    filterable: false
+  },
+  {
+    name: 'Is started',
+    field: 'isStarted',
+    options: [
+      '--is-started'
+    ],
+    filterable: false
+  },
+  {
+    name: 'Is completed',
+    field: 'isCompleted',
+    options: [
+      '--is-completed'
+    ],
+    filterable: false
+  },
+  {
+    name: 'In started column',
+    field: 'inStartedColumn',
+    options: [
+      '--in-started-column'
+    ],
+    filterable: false
+  },
+  {
+    name: 'In completed column',
+    field: 'inCompletedColumn',
+    options: [
+      '--in-completed-column'
+    ],
+    filterable: false
   }
 ];
 

@@ -98,6 +98,21 @@ Options:
   {b}kanbn sort -w{b}
     Sort tasks by workload.
 
+  {b}kanbn sort --overdue{b}
+    Sort tasks by whether they are overdue. Ascending puts overdue tasks last.
+
+  {b}kanbn sort --is-started{b}
+    Sort tasks by whether they have a started date in their metadata.
+
+  {b}kanbn sort --is-completed{b}
+    Sort tasks by whether they have a completed date in their metadata.
+
+  {b}kanbn sort --in-started-column{b}
+    Sort tasks by whether they are in one of the board's startedColumns.
+
+  {b}kanbn sort --in-completed-column{b}
+    Sort tasks by whether they are in one of the board's completedColumns.
+
   {b}kanbn sort --<custom field name>{b}
     Sort tasks by a custom field value.
 
@@ -107,6 +122,9 @@ Examples:
 
   {b}kanbn sort "Todo" -z -n --count-tags{b}
     Sort tasks in the "Todo" column first by name, then by the number of tags, all in descending order
+
+  {b}kanbn sort "Todo" --overdue -z -e -a{b}
+    Sort tasks in the "Todo" column so that overdue tasks come first, then by due date in ascending order
 
   {b}kanbn sort "column" --board "board-slug"{b}
   {b}kanbn sort "column" -b "board-slug"{b}
