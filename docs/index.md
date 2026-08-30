@@ -13,6 +13,7 @@ To get started quickly, check out the [Quick Start](quick-start.md) guide.
 - [Contributors](contributors.md) — an optional list of who works on a workspace, and who "you" are
 - [Actions](actions.md) — declarative rules that fire when a task is created, moved, updated or finished
 - [Views](views.md) — custom board layouts, columns and lanes
+- [Sprints](sprints.md) — named time windows that `status`, `burndown` and `history` report through
 - [Filtering and Sorting](filtering-and-sorting.md) — the filter and sorter model shared by `find`, `sort` and views
 - [Advanced Configuration](advanced-configuration.md)
 - [Migrating to 2.0.0](migration-2.0.md) — separate config files and custom folder locations

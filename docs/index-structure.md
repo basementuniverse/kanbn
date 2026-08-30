@@ -223,7 +223,7 @@ Workspace-scoped. See [multiple boards](multiple-boards.md).
 
 ### `sprints`
 
-A list of sprints. Each sprint will have `start`, `name` and `description` properties.
+A list of sprints. Each sprint will have `start`, `name` and `description` properties. See [sprints](sprints.md).
 
 A board can declare its own `sprints` in its front matter, which **replaces** the workspace list for that board entirely. See [multiple boards](multiple-boards.md#per-board-sprints).
 

@@ -4426,7 +4426,7 @@ class Kanbn {
           start: sprints[sprintIndex].start,
         };
         if (currentSprint - 1 !== sprintIndex) {
-          if (sprintIndex === sprints.length - 1) {
+          if (sprintIndex !== sprints.length - 1) {
             result.sprint.end = sprints[sprintIndex + 1].start;
           }
           result.sprint.current = currentSprint;
