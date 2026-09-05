@@ -42,3 +42,5 @@ module.exports = async () => {
     route.id
   );
 };
+
+module.exports.Kanbn = require('./src/main').Kanbn;

@@ -3,6 +3,7 @@
   "version": "2.5.1",
   "description": "A CLI Kanban application",
   "main": "index.js",
+  "types": "src/main.d.ts",
   "scripts": {
     "test": "KANBN_ENV=test qunit ./test/**/*.test.js",
     "coverage": "KANBN_ENV=test c8 --reporter=text --reporter=html --include=src/** --include=index.js qunit ./test/**/*.test.js"
@@ -38,6 +39,7 @@
     "dotenv": "^8.2.0",
     "front-matter": "^4.0.2",
     "fuzzy": "^0.1.3",
+    "glob": "^7.2.3",
     "glob-promise": "^3.4.0",
     "humanize-duration": "^3.25.0",
     "inquirer": "^7.3.3",

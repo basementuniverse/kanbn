@@ -7,6 +7,7 @@ To get started quickly, check out the [Quick Start](quick-start.md) guide.
 ## Contents
 
 - [Quick Start](quick-start.md)
+- [Library API](api.md) — using `@basementuniverse/kanbn` as a dependency instead of the CLI
 - [Index Structure](index-structure.md) — the board file and all project options
 - [Task Structure](task-structure.md) — task files, metadata, sub-tasks, relations, comments and history
 - [Multiple Boards](multiple-boards.md) — several boards over one shared pool of tasks
