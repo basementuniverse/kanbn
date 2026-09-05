@@ -1,6 +1,6 @@
 {
   "name": "@basementuniverse/kanbn",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "A CLI Kanban application",
   "main": "index.js",
   "types": "src/main.d.ts",
