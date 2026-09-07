@@ -7,20 +7,43 @@ const validate = require('jsonschema').validate;
 const parseMarkdown = require('./parse-markdown');
 
 /**
- * Compile separate headings together into a task description
- * @param {object} data
+ * Get a reserved section from a parsed task, or null if the task doesn't have one
+ *
+ * A section only counts as reserved if it's a level-2 heading, which is what the task format
+ * documents and what json2md writes. A `# Comments` or `### Sub-tasks` heading written into a
+ * description is description content, and used to hijack the section it happened to share a name
+ * with - turning a paragraph about comments into the task's comments, or failing the whole parse
+ * @param {object} task A parsed task
+ * @param {string} title A reserved section title
+ * @return {?object} The section, or null if the task doesn't have it at level 2
  */
-function compileDescription(data) {
+function getReservedSection(task, title) {
+  return title in task && /^## /.test(task[title].heading) ? task[title] : null;
+}
+
+/**
+ * Compile separate headings together into a task description
+ *
+ * Reserved sections have already been removed from the parsed task by this point, so everything
+ * left is description
+ * @param {object} data
+ * @param {string} name The task name, i.e. the title of the level-1 heading at the top of the file
+ */
+function compileDescription(data, name) {
   const description = [];
   if ('raw' in data) {
     description.push(data.raw.content.replace(/[\r\n]{3}/g, '\n\n').trim());
   }
   for (let heading in data) {
-    if (['raw', 'Metadata', 'Sub-tasks', 'Relations', 'History', 'Comments'].indexOf(heading) !== -1) {
+    if (heading === 'raw') {
       continue;
     }
+
+    // The task name's heading line is stored separately as the task name, so it isn't repeated in
+    // the description. Every other heading keeps its line: this used to drop the line from *every*
+    // level-1 heading, silently deleting the text of any `# Heading` written into a description
     description.push(
-      /^# (.*)/.test(data[heading].heading) ? '' : data[heading].heading,
+      heading === name ? '' : data[heading].heading,
       data[heading].content
     );
   }
@@ -359,10 +382,11 @@ module.exports = {
 
       // Parse metadata
       // Metadata will be serialized back to front-matter, this check remains here for backwards compatibility
-      if ('Metadata' in task) {
+      const metadataSection = getReservedSection(task, 'Metadata');
+      if (metadataSection !== null) {
 
         // Get embedded metadata and make sure it's an object
-        const embeddedMetadata = yaml.parse(task['Metadata'].content.trim().replace(/```(yaml|yml)?/g, ''));
+        const embeddedMetadata = yaml.parse(metadataSection.content.trim().replace(/```(yaml|yml)?/g, ''));
         if (typeof embeddedMetadata !== 'object') {
           throw new Error('invalid metadata content');
         }
@@ -434,9 +458,10 @@ module.exports = {
       }
 
       // Parse sub-tasks
-      if ('Sub-tasks' in task) {
+      const subTasksSection = getReservedSection(task, 'Sub-tasks');
+      if (subTasksSection !== null) {
         try {
-          subTasks = marked.lexer(task['Sub-tasks'].content)[0].items.map(item => ({
+          subTasks = marked.lexer(subTasksSection.content)[0].items.map(item => ({
             text: item.text.trim(),
             completed: item.checked || false
           }));
@@ -447,9 +472,10 @@ module.exports = {
       }
 
       // Parse relations
-      if ('Relations' in task) {
+      const relationsSection = getReservedSection(task, 'Relations');
+      if (relationsSection !== null) {
         try {
-          relations = marked.lexer(task['Relations'].content)[0].items.map(item => {
+          relations = marked.lexer(relationsSection.content)[0].items.map(item => {
             const parts = item.tokens[0].tokens[0].text.split(' ');
             return parts.length === 1
               ? {
@@ -468,7 +494,8 @@ module.exports = {
       }
 
       // Parse comments
-      if ('Comments' in task) {
+      const commentsSection = getReservedSection(task, 'Comments');
+      if (commentsSection !== null) {
         try {
           // const commentsHeading = '## Comments';
           // const start = data.indexOf(commentsHeading) + commentsHeading.length;
@@ -479,7 +506,7 @@ module.exports = {
           //   end = data.length;
           // }
           // const parsedComments = marked.lexer(data.slice(start, end).trim())[0].items;
-          const parsedComments = marked.lexer(task['Comments'].content)[0].items;
+          const parsedComments = marked.lexer(commentsSection.content)[0].items;
           for (let parsedComment of parsedComments) {
             const comment = { text: [] };
             const parts = parsedComment.text.split('\n');
@@ -506,9 +533,10 @@ module.exports = {
       }
 
       // Parse history
-      if ('History' in task) {
+      const historySection = getReservedSection(task, 'History');
+      if (historySection !== null) {
         try {
-          const parsedHistory = marked.lexer(task['History'].content)[0].items;
+          const parsedHistory = marked.lexer(historySection.content)[0].items;
           for (let parsedHistoryEvent of parsedHistory) {
             const historyEvent = {};
             const parts = parsedHistoryEvent.text.split('\n');
@@ -563,7 +591,7 @@ module.exports = {
 
       // Assemble description
       // const descriptionParts = [];
-      description = compileDescription(task);
+      description = compileDescription(task, name);
       // description = descriptionParts.join('\n\n');
     } catch (error) {
       throw new Error(`Unable to parse task: ${error.message}`);

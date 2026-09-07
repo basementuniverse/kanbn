@@ -64,7 +64,9 @@ There should be a single level-1 heading at the top of the markdown body contain
 
 The task description should appear below the title. The description can be of any length and can contain markdown.
 
-The following level-2 headings are reserved for special purposes (`## Metadata`, `## Sub-tasks`, `## Relations`, `## Comments` and `## History`). Any other level-2 heading is treated as part of the description.
+The following level-2 headings are reserved for special purposes (`## Metadata`, `## Sub-tasks`, `## Relations`, `## Comments` and `## History`). Any other level-2 heading is treated as part of the description, as is a heading at any other level - a `### Sub-tasks` heading in a description is description content, not the task's sub-tasks.
+
+Headings inside fenced code blocks are ignored, so a shell or Python comment like `# install deps` in a ```` ```bash ```` block stays where you wrote it.
 
 ## Metadata
 

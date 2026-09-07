@@ -232,6 +232,46 @@ function validateOptions(options) {
 }
 
 /**
+ * Check whether a parsed section is a level-2 heading
+ *
+ * The index format reserves level 2 for columns and for the Options section. A deeper heading is
+ * part of the project description: it used to be promoted into a column of its own, which put an
+ * empty phantom column on the board and rewrote the user's `###` as a `##`
+ * @param {object} section A section from parseMarkdown
+ * @return {boolean}
+ */
+function isLevel2(section) {
+  return /^## /.test(section.heading);
+}
+
+/**
+ * Compile the project name's section and any sub-headings below it into a project description
+ *
+ * The Options section and the columns have already been taken out of the index by this point, so
+ * everything left is description
+ * @param {object} index A parsed index
+ * @param {string} name The project name, i.e. the title of the level-1 heading at the top of the file
+ * @param {string[]} columnNames The headings that are columns
+ * @return {string}
+ */
+function compileDescription(index, name, columnNames) {
+  const description = [];
+  for (const heading in index) {
+    if (heading === 'raw' || columnNames.indexOf(heading) !== -1) {
+      continue;
+    }
+
+    // The project name's heading line is stored separately as the name, so it isn't repeated in the
+    // description. Every other heading keeps its line
+    description.push(
+      heading === name ? '' : index[heading].heading,
+      index[heading].content
+    );
+  }
+  return description.join('\n\n').trim();
+}
+
+/**
  * Get the task id from a column list item, or null if the item isn't a task link
  *
  * A task link is a list item that begins with a markdown link, e.g. `- [task-id](tasks/task-id.md)`.
@@ -416,12 +456,9 @@ module.exports = {
       // Get name
       name = indexHeadings[0];
 
-      // Get description
-      description = name in index ? index[name].content.trim() : '';
-
       // Parse options
       // Options will be serialized back to front-matter, this check remains here for backwards-compatibility
-      if ('Options' in index) {
+      if ('Options' in index && isLevel2(index['Options'])) {
 
         // Get embedded options and make sure it's an object
         const embeddedOptions = yaml.parse(index['Options'].content.trim().replace(/```(yaml|yml)?/g, ''));
@@ -431,11 +468,15 @@ module.exports = {
 
         // Merge with front matter options
         options = Object.assign(options, embeddedOptions);
+        delete index['Options'];
       }
       validateOptions(options);
 
       // Parse columns
-      const columnNames = Object.keys(index).filter(column => ['raw', 'Options', name].indexOf(column) === -1);
+      // Only level-2 headings are columns, as documented - anything deeper belongs to the description
+      const columnNames = Object.keys(index).filter(
+        column => ['raw', name].indexOf(column) === -1 && isLevel2(index[column])
+      );
       for (const columnName of columnNames) {
         let parsed = null;
         try {
@@ -452,6 +493,10 @@ module.exports = {
           columnContent[columnName] = parsed.content;
         }
       }
+
+      // Get description
+      // Everything that isn't the Options section or a column is description, sub-headings included
+      description = compileDescription(index, name, columnNames);
     } catch (error) {
       throw new Error(`Unable to parse index: ${error.message}`);
     }

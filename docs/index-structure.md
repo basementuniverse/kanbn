@@ -25,7 +25,7 @@ The index file can optionally begin with YAML front-matter containing project op
 
 There should be a single level-1 heading at the top of the markdown body containing the project name.
 
-The project description should appear below the title. The description can be of any length and can contain markdown, however it must not contain any headings.
+The project description should appear below the title. The description can be of any length and can contain markdown, however it must not contain any level-2 headings. Deeper headings (level 3 and below) are fine, as are level-2 headings inside a fenced code block.
 
 Below the description there should be one or more level-2 headings. The 'Options' name is reserved for project options.
 
