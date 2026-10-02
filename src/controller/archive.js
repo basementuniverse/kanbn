@@ -50,8 +50,8 @@ module.exports = async args => {
   }
 
   // Get the task that we're archiving
-  // Destructive, so only an exact id until resolving a partial one asks for confirmation first
-  const taskId = await utility.resolveTaskArg(kanbn, args, 'archive', { inexact: false });
+  // Archiving is destructive enough that a partially matched id is confirmed first
+  const taskId = await utility.resolveTaskArg(kanbn, args, 'archive', { confirm: 'Archive' });
   if (taskId === null) {
     return;
   }

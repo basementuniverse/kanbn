@@ -204,19 +204,17 @@ module.exports = (() => {
      * @param {object} args The parsed command arguments
      * @param {string} command The command name, for the "no task id" hint
      * @param {object} [options]
-     * @param {boolean} [options.inexact=true] Whether to accept anything other than an exact id
-     * @return {Promise<?string>} The task id, or null if an error was printed
+     * @param {?string} [options.confirm=null] For a destructive command, the verb to ask for
+     * confirmation with ("Archive") when the id was only partially matched. --force skips the prompt,
+     * and without a terminal to prompt on the command fails rather than guessing
+     * @return {Promise<?string>} The task id, or null if an error was printed or the user declined
      */
-    async resolveTaskArg(kanbn, args, command, { inexact = true } = {}) {
+    async resolveTaskArg(kanbn, args, command, { confirm = null } = {}) {
       const input = args._[1];
       if (!input) {
         this.error(`No task id specified\nTry running {b}kanbn ${command} "task id"{b}`);
         return null;
       }
-      if (!inexact) {
-        return input;
-      }
-
       let resolved;
       try {
         resolved = await kanbn.resolveTaskId(input);
@@ -234,7 +232,25 @@ module.exports = (() => {
       // Say what the input was taken to mean. A tool that silently reinterprets its arguments feels
       // unreliable even when it's right
       console.error(this.replaceTags(`{d}Resolved "${input}" to "${resolved.id}"{d}`));
-      return resolved.id;
+      if (confirm === null || args.force) {
+        return resolved.id;
+      }
+      if (!process.stdin.isTTY) {
+        this.error(
+          `"${input}" isn't an exact task id\n` +
+          `Use the full id {b}${resolved.id}{b}, or {b}--force{b} to ${confirm.toLowerCase()} it anyway`
+        );
+        return null;
+      }
+      const answers = await require('inquirer').prompt([
+        {
+          type: 'confirm',
+          message: `${confirm} task "${resolved.id}"?`,
+          name: 'sure',
+          default: false
+        }
+      ]);
+      return answers.sure ? resolved.id : null;
     },
 
     /**

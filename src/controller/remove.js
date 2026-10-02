@@ -73,8 +73,9 @@ module.exports = async args => {
   kanbn = scoped;
 
   // Get the task that we're removing
-  // Destructive, so only an exact id until resolving a partial one asks for confirmation first
-  const taskId = await utility.resolveTaskArg(kanbn, args, 'remove', { inexact: false });
+  // Removal is always confirmed unless forced, and the prompt names the task, so a partially matched
+  // id doesn't need asking about twice
+  const taskId = await utility.resolveTaskArg(kanbn, args, 'remove');
   if (taskId === null) {
     return;
   }
@@ -119,7 +120,7 @@ module.exports = async args => {
     inquirer.prompt([
       {
         type: 'confirm',
-        message: 'Are you sure you want to remove this task?',
+        message: `Are you sure you want to remove task "${taskId}"?`,
         name: 'sure',
         default: false
       }

@@ -1,7 +1,8 @@
 {b}kanbn remove "task-id"{b}
 {b}kanbn rm "task-id"{b}
 
-Remove an existing task. This deletes the task file and its index entry.
+Remove an existing task. This deletes the task file and its index entry. A partial id (a unique
+prefix or part of the id) is resolved to the task it matches, and the confirmation prompt names it.
 
 Options:
   {b}kanbn remove "task-id" --index{b}

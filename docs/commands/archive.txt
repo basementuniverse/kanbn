@@ -5,7 +5,12 @@ Move an existing task to the archive. The task's column will be stored in the ta
 
 Options:
   {b}kanbn archive "task-id"{b}
-    Move a task to the archive.
+    Move a task to the archive. A partial id (a unique prefix or part of the id) asks for
+    confirmation before archiving the task it matched.
+
+  {b}kanbn archive "task-id" --force{b}
+  {b}kanbn archive "task-id" -f{b}
+    Don't ask for confirmation when a partial id is matched.
 
   {b}kanbn archive --list{b}
   {b}kanbn archive -l{b}

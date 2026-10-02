@@ -6,10 +6,14 @@
   ],
   "args": {
     "boolean": [
+      "force",
       "list",
       "actions"
     ],
     "alias": {
+      "force": [
+        "f"
+      ],
       "list": [
         "l"
       ],
