@@ -28,6 +28,11 @@
       ]
     }
   },
+  "completions": {
+    "options": {
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/sprint",
   "help": "./docs/commands/sprint.txt"
 }

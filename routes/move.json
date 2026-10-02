@@ -38,6 +38,15 @@
       "actions": true
     }
   },
+  "completions": {
+    "positional": [
+      "task"
+    ],
+    "options": {
+      "column": "column",
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/move",
   "help": "./docs/commands/move.txt"
 }

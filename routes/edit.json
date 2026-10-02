@@ -62,6 +62,17 @@
       "actions": true
     }
   },
+  "completions": {
+    "positional": [
+      "task-or-simple-task"
+    ],
+    "options": {
+      "column": "column",
+      "tag": "tag",
+      "remove-tag": "tag",
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/edit",
   "help": "./docs/commands/edit.txt"
 }

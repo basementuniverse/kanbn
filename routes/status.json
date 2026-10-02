@@ -40,6 +40,12 @@
       ]
     }
   },
+  "completions": {
+    "options": {
+      "sprint": "sprint",
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/status",
   "help": "./docs/commands/status.txt"
 }

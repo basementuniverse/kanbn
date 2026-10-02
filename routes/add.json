@@ -61,6 +61,13 @@
       "actions": true
     }
   },
+  "completions": {
+    "options": {
+      "column": "column",
+      "tag": "tag",
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/add",
   "help": "./docs/commands/add.txt"
 }

@@ -72,6 +72,15 @@
       ]
     }
   },
+  "completions": {
+    "options": {
+      "id": "task",
+      "column": "column",
+      "tag": "tag",
+      "assigned": "assigned",
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/find",
   "help": "./docs/commands/find.txt"
 }

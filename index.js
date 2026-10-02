@@ -1,5 +1,11 @@
 // Nothing is required at module scope: every invocation pays for it, including ones that never need it
 module.exports = async () => {
+
+  // Shell completion runs on every Tab press, so it must not pay for anything below - see src/complete.js
+  if (process.argv[2] === '__complete') {
+    return require('./src/complete')(process.argv.slice(3));
+  }
+
   const minimist = require('minimist');
   const path = require('path');
   const utility = require('./src/utility');

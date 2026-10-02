@@ -25,6 +25,12 @@
       "name": ["n"]
     }
   },
+  "completions": {
+    "options": {
+      "rename": "board",
+      "delete": "board"
+    }
+  },
   "controller": "./src/controller/boards",
   "help": "./docs/commands/boards.txt"
 }

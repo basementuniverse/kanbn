@@ -40,6 +40,14 @@
       ]
     }
   },
+  "completions": {
+    "options": {
+      "sprint": "sprint",
+      "assigned": "assigned",
+      "column": "column",
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/burndown",
   "help": "./docs/commands/burndown.txt"
 }

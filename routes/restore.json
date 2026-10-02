@@ -24,6 +24,15 @@
       "actions": true
     }
   },
+  "completions": {
+    "positional": [
+      "archived-task"
+    ],
+    "options": {
+      "column": "column",
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/restore",
   "help": "./docs/commands/restore.txt"
 }

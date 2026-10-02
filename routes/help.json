@@ -6,6 +6,11 @@
     ""
   ],
   "args": {},
+  "completions": {
+    "positional": [
+      "command"
+    ]
+  },
   "controller": "./src/controller/help",
   "help": "./docs/commands/help.txt"
 }

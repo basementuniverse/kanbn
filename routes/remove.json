@@ -29,6 +29,14 @@
       "actions": true
     }
   },
+  "completions": {
+    "positional": [
+      "task"
+    ],
+    "options": {
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/remove",
   "help": "./docs/commands/remove.txt"
 }

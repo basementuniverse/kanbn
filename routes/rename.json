@@ -24,6 +24,14 @@
       ]
     }
   },
+  "completions": {
+    "positional": [
+      "task"
+    ],
+    "options": {
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/rename",
   "help": "./docs/commands/rename.txt"
 }

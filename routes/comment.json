@@ -31,6 +31,14 @@
       "actions": true
     }
   },
+  "completions": {
+    "positional": [
+      "task"
+    ],
+    "options": {
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/comment",
   "help": "./docs/commands/comment.txt"
 }

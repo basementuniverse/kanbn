@@ -75,6 +75,14 @@
       ]
     }
   },
+  "completions": {
+    "positional": [
+      "column"
+    ],
+    "options": {
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/sort",
   "help": "./docs/commands/sort.txt"
 }

@@ -20,6 +20,14 @@
       "board"
     ]
   },
+  "completions": {
+    "positional": [
+      "task"
+    ],
+    "options": {
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/task",
   "help": "./docs/commands/task.txt"
 }

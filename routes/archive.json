@@ -28,6 +28,14 @@
       "actions": true
     }
   },
+  "completions": {
+    "positional": [
+      "task"
+    ],
+    "options": {
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/archive",
   "help": "./docs/commands/archive.txt"
 }

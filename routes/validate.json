@@ -28,6 +28,11 @@
       "board"
     ]
   },
+  "completions": {
+    "options": {
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/validate",
   "help": "./docs/commands/validate.txt"
 }

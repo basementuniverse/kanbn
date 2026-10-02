@@ -36,6 +36,13 @@
       ]
     }
   },
+  "completions": {
+    "options": {
+      "assigned": "assigned",
+      "column": "column",
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/gantt",
   "help": "./docs/commands/gantt.txt"
 }

@@ -36,6 +36,14 @@
       ]
     }
   },
+  "completions": {
+    "options": {
+      "sprint": "sprint",
+      "assigned": "assigned",
+      "task": "task",
+      "board": "board"
+    }
+  },
   "controller": "./src/controller/history",
   "help": "./docs/commands/history.txt"
 }
