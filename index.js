@@ -1,8 +1,9 @@
-const minimist = require('minimist');
-const path = require('path');
-const utility = require('./src/utility');
-
+// Nothing is required at module scope: every invocation pays for it, including ones that never need it
 module.exports = async () => {
+  const minimist = require('minimist');
+  const path = require('path');
+  const utility = require('./src/utility');
+
   require('dotenv').config({ path: path.join(__dirname, '.env') });
 
   // Get the command
@@ -43,4 +44,11 @@ module.exports = async () => {
   );
 };
 
-module.exports.Kanbn = require('./src/main').Kanbn;
+// Lazy, so that running the CLI doesn't load the whole library (~50ms) when the command doesn't need it
+Object.defineProperty(module.exports, 'Kanbn', {
+  configurable: true,
+  enumerable: true,
+  get() {
+    return require('./src/main').Kanbn;
+  }
+});
