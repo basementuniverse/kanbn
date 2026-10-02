@@ -169,6 +169,7 @@ Some options describe the workspace rather than a single board:
 | `contributors` | Workspace — `assigned: gordon` has to mean the same person on every board that references the task |
 | `defaultTaskWorkload`, `taskWorkloadTags` | Workspace — workload is a property of the task, not the board |
 | `dateFormat` | Workspace only — dates should read identically everywhere |
+| `taskIdResolution` | Workspace only — a partial task id should resolve the same way whichever board is targeted |
 | `mainFolder`, `indexFile`, `taskFolder`, `archiveFolder`, `defaultBoard`, `boards` | Workspace only — layout, meaningless in a board file |
 
 A workspace-scoped option in a *secondary* board's front matter is ignored, because one shared task file has to parse identically for every board that references it.

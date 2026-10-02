@@ -9,6 +9,7 @@ const humanizeDuration = require("humanize-duration");
 const rimraf = require("rimraf");
 const gitUser = require("./git-user");
 const actions = require("./actions");
+const fuzzy = require("fuzzy");
 
 const DEFAULT_FOLDER_NAME = ".kanbn";
 const DEFAULT_INDEX_FILE_NAME = "index.md";
@@ -33,6 +34,7 @@ const WORKSPACE_SCOPED_OPTIONS = [
   "dateFormat",
   "defaultTaskWorkload",
   "taskWorkloadTags",
+  "taskIdResolution",
 ];
 
 // Options that a secondary board inherits from the main board's front matter. When there is no
@@ -54,6 +56,13 @@ const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
+
+// How loosely a partial task id is matched - see resolveTaskId()
+const TASK_ID_RESOLUTION_MODES = ["exact", "prefix", "fuzzy"];
+const DEFAULT_TASK_ID_RESOLUTION = "prefix";
+
+// The most candidates an ambiguous task id error lists before summarising the rest
+const MAX_AMBIGUOUS_TASK_IDS = 10;
 
 // Default fallback values for index options
 const DEFAULT_TASK_WORKLOAD = 2;
@@ -3497,6 +3506,66 @@ class Kanbn {
     if (!taskInIndex(index, taskId)) {
       throw new Error(`No task with id "${taskId}" found in the index`);
     }
+  }
+
+  /**
+   * Resolve a possibly partial task id against the tasks in this board's index
+   *
+   * Tried in order, stopping at the first rung that matches anything: an exact id in the index, a task
+   * file with exactly this id, a unique case-insensitive prefix, a unique case-insensitive substring,
+   * then (only when the taskIdResolution option is "fuzzy") a unique fuzzy match. A rung with more
+   * than one match is ambiguous and throws, listing the candidates, rather than falling through to a
+   * looser rung. When nothing matches, the input is returned unchanged so that the caller reports
+   * whatever it reported before resolution existed
+   * @param {string} input The task id, or part of one
+   * @return {Promise<object>} The resolved id, and which rung matched it ("exact", "file", "prefix",
+   * "substring", "fuzzy", or null if nothing matched)
+   */
+  async resolveTaskId(input) {
+    const index = await this.getIndex();
+    const taskIds = [...getTrackedTaskIds(index)];
+    if (!input) {
+      return { id: input, match: null };
+    }
+
+    // Exact matches are what every command did before, so they always win
+    if (taskIds.includes(input) || (await this.taskFileExists(input))) {
+      return { id: input, match: taskIds.includes(input) ? "exact" : "file" };
+    }
+
+    const mode = TASK_ID_RESOLUTION_MODES.includes(index.options.taskIdResolution)
+      ? index.options.taskIdResolution
+      : DEFAULT_TASK_ID_RESOLUTION;
+    if (mode === "exact") {
+      return { id: input, match: null };
+    }
+
+    const lowerInput = input.toLowerCase();
+    const rungs = [
+      ["prefix", (ids) => ids.filter((id) => id.toLowerCase().startsWith(lowerInput))],
+      ["substring", (ids) => ids.filter((id) => id.toLowerCase().includes(lowerInput))],
+    ];
+    if (mode === "fuzzy") {
+      rungs.push(["fuzzy", (ids) => fuzzy.filter(input, ids).map((result) => result.string)]);
+    }
+    for (const [match, filter] of rungs) {
+      const matches = filter(taskIds);
+      if (matches.length === 1) {
+        return { id: matches[0], match };
+      }
+      if (matches.length > 1) {
+        const shown = matches.slice(0, MAX_AMBIGUOUS_TASK_IDS);
+        const more = matches.length - shown.length;
+        const error = new Error(
+          `Task id "${input}" is ambiguous, it could be:\n` +
+            shown.map((id) => `  ${id}`).join("\n") +
+            (more > 0 ? `\n  ...and ${more} more` : "")
+        );
+        error.candidates = matches;
+        throw error;
+      }
+    }
+    return { id: input, match: null };
   }
 
   /**

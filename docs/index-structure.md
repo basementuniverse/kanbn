@@ -284,6 +284,18 @@ _Note: custom fields can also be interpolated into the task template, but only i
 
 The date format to use for dates on the kanbn board and burndown chart views. See [dateformat](https://www.npmjs.com/package/dateformat) for date format reference.
 
+### `taskIdResolution`
+
+How loosely a task id given on the command line is matched against the tasks in the index. One of:
+
+- `exact` - the id must match exactly.
+- `prefix` (the default) - an exact match wins; otherwise a unique case-insensitive prefix (`build-inv` for `build-invoice-download-endpoint`), then a unique substring (`invoice`).
+- `fuzzy` - as `prefix`, then a unique fuzzy match (`bldinv`).
+
+If more than one task matches, the command fails and lists the matching ids rather than guessing.
+
+Workspace-scoped. See [multiple boards](multiple-boards.md).
+
 ### `views`
 
 An array of views that can be used to customize how the kanbn board is displayed. Select a view with `kanbn board --view "name"`.

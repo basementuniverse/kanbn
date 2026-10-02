@@ -590,6 +590,17 @@ export class Kanbn {
    */
   taskExists(taskId: string): Promise<void>;
   /**
+   * Resolve a possibly partial task id against the tasks in this board's index. Throws if the input
+   * is ambiguous; the error's `candidates` property lists every match
+   * @param {string} input The task id, or part of one
+   * @return {Promise<object>} The resolved id, and which rung matched it (null if nothing matched,
+   * in which case the id is the input unchanged)
+   */
+  resolveTaskId(input: string): Promise<{
+    id: string;
+    match: 'exact' | 'file' | 'prefix' | 'substring' | 'fuzzy' | null;
+  }>;
+  /**
    * Get the column that a task is in or throw an error if the task doesn't exist or isn't indexed
    * @param {string} taskId The task id to find
    * @return {Promise<string>} The name of the column the task is in

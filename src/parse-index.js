@@ -54,6 +54,7 @@ function validateOptions(options) {
         }
       },
       'defaultTaskWorkload': { type: 'number' },
+      'taskIdResolution': { type: 'string', enum: ['exact', 'prefix', 'fuzzy'] },
       'taskWorkloadTags': {
         type: 'object',
         patternProperties: {
