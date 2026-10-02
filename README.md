@@ -52,3 +52,13 @@ kanbn h <command>
 kanbn <command> --help
 kanbn <command> -h
 ```
+
+## Task ids
+
+Commands that take a task id accept any unique part of one (`kanbn task invoice`), and ask you to pick from a list if you leave it out. See [task ids](./docs/quick-start.md#task-ids).
+
+`kanbn find -q` prints just the ids of the tasks it finds, so it also works with a fuzzy finder such as [fzf](https://github.com/junegunn/fzf):
+
+```
+kanbn move "$(kanbn find -q | fzf)" -c Done
+```
