@@ -772,7 +772,7 @@ function compareValues(a, b) {
 function filterTasks(index, tasks, filters) {
   return tasks.filter((task) => {
     // Get task id and column
-    const taskId = utility.getTaskId(task.name);
+    const taskId = task.id;
     const column = findTaskColumn(index, taskId);
 
     // If no filters are defined, return all tasks
@@ -2386,7 +2386,10 @@ class Kanbn {
     } catch (error) {
       throw new Error(`Couldn't access task file: ${error.message}`);
     }
-    return parseTask.md2json(taskData);
+
+    // The parser can only derive an id from the task's name, which drifts from the file whenever the
+    // name is edited by hand. The file is what the index links to, so it's the id that counts
+    return { ...parseTask.md2json(taskData), id: removeFileExtension(taskId) };
   }
 
   /**
@@ -2668,7 +2671,7 @@ class Kanbn {
     } catch (error) {
       throw new Error(`Couldn't access archived task file: ${error.message}`);
     }
-    return parseTask.md2json(taskData);
+    return { ...parseTask.md2json(taskData), id: removeFileExtension(taskId) };
   }
 
   /**
@@ -4285,7 +4288,7 @@ class Kanbn {
 
     // Return resulting task ids or the full tasks
     return tasks.map((task) => {
-      return quiet ? utility.getTaskId(task.name) : this.hydrateTask(index, task);
+      return quiet ? task.id : this.hydrateTask(index, task);
     });
   }
 
