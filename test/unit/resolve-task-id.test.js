@@ -112,9 +112,18 @@ QUnit.test('Ambiguous substring throws rather than guessing', async assert => {
   workspace();
   await assert.throwsAsync(
     async () => {
-      await kanbn.resolveTaskId('-s');
+      await kanbn.resolveTaskId('uild');
     },
-    /Task id "-s" is ambiguous/
+    /Task id "uild" is ambiguous/
+  );
+});
+
+QUnit.test('Inputs shorter than four characters are only matched exactly', async assert => {
+  workspace('taskIdResolution: fuzzy');
+  assert.deepEqual(await kanbn.resolveTaskId('ref'), { id: 'ref', match: null });
+  assert.deepEqual(
+    await kanbn.resolveTaskId('refa'),
+    { id: 'refactor-auth-middleware', match: 'prefix' }
   );
 });
 

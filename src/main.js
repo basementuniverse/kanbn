@@ -61,6 +61,10 @@ const DAY = 24 * HOUR;
 const TASK_ID_RESOLUTION_MODES = ["exact", "prefix", "fuzzy"];
 const DEFAULT_TASK_ID_RESOLUTION = "prefix";
 
+// Shorter inputs than this are only ever matched exactly - "set" matching "setup-ci-pipeline" is
+// technically unique but rarely what was meant
+const MIN_PARTIAL_TASK_ID_LENGTH = 4;
+
 // The most candidates an ambiguous task id error lists before summarising the rest
 const MAX_AMBIGUOUS_TASK_IDS = 10;
 
@@ -3513,7 +3517,8 @@ class Kanbn {
    *
    * Tried in order, stopping at the first rung that matches anything: an exact id in the index, a task
    * file with exactly this id, a unique case-insensitive prefix, a unique case-insensitive substring,
-   * then (only when the taskIdResolution option is "fuzzy") a unique fuzzy match. A rung with more
+   * then (only when the taskIdResolution option is "fuzzy") a unique fuzzy match. Inputs shorter
+   * than MIN_PARTIAL_TASK_ID_LENGTH skip everything but the exact rungs. A rung with more
    * than one match is ambiguous and throws, listing the candidates, rather than falling through to a
    * looser rung. When nothing matches, the input is returned unchanged so that the caller reports
    * whatever it reported before resolution existed
@@ -3536,7 +3541,7 @@ class Kanbn {
     const mode = TASK_ID_RESOLUTION_MODES.includes(index.options.taskIdResolution)
       ? index.options.taskIdResolution
       : DEFAULT_TASK_ID_RESOLUTION;
-    if (mode === "exact") {
+    if (mode === "exact" || input.length < MIN_PARTIAL_TASK_ID_LENGTH) {
       return { id: input, match: null };
     }
 
