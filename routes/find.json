@@ -73,6 +73,10 @@
     }
   },
   "completions": {
+    "customFields": {
+      "negate": true,
+      "values": true
+    },
     "options": {
       "id": "task",
       "column": "column",

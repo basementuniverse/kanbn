@@ -52,14 +52,15 @@ kanbn completion fish > ~/.config/fish/completions/kanbn.fish
 | Where | Completes |
 | --- | --- |
 | The command | Command names. Aliases (`mv`, `rm`, ...) still work, but aren't offered |
-| A word starting with `-` | That command's options |
+| A word starting with `-` | That command's options, including any [custom fields](index-structure.md#customfields) in the form the command takes them - `--<field>` everywhere, `--no-<field>` for booleans on `add`, `edit` and `find`, and `--remove-<field>` on `edit` |
 | `task`, `edit`, `move`, `comment`, `archive`, `remove`, `rename` | Task ids on the target board. `edit` also offers [simple tasks](index-structure.md#working-with-simple-tasks), since editing one is how it becomes a task |
 | `restore` | Archived task ids |
-| `--column`, and `sort`'s column | Column names. [Hidden columns](index-structure.md#hiddencolumns) are offered last, and marked |
+| `--column`, and `sort`'s column | Column names. [Hidden columns](index-structure.md#hiddencolumns) are offered last, and marked. `move` leaves out the column the task is already in |
 | `--board` | Board slugs, apart from any in `boards.exclude` |
 | `--tag` | Every tag used by a task |
 | `--assigned` | The [contributors](contributors.md) if there are any, otherwise everyone assigned to a task, plus `@me` |
 | `--sprint` | Sprint names |
+| A string custom field, on `add`, `edit` and `find` | Every value that field has in a task |
 
 ## How it works
 

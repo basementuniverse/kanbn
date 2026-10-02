@@ -63,6 +63,11 @@
     }
   },
   "completions": {
+    "customFields": {
+      "negate": true,
+      "remove": true,
+      "values": true
+    },
     "positional": [
       "task-or-simple-task"
     ],

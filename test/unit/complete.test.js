@@ -231,6 +231,7 @@ QUnit.test('Hidden columns should be offered last, and marked', assert => {
   const columns = complete(['kanbn', 'add', '--column', ''], { cwd: root, env: {} });
   assert.deepEqual(columns[columns.length - 1], ['Archive', 'hidden']);
   assert.deepEqual(columns[0], ['Todo', '2 tasks']);
+  assert.deepEqual(columns[1], ['In Progress', '1 task']);
 });
 
 QUnit.test('--board, KANBN_BOARD and defaultBoard should choose the board, in that order', assert => {
@@ -323,6 +324,78 @@ QUnit.test('Sprints should complete by name', assert => {
   assert.deepEqual(
     complete(['kanbn', 'status', '--sprint', ''], { cwd: root, env: {} }),
     [['First Sprint', 'sprint 1'], ['Second', 'sprint 2']]
+  );
+});
+
+const CUSTOM_FIELDS_CONFIG =
+  'customFields:\n  - name: team\n    type: string\n  - name: storyPoints\n    type: number\n' +
+  '  - name: needsDesign\n    type: boolean\n';
+const CUSTOM_FIELD_TASKS = {
+  ...TASKS,
+  'build-invoices.md': '---\nteam: Platform\nstoryPoints: 3\n---\n\n# Build invoices\n',
+  'build-reports.md': '---\nteam: "Growth"\n---\n\n# Build reports\n'
+};
+
+QUnit.test('Custom fields should be offered as options, in the form each command takes them', assert => {
+  const root = workspace({ 'kanbn.yml': CUSTOM_FIELDS_CONFIG, '.kanbn': { 'index.md': BOARD, tasks: TASKS } });
+  const has = (command, option) => values(root, [command, '--']).indexOf(option) !== -1;
+
+  for (const command of ['add', 'edit', 'find']) {
+    assert.ok(has(command, '--team') && has(command, '--storyPoints') && has(command, '--needsDesign'), command);
+    assert.ok(has(command, '--no-needsDesign'), `${command} --no-<boolean>`);
+    assert.notOk(has(command, '--no-team'), `${command} only negates booleans`);
+  }
+  assert.ok(has('edit', '--remove-team') && has('edit', '--remove-needsDesign'), 'edit can remove fields');
+  assert.notOk(has('add', '--remove-team') || has('find', '--remove-team'), 'only edit removes');
+  assert.ok(has('sort', '--storyPoints'), 'sort by a custom field');
+  assert.notOk(has('sort', '--no-needsDesign') || has('sort', '--remove-team'), 'sort only takes the name');
+  assert.notOk(has('task', '--team'), 'commands without custom fields');
+  assert.deepEqual(
+    complete(['kanbn', 'find', '--sto'], { cwd: root, env: {} }),
+    [['--storyPoints', 'custom field (number)']]
+  );
+});
+
+QUnit.test('A string custom field\'s values should complete from the tasks', assert => {
+  const root = workspace({ 'kanbn.yml': CUSTOM_FIELDS_CONFIG, '.kanbn': { 'index.md': BOARD, tasks: CUSTOM_FIELD_TASKS } });
+  assert.deepEqual(values(root, ['find', '--team', '']), ['Growth', 'Platform']);
+  assert.deepEqual(values(root, ['edit', 'x', '--team=G']), ['--team=Growth']);
+  assert.deepEqual(values(root, ['find', '--storyPoints', '']), [], 'not numbers');
+  assert.deepEqual(values(root, ['sort', 'Todo', '--team', '']), [], 'sort takes a filter, not a value');
+});
+
+QUnit.test('Custom fields declared in the main board\'s front matter should be found too', assert => {
+  const root = workspace({
+    '.kanbn': {
+      'index.md': '---\ncustomFields:\n  - name: team\n    type: string\n---\n\n# Main\n\n## Todo\n',
+      tasks: CUSTOM_FIELD_TASKS
+    }
+  });
+  assert.deepEqual(values(root, ['find', '--team', '']), ['Growth', 'Platform']);
+});
+
+QUnit.test('Words should be read the way minimist reads them', assert => {
+  const root = workspace({ '.kanbn': { 'index.md': BOARD, tasks: TASKS } });
+  const tasks = ['old-task', 'build-invoices', 'build-reports', 'fix-login'];
+  assert.deepEqual(values(root, ['task', '--team', 'Platform', '']), tasks, 'an undeclared option takes a value');
+  assert.deepEqual(values(root, ['move', '--no-actions', '']), tasks, '--no-<x> takes no value');
+  assert.deepEqual(values(root, ['move', '-i', '']), tasks, 'a boolean alias takes no value');
+  assert.deepEqual(values(root, ['move', '--column', '--relative', '']), tasks, 'an option is never a value');
+  assert.deepEqual(values(root, ['move', '--', '']), tasks, 'after --');
+  assert.deepEqual(values(root, ['move', '--', 'fix-login', '']), [], 'everything after -- is positional');
+  assert.ok(values(root, ['move', '--column', '-']).indexOf('--relative') !== -1, 'a dash after an option is an option');
+});
+
+QUnit.test('move --column should leave out the column the task is already in', assert => {
+  const root = workspace({ '.kanbn': { 'index.md': BOARD, tasks: TASKS } });
+  assert.deepEqual(values(root, ['move', 'fix-login', '--column', '']), ['Todo', 'Archive']);
+  assert.deepEqual(values(root, ['move', 'build-reports', '-c', '']), ['In Progress', 'Archive']);
+  assert.deepEqual(values(root, ['move', '--column', '']), ['Todo', 'In Progress', 'Archive'], 'no task yet');
+  assert.deepEqual(values(root, ['move', 'nope', '--column', '']), ['Todo', 'In Progress', 'Archive'], 'unknown task');
+  assert.deepEqual(values(root, ['add', '--column', '']), ['Todo', 'In Progress', 'Archive'], 'other commands');
+  assert.deepEqual(
+    complete(['kanbn', 'move', 'fix-login', '--column', 'T'], { cwd: root, env: {} }),
+    [['Todo', '2 tasks']]
   );
 });
 

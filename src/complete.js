@@ -278,6 +278,25 @@ class Workspace {
   }
 
   /**
+   * The declared custom fields - a workspace-scoped option
+   * @return {object[]} Each field's name and type
+   */
+  customFields() {
+
+    // Most workspaces have none, and a front matter that doesn't mention them isn't worth parsing
+    if (this.config() === null) {
+      const main = this.board(this.mainBoardSlug());
+      if (main === null || main.frontMatter === null || !/^customFields:/m.test(main.frontMatter)) {
+        return [];
+      }
+    }
+    const fields = this.workspaceOptions().options.customFields;
+    return Array.isArray(fields)
+      ? fields.filter(field => field && typeof field.name === 'string' && field.name && typeof field.type === 'string')
+      : [];
+  }
+
+  /**
    * Resolve a board slug the way the CLI does: the reserved aliases and an empty slug are the main board
    * @param {?string} slug
    * @return {string}
@@ -448,9 +467,19 @@ const PROVIDERS = {
     const hidden = workspace.boardOptions(boardSlug).hiddenColumns;
     const isHidden = column => Array.isArray(hidden) && hidden.indexOf(column.name) !== -1;
     return [
-      ...board.columns.filter(column => !isHidden(column)).map(column => [column.name, `${column.tasks.length} tasks`]),
+      ...board.columns.filter(column => !isHidden(column)).map(column => [column.name, `${column.tasks.length} ${column.tasks.length === 1 ? 'task' : 'tasks'}`]),
       ...board.columns.filter(isHidden).map(column => [column.name, 'hidden'])
     ];
+  },
+
+  // Moving a task to the column it's already in does nothing, so that one isn't offered
+  'other-column': context => {
+    const taskId = context.positionals[0];
+    const board = context.workspace.board(context.boardSlug);
+    const current = board === null || taskId === undefined
+      ? undefined
+      : board.columns.find(column => column.tasks.indexOf(taskId) !== -1);
+    return PROVIDERS.column(context).filter(([name]) => current === undefined || name !== current.name);
   },
 
   board: ({ workspace }) => {
@@ -533,43 +562,84 @@ function canonicalOption(args, name) {
 
 /**
  * Work through the words before the cursor, finding positional arguments, option values and any
- * --board, the same way minimist will read them
+ * --board, the same way minimist will read them. That includes minimist's rule that any option not
+ * declared as a boolean takes the next word as its value - which is how custom fields, which no route
+ * declares, get theirs - unless that word looks like an option itself
  * @param {object} args The route's minimist config
  * @param {string[]} words The words after the command and before the current word
- * @return {{positionals: number, board: ?string, pending: ?string}} The number of positionals seen,
+ * @return {{positionals: string[], board: ?string, pending: ?string}} The positional arguments seen,
  * the --board value, and the option still waiting for its value, if the last word was one
  */
 function scanWords(args, words) {
-  const strings = args.string || [];
-  let positionals = 0, board = null, pending = null;
+  const booleans = args.boolean || [];
+  const positionals = [];
+  let board = null, pending = null, rest = false;
   for (const word of words) {
-    if (pending !== null) {
-      if (pending === 'board') {
-        board = word;
-      }
-      pending = null;
+    if (rest) {
+      positionals.push(word);
       continue;
+    }
+    const isOption = /^--?[^-]/.test(word);
+    if (pending !== null) {
+      const name = pending;
+      pending = null;
+      if (!isOption) {
+        if (name === 'board') {
+          board = word;
+        }
+        continue;
+      }
     }
     if (word === '--') {
+      rest = true;
       continue;
     }
-    const long = /^--([^=]+)(?:=(.*))?$/.exec(word);
+    const long = /^--([^=]+)(?:=([\s\S]*))?$/.exec(word);
     const short = /^-([^-].*)$/.exec(word);
-    if (long !== null || short !== null) {
-      const name = canonicalOption(args, long !== null ? long[1] : short[1].slice(-1));
-      const value = long !== null ? long[2] : undefined;
-      if (strings.indexOf(name) !== -1) {
-        if (value === undefined) {
-          pending = name;
-        } else if (name === 'board') {
-          board = value;
+    if (long !== null) {
+      const name = canonicalOption(args, long[1]);
+      if (long[2] !== undefined) {
+        if (name === 'board') {
+          board = long[2];
         }
+      } else if (!name.startsWith('no-') && booleans.indexOf(name) === -1) {
+        pending = name;
       }
       continue;
     }
-    positionals++;
+    if (short !== null) {
+
+      // In a run of short flags (-iz) only the last one can take a value
+      const name = canonicalOption(args, short[1].slice(-1));
+      if (booleans.indexOf(name) === -1) {
+        pending = name;
+      }
+      continue;
+    }
+    positionals.push(word);
   }
   return { positionals, board, pending };
+}
+
+/**
+ * Get the options a route accepts for each custom field. Which ones depends on the command: setting a
+ * boolean field to false is --no-<field>, edit can also --remove-<field>, and sort just takes the name
+ * @param {object} workspace
+ * @param {object} config The route's customFields completion config
+ * @return {string[][]} [option, description] pairs
+ */
+function customFieldOptions(workspace, config) {
+  const names = [];
+  for (const field of workspace.customFields()) {
+    names.push([`--${field.name}`, `custom field (${field.type})`]);
+    if (config.negate && field.type === 'boolean') {
+      names.push([`--no-${field.name}`, 'custom field (boolean)']);
+    }
+    if (config.remove) {
+      names.push([`--remove-${field.name}`, 'custom field']);
+    }
+  }
+  return names;
 }
 
 /**
@@ -619,20 +689,36 @@ function complete(words, { cwd = process.cwd(), env = process.env } = {}) {
     }
 
     const scan = scanWords(args, before);
-    const optionProviders = completions.options || {};
-    let provider = null;
-    if (option !== null) {
-      provider = optionProviders[canonicalOption(args, option)] || null;
-    } else if (scan.pending !== null) {
-      provider = optionProviders[scan.pending] || null;
-    } else if (current.startsWith('-')) {
+    const workspace = new Workspace(cwd, env);
+    const context = () => ({
+      routes,
+      workspace,
+      boardSlug: workspace.targetBoard(scan.board),
+      positionals: scan.positionals
+    });
+    if (option === null && current.startsWith('-')) {
       candidates = optionNames(args);
+      if (completions.customFields) {
+        candidates = [...candidates, ...customFieldOptions(workspace, completions.customFields)];
+      }
+    } else if (option !== null || scan.pending !== null) {
+      const name = option !== null ? canonicalOption(args, option) : scan.pending;
+      const provider = (completions.options || {})[name];
+      if (provider && PROVIDERS[provider]) {
+        candidates = PROVIDERS[provider](context());
+      } else if (completions.customFields && completions.customFields.values) {
+
+        // A string custom field's values come from the tasks, the same way tags do
+        const field = workspace.customFields().find(field => field.name === name);
+        if (field !== undefined && field.type === 'string') {
+          candidates = workspace.taskValues(field.name).map(value => [value, '']);
+        }
+      }
     } else {
-      provider = (completions.positional || [])[scan.positionals] || null;
-    }
-    if (provider !== null && PROVIDERS[provider]) {
-      const workspace = new Workspace(cwd, env);
-      candidates = PROVIDERS[provider]({ routes, workspace, boardSlug: workspace.targetBoard(scan.board) });
+      const provider = (completions.positional || [])[scan.positionals.length];
+      if (provider && PROVIDERS[provider]) {
+        candidates = PROVIDERS[provider](context());
+      }
     }
   }
 

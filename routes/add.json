@@ -62,6 +62,10 @@
     }
   },
   "completions": {
+    "customFields": {
+      "negate": true,
+      "values": true
+    },
     "options": {
       "column": "column",
       "tag": "tag",
