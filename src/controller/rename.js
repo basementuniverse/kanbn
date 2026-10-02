@@ -62,7 +62,9 @@ module.exports = async args => {
   kanbn = scoped;
 
   // Get the task that we're renaming
-  const taskId = await utility.resolveTaskArg(kanbn, args, 'rename');
+  const taskId = await utility.resolveTaskArg(kanbn, args, 'rename', {
+    interactiveIfPicked: !args.name
+  });
   if (taskId === null) {
     return;
   }

@@ -124,7 +124,9 @@ module.exports = async args => {
   kanbn = scoped;
 
   // Get the task that we're moving
-  const taskId = await utility.resolveTaskArg(kanbn, args, 'move');
+  const taskId = await utility.resolveTaskArg(kanbn, args, 'move', {
+    interactiveIfPicked: !args.column && args.position === undefined
+  });
   if (taskId === null) {
     return;
   }

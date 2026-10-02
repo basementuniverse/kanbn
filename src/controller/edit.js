@@ -467,7 +467,12 @@ module.exports = async args => {
   kanbn = scoped;
 
   // Get the task that we're editing
-  let taskId = await utility.resolveTaskArg(kanbn, args, 'edit');
+  let taskId = await utility.resolveTaskArg(kanbn, args, 'edit', {
+
+    // Every edit option is a string, so if there are none there's nothing to edit yet
+    interactiveIfPicked: Object.entries(args)
+      .every(([key, value]) => ['_', 'board', 'b'].includes(key) || typeof value !== 'string')
+  });
   if (taskId === null) {
     return;
   }

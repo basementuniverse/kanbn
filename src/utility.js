@@ -207,13 +207,22 @@ module.exports = (() => {
      * @param {?string} [options.confirm=null] For a destructive command, the verb to ask for
      * confirmation with ("Archive") when the id was only partially matched. --force skips the prompt,
      * and without a terminal to prompt on the command fails rather than guessing
+     * @param {boolean} [options.interactiveIfPicked=false] Switch the command to its interactive mode
+     * if the task was picked from a list, because nothing else was given on the command line either
      * @return {Promise<?string>} The task id, or null if an error was printed or the user declined
      */
-    async resolveTaskArg(kanbn, args, command, { confirm = null } = {}) {
+    async resolveTaskArg(kanbn, args, command, { confirm = null, interactiveIfPicked = false } = {}) {
       const input = args._[1];
       if (!input) {
-        this.error(`No task id specified\nTry running {b}kanbn ${command} "task id"{b}`);
-        return null;
+        const picked = this.canPrompt(args) ? await this.pickTask(kanbn) : null;
+        if (picked === null) {
+          this.error(`No task id specified\nTry running {b}kanbn ${command} "task id"{b}`);
+          return null;
+        }
+        if (interactiveIfPicked) {
+          args.interactive = true;
+        }
+        return picked;
       }
       let resolved;
       try {
@@ -235,7 +244,7 @@ module.exports = (() => {
       if (confirm === null || args.force) {
         return resolved.id;
       }
-      if (!process.stdin.isTTY) {
+      if (!this.canPrompt(args)) {
         this.error(
           `"${input}" isn't an exact task id\n` +
           `Use the full id {b}${resolved.id}{b}, or {b}--force{b} to ${confirm.toLowerCase()} it anyway`
@@ -251,6 +260,63 @@ module.exports = (() => {
         }
       ]);
       return answers.sure ? resolved.id : null;
+    },
+
+    /**
+     * Check whether a command can stop and ask the user something it wasn't told on the command line.
+     * A prompt with nobody to answer it hangs a script forever, so this needs a terminal at both ends
+     * and no sign that the output is going to a program
+     * @param {object} args The parsed command arguments
+     * @return {boolean} True if it's safe to prompt
+     */
+    canPrompt(args) {
+      return !!process.stdin.isTTY &&
+        !!process.stdout.isTTY &&
+        !args.quiet &&
+        !args.json &&
+        !process.env.KANBN_NO_INTERACTIVE;
+    },
+
+    /**
+     * Ask the user to pick one of the board's tasks from a filterable list
+     * @param {object} kanbn The board-scoped Kanbn instance
+     * @return {Promise<?string>} The picked task id, or null if the board has no tasks
+     */
+    async pickTask(kanbn) {
+      let index;
+      try {
+        index = await kanbn.getIndex();
+      } catch (error) {
+        return null;
+      }
+
+      // Hidden columns' tasks are still real tasks that every command operates on, so they're listed
+      const tasks = Object.entries(index.columns)
+        .flatMap(([column, taskIds]) => taskIds.map(id => ({ id, column })));
+      if (!tasks.length) {
+        return null;
+      }
+      const width = Math.max(...tasks.map(task => task.id.length));
+      const choices = tasks.map(task => ({
+        name: `${task.id.padEnd(width)}  ${this.dim(task.column)}`,
+        value: task.id,
+        short: task.id
+      }));
+
+      const inquirer = require('inquirer');
+      inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
+      const answers = await inquirer.prompt([
+        {
+          type: 'autocomplete',
+          name: 'taskId',
+          message: 'Which task?',
+          source: (answers, input) => Promise.resolve(
+            fuzzy.filter(input || '', choices, { extract: choice => choice.value })
+              .map(result => result.original)
+          )
+        }
+      ]);
+      return answers.taskId;
     },
 
     /**

@@ -62,7 +62,9 @@ module.exports = async args => {
   kanbn = scoped;
 
   // Get the task that we're add a comment to
-  const taskId = await utility.resolveTaskArg(kanbn, args, 'comment');
+  const taskId = await utility.resolveTaskArg(kanbn, args, 'comment', {
+    interactiveIfPicked: !args.text
+  });
   if (taskId === null) {
     return;
   }

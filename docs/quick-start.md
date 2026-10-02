@@ -59,6 +59,18 @@ This will add a "Large" tag to the task and modify the task's updated date. If y
 
 Run `kanbn edit --help` for more information on editing tasks.
 
+## Task ids
+
+Commands that take a task id accept part of one, as long as it matches a single task on the board: `kanbn task invoice` finds `build-invoice-download-endpoint`, and says so. If it matches several tasks they're listed instead. `kanbn archive` and `kanbn remove` ask before acting on a partial id. See [`taskIdResolution`](index-structure.md#taskidresolution) to make matching stricter or looser.
+
+Leave the id out altogether and you'll be asked to pick the task from a list:
+
+```
+kanbn move
+```
+
+The list only appears in a terminal - never when output is piped, or with `--json` or `--quiet`. Set `KANBN_NO_INTERACTIVE=1` to turn it off entirely.
+
 ## Find tasks
 
 ```
