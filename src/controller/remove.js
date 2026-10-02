@@ -73,9 +73,9 @@ module.exports = async args => {
   kanbn = scoped;
 
   // Get the task that we're removing
-  const taskId = args._[1];
-  if (!taskId) {
-    utility.error('No task id specified\nTry running {b}kanbn remove "task id"{b}');
+  // Destructive, so only an exact id until resolving a partial one asks for confirmation first
+  const taskId = await utility.resolveTaskArg(kanbn, args, 'remove', { inexact: false });
+  if (taskId === null) {
     return;
   }
 

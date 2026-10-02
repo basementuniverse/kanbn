@@ -47,9 +47,8 @@ module.exports = async (args) => {
   }
 
   // Get the task that we're showing
-  const taskId = args._[1];
-  if (!taskId) {
-    utility.error('No task id specified\nTry running {b}kanbn task "task id"{b}');
+  const taskId = await utility.resolveTaskArg(kanbn, args, 'task');
+  if (taskId === null) {
     return;
   }
 

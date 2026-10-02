@@ -62,9 +62,8 @@ module.exports = async args => {
   kanbn = scoped;
 
   // Get the task that we're renaming
-  const taskId = args._[1];
-  if (!taskId) {
-    utility.error('No task id specified\nTry running {b}kanbn rename "task id"{b}');
+  const taskId = await utility.resolveTaskArg(kanbn, args, 'rename');
+  if (taskId === null) {
     return;
   }
 

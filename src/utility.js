@@ -194,6 +194,50 @@ module.exports = (() => {
     },
 
     /**
+     * Get the task id a command was given, resolving a partial id to a full one where it's unambiguous
+     *
+     * Prints an error and returns null if there's no id, or if the id is ambiguous. An id that doesn't
+     * resolve to anything is returned unchanged, so the command reports it exactly as it always has.
+     * A simple task whose title matches the input exactly is left for the command to handle, rather
+     * than being shadowed by a task whose id merely starts with it
+     * @param {object} kanbn The board-scoped Kanbn instance
+     * @param {object} args The parsed command arguments
+     * @param {string} command The command name, for the "no task id" hint
+     * @param {object} [options]
+     * @param {boolean} [options.inexact=true] Whether to accept anything other than an exact id
+     * @return {Promise<?string>} The task id, or null if an error was printed
+     */
+    async resolveTaskArg(kanbn, args, command, { inexact = true } = {}) {
+      const input = args._[1];
+      if (!input) {
+        this.error(`No task id specified\nTry running {b}kanbn ${command} "task id"{b}`);
+        return null;
+      }
+      if (!inexact) {
+        return input;
+      }
+
+      let resolved;
+      try {
+        resolved = await kanbn.resolveTaskId(input);
+      } catch (error) {
+        this.error(error);
+        return null;
+      }
+      if (resolved.match === null || resolved.match === 'exact' || resolved.match === 'file') {
+        return resolved.id;
+      }
+      if ((await kanbn.findSimpleTasks(input)).length) {
+        return input;
+      }
+
+      // Say what the input was taken to mean. A tool that silently reinterprets its arguments feels
+      // unreliable even when it's right
+      console.error(this.replaceTags(`{d}Resolved "${input}" to "${resolved.id}"{d}`));
+      return resolved.id;
+    },
+
+    /**
      * Report rules that were skipped during an operation
      *
      * A rule that quietly stops working is worse than no rule, so these go to stderr and aren't

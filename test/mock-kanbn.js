@@ -67,6 +67,9 @@ function defaults() {
     missingTaskFiles: [],
     columnContentWarnings: [],
     simpleTasks: [],
+
+    // Maps a partial task id to the id resolveTaskId() should resolve it to, as { id, match }
+    resolvedTaskIds: {},
     contributors: [],
     contributorUsage: { contributors: [], unknown: [] },
     contributorWarnings: [],
@@ -256,6 +259,13 @@ const kanbn = {
   },
   async taskFileExists(taskId) {
     return config.taskExists;
+  },
+  async resolveTaskId(input) {
+    failIfConfigured('resolveTaskId');
+    if (input in config.resolvedTaskIds) {
+      return config.resolvedTaskIds[input];
+    }
+    return { id: input, match: config.taskExists ? 'exact' : null };
   },
   async taskExists(taskId) {
     if (!config.taskExists) {

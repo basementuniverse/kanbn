@@ -124,9 +124,8 @@ module.exports = async args => {
   kanbn = scoped;
 
   // Get the task that we're moving
-  const taskId = args._[1];
-  if (!taskId) {
-    utility.error('No task id specified\nTry running {b}kanbn move "task id"{b}');
+  const taskId = await utility.resolveTaskArg(kanbn, args, 'move');
+  if (taskId === null) {
     return;
   }
 

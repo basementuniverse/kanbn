@@ -50,9 +50,9 @@ module.exports = async args => {
   }
 
   // Get the task that we're archiving
-  const taskId = args._[1];
-  if (!taskId) {
-    utility.error('No task id specified\nTry running {b}kanbn archive "task id"{b}');
+  // Destructive, so only an exact id until resolving a partial one asks for confirmation first
+  const taskId = await utility.resolveTaskArg(kanbn, args, 'archive', { inexact: false });
+  if (taskId === null) {
     return;
   }
 

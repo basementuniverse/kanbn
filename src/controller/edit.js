@@ -467,9 +467,8 @@ module.exports = async args => {
   kanbn = scoped;
 
   // Get the task that we're editing
-  let taskId = args._[1];
-  if (!taskId) {
-    utility.error('No task id specified\nTry running {b}kanbn edit "task id"{b}');
+  let taskId = await utility.resolveTaskArg(kanbn, args, 'edit');
+  if (taskId === null) {
     return;
   }
 
