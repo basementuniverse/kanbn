@@ -16,6 +16,7 @@ To get started quickly, check out the [Quick Start](quick-start.md) guide.
 - [Views](views.md) — custom board layouts, columns and lanes
 - [Sprints](sprints.md) — named time windows that `status`, `burndown` and `history` report through
 - [Filtering and Sorting](filtering-and-sorting.md) — the filter and sorter model shared by `find`, `sort` and views
+- [Tab Completion](completion.md) — completing task ids, columns and boards in bash, zsh and fish
 - [Advanced Configuration](advanced-configuration.md)
 - [Migrating to 2.0.0](migration-2.0.md) — separate config files and custom folder locations
 

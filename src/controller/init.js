@@ -94,6 +94,12 @@ async function initialise(options, initialised, boardSlug = null) {
       console.log(`Reinitialised existing kanbn board in ${mainFolder}`);
     } else {
       console.log(`Initialised empty kanbn board in ${mainFolder}`);
+
+      // Completion is the sort of thing nobody finds in a README, so mention it once, here
+      const hint = require('./completion').installHint();
+      if (hint !== null) {
+        console.log(utility.replaceTags(`\n${hint}`));
+      }
     }
   })
   .catch(error => {

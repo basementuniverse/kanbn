@@ -155,6 +155,11 @@ QUnit.test('An unknown command should complete nothing', assert => {
   assert.deepEqual(values(EXAMPLES, ['nonsense', '']), []);
 });
 
+QUnit.test('completion should complete shell names', assert => {
+  assert.deepEqual(values(EXAMPLES, ['completion', '']), ['bash', 'fish', 'zsh']);
+  assert.deepEqual(values(EXAMPLES, ['comp']), ['completion']);
+});
+
 QUnit.test('help should complete command names', assert => {
   assert.deepEqual(values(EXAMPLES, ['help', 'sta']), ['status']);
 });

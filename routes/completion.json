@@ -1,0 +1,14 @@
+{
+  "name": "Shell Completion",
+  "commands": [
+    "completion"
+  ],
+  "args": {},
+  "completions": {
+    "positional": [
+      "shell"
+    ]
+  },
+  "controller": "./src/controller/completion",
+  "help": "./docs/commands/completion.txt"
+}

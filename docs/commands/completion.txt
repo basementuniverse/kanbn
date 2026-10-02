@@ -1,0 +1,24 @@
+{b}kanbn completion <shell>{b}
+
+Print a script that adds tab completion for kanbn to your shell. The shells supported are bash, zsh
+and fish.
+
+Commands, options, task ids, columns, boards, tags, assignees and sprints are completed. Task ids and
+columns come from the board the command would target - so {b}--board{b}, {b}KANBN_BOARD{b} and the
+{b}defaultBoard{b} option are all taken into account.
+
+Options:
+  {b}kanbn completion bash{b}
+    Add {b}eval "$(kanbn completion bash)"{b} to ~/.bashrc. bash doesn't complete values that contain
+    spaces, such as most column names - zsh and fish do.
+
+  {b}kanbn completion zsh{b}
+    Add {b}eval "$(kanbn completion zsh)"{b} to ~/.zshrc, after compinit - it does nothing before it.
+    Or save it as _kanbn in a directory on your $fpath:
+    {b}kanbn completion zsh > ~/.zsh/completions/_kanbn{b}
+
+  {b}kanbn completion fish{b}
+    Save it where fish looks for completions:
+    {b}kanbn completion fish > ~/.config/fish/completions/kanbn.fish{b}
+
+See {b}docs/completion.md{b} for more.

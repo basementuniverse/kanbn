@@ -44,6 +44,7 @@ Where <command> is one of:
   remove-all .... Remove the kanbn board and all tasks
   history ....... Show task history
   contributors .. List the workspace's contributors
+  completion .... Set up tab completion for your shell
 
 For more help with commands, try:
 
@@ -52,6 +53,23 @@ kanbn h <command>
 kanbn <command> --help
 kanbn <command> -h
 ```
+
+## Tab completion
+
+Kanbn can complete commands, options, task ids, columns, boards, tags, assignees and sprints in bash, zsh and fish. Load it from your shell's startup file:
+
+```sh
+# bash - in ~/.bashrc
+eval "$(kanbn completion bash)"
+
+# zsh - in ~/.zshrc, after compinit
+eval "$(kanbn completion zsh)"
+
+# fish
+kanbn completion fish > ~/.config/fish/completions/kanbn.fish
+```
+
+**In zsh the `eval` line must come after `compinit`**, or it does nothing. Alternatively, save the script as `_kanbn` in a directory on your `$fpath`, which also loads it lazily: `kanbn completion zsh > ~/.zsh/completions/_kanbn`. See [tab completion](./docs/completion.md) for more.
 
 ## Task ids
 
