@@ -152,6 +152,8 @@ This should be a list of links to other task files. The link text can optionally
 
 The `depends-on` relation type is reserved for gantt scheduling. It means the current task should not start until the linked task has finished.
 
+Relations are matched on the task id in the link text, not on the link's target, so a relation keeps working when the task it points at is archived: restoring the task brings the relation straight back. A relation to a task that isn't on the board - because it's archived, only on another board, or doesn't exist - has no effect on the gantt chart. `kanbn validate` reports relations that point at a task with no task file and no archived task file, and tasks related to themselves.
+
 ## Comments
 
 An array of comments, where each comment has an `author` and `date` property, and some text.

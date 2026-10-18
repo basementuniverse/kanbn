@@ -10,6 +10,10 @@ ignored by every other command, so this is information rather than a problem - e
 looks like a task link with a typo in it, or one naming a task file that exists, both of which mean a
 task isn't being tracked when it probably should be.
 
+Relations are checked as well. A relation to a task that has been archived is fine - restoring the
+task brings it back - but a relation to a task that has no task file and no archived task file, or a
+task related to itself, is reported as a warning.
+
 Options:
   {b}kanbn validate --save{b}
     Re-save the index and task files. This will ensure that all index column sorting settings are applied and that all tasks are formatted correctly.

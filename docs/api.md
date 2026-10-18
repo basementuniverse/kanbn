@@ -188,6 +188,7 @@ See [Sprints](sprints.md).
 | `validate(save?)` | Validate the index and task files; `true` on success, otherwise an array of errors |
 | `findMissingTaskFiles(index?)` | Tasks referenced by this board that have no task file |
 | `findColumnContentWarnings(index?)` | Lines in this board's columns that aren't task links |
+| `findRelationWarnings()` | Relations to a task with no task file or archived task file, and tasks related to themselves |
 | `findWorkspaceUntrackedTasks()` | Tasks that no board references at all |
 | `findTasksOnOtherBoards()` | Tasks that other boards track but this one doesn't |
 

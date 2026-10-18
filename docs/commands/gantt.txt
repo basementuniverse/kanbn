@@ -3,7 +3,7 @@
 
 Show a gantt chart for tracked tasks.
 
-Tasks are ordered using `depends-on` relations when present. The chart prioritizes optional `plannedStart`/`plannedFinish` metadata when arranging bars, then falls back through `started`/`completed` dates, and finally uses workload-based best-effort scheduling when no timeline dates are available.
+Tasks are ordered using `depends-on` relations when present. A relation to a task that isn't on the board (archived, only on another board, or deleted) is ignored. The chart prioritizes optional `plannedStart`/`plannedFinish` metadata when arranging bars, then falls back through `started`/`completed` dates, and finally uses workload-based best-effort scheduling when no timeline dates are available.
 The rendered chart includes:
   Dependency arrows (└─→) showing which tasks depend on others
   A blocked indicator (⧗) showing tasks delayed by dependencies

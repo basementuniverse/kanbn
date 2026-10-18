@@ -1364,9 +1364,12 @@ function buildGanttSchedule(index, tasks, now, trackedTaskIds = new Set()) {
     if (!taskById.has(dependencyId)) {
       if (taskExistsInBoard(dependencyId)) {
         externalIncomingDependenciesMap.get(dependentId).add(dependencyId);
-        return;
       }
-      throw new Error(`Task "${dependentId}" depends on missing task "${dependencyId}"`);
+
+      // A dependency that isn't on this board at all - archived, only on another board, or deleted -
+      // has nothing to schedule against, so it doesn't hold the dependent back. Archiving a finished
+      // blocker is routine, and validate reports the relations that point at nothing
+      return;
     }
 
     const dependencies = dependencyMap.get(dependentId);
@@ -1396,8 +1399,6 @@ function buildGanttSchedule(index, tasks, now, trackedTaskIds = new Set()) {
           addDependencyEdge(task.id, relation.task);
         } else if (taskExistsInBoard(relation.task)) {
           externalOutgoingDependentsMap.get(task.id).add(relation.task);
-        } else {
-          throw new Error(`Task "${task.id}" blocks missing task "${relation.task}"`);
         }
       }
     });
@@ -4992,6 +4993,58 @@ class Kanbn {
           value: entry.value,
           message: `"${entry.value}" isn't a known contributor`
         });
+      }
+    }
+    return warnings;
+  }
+
+  /**
+   * Find relations that don't point at a task
+   *
+   * Relations are keyed on task id, so a relation to a task that has been archived is still good -
+   * restoring the task brings it straight back - and a relation to a task that's only on another
+   * board is good too. What's reported is a relation to an id with no task file and no archived task
+   * file, which nothing can follow, and a task related to itself, which nothing can mean
+   * @return {Promise<object[]>} A list of warnings
+   */
+  async findRelationWarnings() {
+    if (!(await this.workspaceInitialised())) {
+      throw new Error("Not initialised in this folder");
+    }
+    const taskIds = new Set(
+      (await glob(`${await this.getTaskFolderPath()}/*.md`)).map((taskPath) => path.parse(taskPath).name)
+    );
+    const archivedTaskIds = new Set(
+      (await glob(`${await this.getArchiveFolderPath()}/*.md`)).map((taskPath) => path.parse(taskPath).name)
+    );
+    const warnings = [];
+    for (const taskId of [...taskIds].sort()) {
+      let taskData = null;
+      try {
+        taskData = await this.loadTask(taskId);
+      } catch (error) {
+        continue;
+      }
+      for (const relation of taskData.relations || []) {
+        if (!relation || !relation.task) {
+          continue;
+        }
+        const description = relation.type ? `${relation.type} ${relation.task}` : relation.task;
+        if (relation.task === taskId) {
+          warnings.push({
+            task: taskId,
+            type: "self-relation",
+            relation,
+            message: `"${description}" relates the task to itself`
+          });
+        } else if (!taskIds.has(relation.task) && !archivedTaskIds.has(relation.task)) {
+          warnings.push({
+            task: taskId,
+            type: "missing-related-task",
+            relation,
+            message: `"${description}" points at a task that doesn't exist`
+          });
+        }
       }
     }
     return warnings;

@@ -104,6 +104,23 @@ function showContributorWarnings(warnings) {
 }
 
 /**
+ * Show relations that don't point at a task. A relation to an archived task isn't one of these:
+ * restoring the task brings it straight back
+ * @param {object[]} warnings
+ */
+function showRelationWarnings(warnings) {
+  if (!warnings.length) {
+    return;
+  }
+  console.log(utility.replaceTags(
+    `${warnings.length} ${warnings.length === 1 ? 'relation is' : 'relations are'} {b}broken{b}:`
+  ));
+  for (const warning of warnings) {
+    console.log(`  ${warning.task}: ${warning.message}`);
+  }
+}
+
+/**
  * Show rules that are legal but probably not what their author meant. A rule that is wrong in the
  * file is an error rather than a warning, and is reported with the rest of them
  * @param {object[]} warnings
@@ -209,6 +226,15 @@ module.exports = async args => {
     return;
   }
 
+  // Report relations to tasks that don't exist anywhere, archived or not
+  let relationWarnings = [];
+  try {
+    relationWarnings = await kanbn.findRelationWarnings();
+  } catch (error) {
+    utility.error(error);
+    return;
+  }
+
   // Backfill missing started and completed dates
   if (args.fix) {
     let fixed;
@@ -219,9 +245,13 @@ module.exports = async args => {
       return;
     }
     if (!fixed.length) {
-      if (!args.json && (columnContentWarnings.length || contributorWarnings.length || actionWarnings.length)) {
+      if (
+        !args.json &&
+        (columnContentWarnings.length || contributorWarnings.length || relationWarnings.length || actionWarnings.length)
+      ) {
         showColumnContentWarnings(columnContentWarnings);
         showContributorWarnings(contributorWarnings);
+        showRelationWarnings(relationWarnings);
         showActionWarnings(actionWarnings);
         return;
       }
@@ -252,7 +282,13 @@ module.exports = async args => {
     // A multi-board workspace has warnings to report as well as drift, so JSON output carries both.
     // With a single board it stays the bare drift list it has always been - unless there are
     // warnings, which have nowhere to go in a bare drift list and are worth more than the shape
-    const warnings = [...boardWarnings, ...columnContentWarnings, ...contributorWarnings, ...actionWarnings];
+    const warnings = [
+      ...boardWarnings,
+      ...columnContentWarnings,
+      ...contributorWarnings,
+      ...relationWarnings,
+      ...actionWarnings
+    ];
     if (multiBoard || warnings.length) {
       console.log(JSON.stringify({ drift, warnings }, null, 2));
       return;
@@ -269,6 +305,7 @@ module.exports = async args => {
   }
   showColumnContentWarnings(columnContentWarnings);
   showContributorWarnings(contributorWarnings);
+  showRelationWarnings(relationWarnings);
   showActionWarnings(actionWarnings);
   showBoardWarnings(boardWarnings);
   if (
@@ -276,6 +313,7 @@ module.exports = async args => {
     boardWarnings.length ||
     columnContentWarnings.length ||
     contributorWarnings.length ||
+    relationWarnings.length ||
     actionWarnings.length
   ) {
     return;

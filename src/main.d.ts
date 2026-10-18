@@ -142,6 +142,13 @@ declare type contributorWarning = {
   message: string
 };
 
+declare type relationWarning = {
+  task: string,
+  type: 'missing-related-task' | 'self-relation',
+  relation: { task: string, type: string },
+  message: string
+};
+
 declare type actionRule = {
   name?: string,
   on: string,
@@ -348,6 +355,11 @@ export class Kanbn {
    * Find tasks whose assigned user or comment author isn't a known contributor
    */
   findContributorWarnings(): Promise<contributorWarning[]>;
+  /**
+   * Find relations that point at a task with no task file and no archived task file, or at the task
+   * they're in
+   */
+  findRelationWarnings(): Promise<relationWarning[]>;
   /**
    * Get the options a secondary board inherits from the workspace
    */

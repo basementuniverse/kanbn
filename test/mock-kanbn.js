@@ -73,6 +73,7 @@ function defaults() {
     contributors: [],
     contributorUsage: { contributors: [], unknown: [] },
     contributorWarnings: [],
+    relationWarnings: [],
     actionWarnings: [],
     lastActionWarnings: [],
     currentUser: null,
@@ -488,6 +489,10 @@ const kanbn = {
   async findContributorWarnings() {
     failIfConfigured('findContributorWarnings');
     return config.contributorWarnings;
+  },
+  async findRelationWarnings() {
+    failIfConfigured('findRelationWarnings');
+    return config.relationWarnings;
   },
   async findActionWarnings() {
     failIfConfigured('findActionWarnings');

@@ -348,6 +348,43 @@ QUnit.test('Validate should include contributor warnings in JSON output', async 
   assert.deepEqual(result.warnings, mockConfig.contributorWarnings);
 });
 
+QUnit.test('Validate should report broken relations', async assert => {
+  mockConfig.relationWarnings = [
+    {
+      task: 'test-task-1',
+      type: 'missing-related-task',
+      relation: { type: 'blocks', task: 'test-task-9' },
+      message: '"blocks test-task-9" points at a task that doesn\'t exist'
+    }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  assert.contains(output, /1 relation is broken/);
+  assert.contains(output, /test-task-1: "blocks test-task-9" points at a task that doesn't exist/);
+  assert.strictEqual(output.join('').indexOf('Everything OK'), -1);
+});
+
+QUnit.test('Validate should include relation warnings in JSON output', async assert => {
+  mockConfig.relationWarnings = [
+    {
+      task: 'test-task-1',
+      type: 'self-relation',
+      relation: { type: '', task: 'test-task-1' },
+      message: '"test-task-1" relates the task to itself'
+    }
+  ];
+  const output = await capture.stdout(async out => {
+    await mockArgv(['validate', '--json'], kanbn);
+    await capture.waitFor(() => out.length > 0);
+  });
+
+  const result = JSON.parse(output.join(''));
+  assert.deepEqual(result.warnings, mockConfig.relationWarnings);
+});
+
 QUnit.test('Validate with no contributor warnings should say everything is OK', async assert => {
   const output = await capture.stdout(async out => {
     await mockArgv(['validate'], kanbn);
