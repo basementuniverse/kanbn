@@ -1,6 +1,16 @@
 const fs = require("fs");
 const path = require("path");
 const glob = require("glob-promise");
+
+/**
+ * List the markdown files directly inside a folder. The folder is passed as cwd rather than built into
+ * the pattern, because glob patterns only take forward slashes and a Windows path never matches
+ * @param {string} folder The folder to look in
+ * @return {Promise<string[]>} The paths of the markdown files, in the folder's own path format
+ */
+async function globMarkdown(folder) {
+  return (await glob("*.md", { cwd: folder })).map((file) => path.join(folder, file));
+}
 const parseIndex = require("./parse-index");
 const parseTask = require("./parse-task");
 const utility = require("./utility");
@@ -2775,7 +2785,7 @@ class Kanbn {
     }
     const mainBoardSlug = await this.getMainBoardSlug();
     const { exclude, order } = await this.getBoardsConfig();
-    const boardPaths = await glob(`${mainFolder}/*.md`);
+    const boardPaths = await globMarkdown(mainFolder);
     const boards = [];
     for (const boardPath of boardPaths) {
       const slug = boardSlugFromFileName(boardPath);
@@ -3802,7 +3812,7 @@ class Kanbn {
     const trackedTasks = getTrackedTaskIds(index);
 
     // Get all tasks in the tasks folder
-    const files = await glob(`${await this.getTaskFolderPath()}/*.md`);
+    const files = await globMarkdown(await this.getTaskFolderPath());
     const untrackedTasks = new Set(files.map((task) => path.parse(task).name));
 
     // Return the set difference
@@ -3832,7 +3842,7 @@ class Kanbn {
     }
 
     // Get all tasks in the tasks folder and return the set difference
-    const files = await glob(`${await this.getTaskFolderPath()}/*.md`);
+    const files = await globMarkdown(await this.getTaskFolderPath());
     return new Set(files.map((task) => path.parse(task).name).filter((taskId) => !trackedTasks.has(taskId)));
   }
 
@@ -4691,7 +4701,7 @@ class Kanbn {
     // Markdown files beside the boards that don't parse as one. These are ignored during ordinary
     // commands, which is the right default, but the user should be able to find out why
     const mainFolder = await this.getMainFolder();
-    for (const filePath of await glob(`${mainFolder}/*.md`)) {
+    for (const filePath of await globMarkdown(mainFolder)) {
       const slug = boardSlugFromFileName(filePath);
       if (boardSlugs.has(slug)) {
         continue;
@@ -4870,7 +4880,7 @@ class Kanbn {
       entry[field]++;
       entry.tasks.add(taskId);
     };
-    for (const taskPath of await glob(`${await this.getTaskFolderPath()}/*.md`)) {
+    for (const taskPath of await globMarkdown(await this.getTaskFolderPath())) {
       const taskId = path.parse(taskPath).name;
       let taskData = null;
       try {
@@ -5012,10 +5022,10 @@ class Kanbn {
       throw new Error("Not initialised in this folder");
     }
     const taskIds = new Set(
-      (await glob(`${await this.getTaskFolderPath()}/*.md`)).map((taskPath) => path.parse(taskPath).name)
+      (await globMarkdown(await this.getTaskFolderPath())).map((taskPath) => path.parse(taskPath).name)
     );
     const archivedTaskIds = new Set(
-      (await glob(`${await this.getArchiveFolderPath()}/*.md`)).map((taskPath) => path.parse(taskPath).name)
+      (await globMarkdown(await this.getArchiveFolderPath())).map((taskPath) => path.parse(taskPath).name)
     );
     const warnings = [];
     for (const taskId of [...taskIds].sort()) {
@@ -5759,7 +5769,7 @@ class Kanbn {
     }
 
     // Get a list of archived task files
-    const files = await glob(`${archiveFolder}/*.md`);
+    const files = await globMarkdown(archiveFolder);
     return [...new Set(files.map((task) => path.parse(task).name))];
   }
 
